@@ -1,0 +1,120 @@
+#!/bin/bash
+# Enhanced ckat wrapper with code indexing (mimics Amp's internal representation)
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Read stdin (the prompt from ralph.sh)
+PROMPT=$(cat)
+
+# Load skill knowledge
+PRD_KNOWLEDGE="$([ -f "$SCRIPT_DIR/skills/prd/SKILL.md" ] && cat "$SCRIPT_DIR/skills/prd/SKILL.md")"
+RALPH_KNOWLEDGE="$([ -f "$SCRIPT_DIR/skills/ralph/SKILL.md" ] && cat "$SCRIPT_DIR/skills/ralph/SKILL.md")"
+INSTRUCTIONS="$([ -f "$SCRIPT_DIR/.ckat/instructions.md" ] && cat "$SCRIPT_DIR/.ckat/instructions.md")"
+
+# ===== AMP-STYLE CODE INDEXING =====
+# Create a code index for this iteration (persists in temp file)
+CODE_INDEX_FILE="/tmp/ralph_code_index_$(basename $SCRIPT_DIR).txt"
+
+# Only regenerate if older than 5 minutes or doesn't exist
+REGENERATE=0
+if [ ! -f "$CODE_INDEX_FILE" ]; then
+  REGENERATE=1
+elif [ ! -z "$(find "$CODE_INDEX_FILE" -mmin +5 2>/dev/null)" ]; then
+  REGENERATE=1
+fi
+
+if [ "$REGENERATE" = "1" ]; then
+  echo "## CODE INDEX - $(date)" > "$CODE_INDEX_FILE"
+  echo "Project structure overview:" >> "$CODE_INDEX_FILE"
+  
+  # List all code files
+  if [ -d "$SCRIPT_DIR" ]; then
+    find "$SCRIPT_DIR" -type f \( \
+      -name "*.js" -o -name "*.ts" -o -name "*.jsx" -o -name "*.tsx" \
+      -o -name "*.py" -o -name "*.rb" -o -name "*.java" \
+      -o -name "*.go" -o -name "*.rs" -o -name "*.cpp" \
+      -o -name "*.c" -o -name "*.h" \
+      -o -name "*.json" -o -name "*.yaml" -o -name "*.yml" \
+      -o -name "*.md" -o -name "*.txt" \
+    \) ! -path "*/node_modules/*" ! -path "*/.git/*" ! -path "*/archive/*" | \
+    while read -r file; do
+      echo "=== FILE: $file ===" >> "$CODE_INDEX_FILE"
+      # Include first 30 lines to give context without overwhelming
+      head -30 "$file" 2>/dev/null >> "$CODE_INDEX_FILE"
+      echo "" >> "$CODE_INDEX_FILE"
+    done
+  fi
+  
+  # Also check prd.json for current story context
+  if [ -f "$SCRIPT_DIR/prd.json" ]; then
+    echo "=== CURRENT PRD ===" >> "$CODE_INDEX_FILE"
+    cat "$SCRIPT_DIR/prd.json" >> "$CODE_INDEX_FILE"
+    echo "" >> "$CODE_INDEX_FILE"
+  fi
+  
+  # Check progress.txt for learnings
+  if [ -f "$SCRIPT_DIR/progress.txt" ]; then
+    echo "=== EXISTING PROGRESS ===" >> "$CODE_INDEX_FILE"
+    cat "$SCRIPT_DIR/progress.txt" >> "$CODE_INDEX_FILE"
+    echo "" >> "$CODE_INDEX_FILE"
+  fi
+fi
+
+# Read the code index
+CODE_INDEX_CONTENT="$([ -f "$CODE_INDEX_FILE" ] && cat "$CODE_INDEX_FILE")"
+
+# Create the enhanced prompt
+TMP_PROMPT=$(mktemp)
+cat > "$TMP_PROMPT" << EOF
+## RALPH MODE - AUTONOMOUS EXECUTION WITH CODE INDEXING
+
+### Your Internal Knowledge
+You now have an internal code representation, similar to Amp's architecture:
+
+1. **Code Index**: Pre-analyzed project structure with file contents
+2. **Current PRD**: Stories to implement
+3. **Progress Log**: Previous learnings
+4. **Skill Knowledge**: PRD generation and conversion rules
+
+This means you can reference code without re-reading files repeatedly.
+
+### Execution Rules
+- NEVER ask questions or request confirmation
+- ALWAYS execute commands and modify files
+- COMPLETE ONE story fully per iteration
+- Output <promise>COMPLETE</promise> when all stories pass
+- Use the code index to understand project structure
+
+### Skill Knowledge (From PRD Skills)
+$INSTRUCTIONS
+
+$RALPH_KNOWLEDGE
+
+$PRD_KNOWLEDGE
+
+### CODE INDEX (Amp-Style Representation)
+$CODE_INDEX_CONTENT
+
+---
+
+### RALPH'S PROMPT
+$PROMPT
+EOF
+
+# Set ckat environment variables
+export ANTHROPIC_MODEL="kwaipilot/kat-coder-pro:free"
+export ANTHROPIC_BASE_URL='https://openrouter.ai/api'
+export ANTHROPIC_AUTH_TOKEN='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'
+export ANTHROPIC_API_KEY=''
+export ANTHROPIC_DEFAULT_SONNET_MODEL="kwaipilot/kat-coder-pro:free"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="kwaipilot/kat-coder-pro:free"
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="kwaipilot/kat-coder-pro:free"
+export CLAUDE_CODE_SUBAGENT_MODEL="kwaipilot/kat-coder-pro:free"
+
+# Call claude
+cat "$TMP_PROMPT" | claude -p /dev/stdin --model sonnet --disallowed-tools "none" --max-turns 100
+
+# Clean up (but keep code index for next iteration)
+rm -f "$TMP_PROMPT"
+
+exit $?
