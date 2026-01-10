@@ -5,6 +5,10 @@ import { ProgressDashboard } from './ProgressDashboard';
 import { AntiPerfectionismMode } from './AntiPerfectionismMode';
 import { ProcrastinationInsights } from './ProcrastinationInsights';
 import { ContextPreservation } from './ContextPreservation';
+import { EmotionSelector } from './EmotionSelector';
+import { SmartTaskFilter } from './SmartTaskFilter';
+import { ProcrastinationFriendlyReminders } from './ProcrastinationFriendlyReminders';
+import { EmergencyDeadlineMode } from './EmergencyDeadlineMode';
 
 export const Dashboard: React.FC = () => {
   const { state, addTask, deleteTask } = useAppState();
@@ -28,106 +32,153 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="dashboard">
-      <AntiPerfectionismMode className="anti-perfectionism-section" />
+      <div className="dashboard-content">
+        <div className="left-column">
+          <AntiPerfectionismMode className="anti-perfectionism-section" />
 
-      <ProgressDashboard progress={state.progress} />
+          <EmotionSelector className="emotion-section" />
 
-      <ProcrastinationInsights className="insights-section" />
+          <div className="add-task-section">
+            <h2>Add a task to break down</h2>
+            <p>Enter any overwhelming task and our AI will help you break it into tiny, manageable steps.</p>
 
-      <ContextPreservation className="context-section" taskId={state.tasks[0]?.id || ''} />
-
-      <div className="add-task-section">
-        <h2>Add a task to break down</h2>
-        <p>Enter any overwhelming task and our AI will help you break it into tiny, manageable steps.</p>
-
-        <form onSubmit={handleAddTask} className="task-form">
-          <div className="form-group">
-            <label htmlFor="task-title">What do you need to do?</label>
-            <input
-              id="task-title"
-              type="text"
-              value={newTaskTitle}
-              onChange={(e) => setNewTaskTitle(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="e.g., Write research paper, Organize closet, Learn to cook"
-              className="task-input"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="task-description">Any details? (optional)</label>
-            <textarea
-              id="task-description"
-              value={newTaskDescription}
-              onChange={(e) => setNewTaskDescription(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Additional context or requirements..."
-              className="task-textarea"
-              rows={3}
-            />
-          </div>
-
-          <button type="submit" className="add-task-btn" disabled={!newTaskTitle.trim()}>
-            Add Task
-          </button>
-        </form>
-      </div>
-
-      {state.tasks.length > 0 && (
-        <div className="tasks-section">
-          <h2>Your Tasks</h2>
-
-          <div className="tasks-grid">
-            {state.tasks.map(task => (
-              <div key={task.id} className="task-card">
-                <div className="task-header">
-                  <h3>{task.title}</h3>
-                  {task.description && (
-                    <p className="task-description">{task.description}</p>
-                  )}
-                  <div className="task-meta">
-                    <span className="task-date">Added {task.createdAt.toLocaleDateString()}</span>
-                    <button
-                      onClick={() => deleteTask(task.id)}
-                      className="delete-btn"
-                      aria-label="Delete task"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-
-                <TaskBreakdownAssistant task={task} />
+            <form onSubmit={handleAddTask} className="task-form">
+              <div className="form-group">
+                <label htmlFor="task-title">What do you need to do?</label>
+                <input
+                  id="task-title"
+                  type="text"
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="e.g., Write research paper, Organize closet, Learn to cook"
+                  className="task-input"
+                />
               </div>
-            ))}
+
+              <div className="form-group">
+                <label htmlFor="task-description">Any details? (optional)</label>
+                <textarea
+                  id="task-description"
+                  value={newTaskDescription}
+                  onChange={(e) => setNewTaskDescription(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Additional context or requirements..."
+                  className="task-textarea"
+                  rows={3}
+                />
+              </div>
+
+              <button type="submit" className="add-task-btn" disabled={!newTaskTitle.trim()}>
+                Add Task
+              </button>
+            </form>
           </div>
+
+          {state.tasks.length > 0 && (
+            <div className="tasks-section">
+              <h2>Your Tasks</h2>
+
+              <div className="tasks-grid">
+                {state.tasks.map(task => (
+                  <div key={task.id} className="task-card">
+                    <div className="task-header">
+                      <h3>{task.title}</h3>
+                      {task.description && (
+                        <p className="task-description">{task.description}</p>
+                      )}
+                      <div className="task-meta">
+                        <span className="task-date">Added {task.createdAt.toLocaleDateString()}</span>
+                        <button
+                          onClick={() => deleteTask(task.id)}
+                          className="delete-btn"
+                          aria-label="Delete task"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+
+                    <TaskBreakdownAssistant task={task} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      )}
+
+        <div className="right-column">
+          <ProgressDashboard progress={state.progress} />
+
+          <EmergencyDeadlineMode className="emergency-section" />
+
+          <ProcrastinationFriendlyReminders className="reminders-section" />
+
+          <SmartTaskFilter className="smart-filter-section" />
+
+          <ProcrastinationInsights className="insights-section" />
+
+          <ContextPreservation className="context-section" taskId={state.tasks[0]?.id || ''} />
+        </div>
+      </div>
 
       <style>{`
         .dashboard {
-          max-width: 800px;
+          max-width: 1200px;
           margin: 0 auto;
         }
 
+        .dashboard-content {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+          gap: 2rem;
+        }
+
+        .left-column {
+          display: flex;
+          flex-direction: column;
+          gap: 2rem;
+        }
+
+        .right-column {
+          display: flex;
+          flex-direction: column;
+          gap: 2rem;
+        }
+
         .anti-perfectionism-section {
-      margin-bottom: 2rem;
-    }
+          margin-bottom: 0;
+        }
 
-    .insights-section {
-      margin-bottom: 2rem;
-    }
+        .emotion-section {
+          margin-bottom: 0;
+        }
 
-    .context-section {
-      margin-bottom: 2rem;
-    }
+        .emergency-section {
+          margin-bottom: 0;
+        }
 
-    .add-task-section {
+        .insights-section {
+          margin-bottom: 0;
+        }
+
+        .context-section {
+          margin-bottom: 0;
+        }
+
+        .smart-filter-section {
+          margin-bottom: 0;
+        }
+
+        .reminders-section {
+          margin-bottom: 0;
+        }
+
+        .add-task-section {
           background: white;
           border-radius: 16px;
           padding: 2rem;
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-          margin-bottom: 2rem;
         }
 
         .add-task-section h2 {
@@ -263,6 +314,12 @@ export const Dashboard: React.FC = () => {
 
         .delete-btn:hover {
           background: #fecaca;
+        }
+
+        @media (max-width: 768px) {
+          .dashboard-content {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
     </div>

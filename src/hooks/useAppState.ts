@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { AppState, Task, MicroStep, TaskBreakdown, ProgressState, Achievement, ContextSnapshot, WorkSession } from '../types';
+import { AppState, Task, MicroStep, TaskBreakdown, ProgressState, Achievement, ContextSnapshot, WorkSession, EmotionState, TaskEnergyRequirement, EmergencyAssessment } from '../types';
 import { generateMicroSteps, simulateAiResponse } from '../utils/taskBreakdown';
 import { ProcrastinationInsights } from '../utils/procrastinationInsights';
+import { ReminderManager, defaultReminderSettings } from '../utils/reminderUtils';
 
 export function useAppState() {
   const [state, setState] = useState<AppState>(() => {
@@ -50,7 +51,25 @@ export function useAppState() {
             deadlinePatterns: []
           },
           contextSnapshots: parsed.contextSnapshots || [],
-          workSessions: parsed.workSessions || []
+          workSessions: parsed.workSessions || [],
+          emotionStates: parsed.emotionStates || [],
+          taskEnergyRequirements: parsed.taskEnergyRequirements || [],
+          reminders: parsed.reminders || [],
+          reminderSettings: parsed.reminderSettings || defaultReminderSettings,
+          snoozeReasons: parsed.snoozeReasons || [],
+          reminderPatterns: parsed.reminderPatterns || [],
+          emergencyMode: parsed.emergencyMode || {
+            isActive: false,
+            activatedAt: null,
+            deadline: null,
+            essentialTasks: [],
+            timeBoxingEnabled: true,
+            timeBoxingDuration: 25, // 25 minutes default
+            enforcedBreaks: true,
+            breakDuration: 5, // 5 minutes default
+            reflectionPrompt: "What did you accomplish? What could prevent this next time?"
+          },
+          emergencyAssessments: parsed.emergencyAssessments || []
         };
       } catch (e) {
         console.warn('Failed to parse saved state, using defaults');
@@ -85,7 +104,25 @@ export function useAppState() {
         deadlinePatterns: []
       },
       contextSnapshots: [],
-      workSessions: []
+      workSessions: [],
+      emotionStates: [],
+      taskEnergyRequirements: [],
+      reminders: [],
+      reminderSettings: defaultReminderSettings,
+      snoozeReasons: [],
+      reminderPatterns: [],
+      emergencyMode: {
+        isActive: false,
+        activatedAt: null,
+        deadline: null,
+        essentialTasks: [],
+        timeBoxingEnabled: true,
+        timeBoxingDuration: 25, // 25 minutes default
+        enforcedBreaks: true,
+        breakDuration: 5, // 5 minutes default
+        reflectionPrompt: "What did you accomplish? What could prevent this next time?"
+      },
+      emergencyAssessments: []
     };
   });
 
@@ -424,6 +461,340 @@ export function useAppState() {
     }));
   };
 
+  // Emotion Tracking Functions
+  const setCurrentEmotion = (emotion: 'energized' | 'anxious' | 'creative' | 'brain-dead' | 'focused' | 'tired' | 'motivated' | 'overwhelmed', intensity: number) => {
+    const emotionState: EmotionState = {
+      id: `emotion-${Date.now()}`,
+      emotion,
+      intensity,
+      timestamp: new Date(),
+      tasksCompleted: []
+    };
+
+    setState(prev => ({
+      ...prev,
+      emotionStates: [...prev.emotionStates, emotionState]
+    }));
+  };
+
+  const getCurrentEmotion = (): EmotionState | null => {
+    const emotions = state.emotionStates
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    return emotions.length > 0 ? emotions[0] : null;
+  };
+
+  const setTaskEnergyRequirement = (taskId: string, energyLevel: 'low' | 'medium' | 'high', focusType: 'creative' | 'analytical' | 'routine' | 'mental' | 'physical', estimatedTime: number) => {
+    const existingIndex = state.taskEnergyRequirements.findIndex(req => req.taskId === taskId);
+
+    const newRequirement: TaskEnergyRequirement = {
+      taskId,
+      energyLevel,
+      focusType,
+      estimatedTime
+    };
+
+    setState(prev => ({
+      ...prev,
+      taskEnergyRequirements: existingIndex >= 0
+        ? prev.taskEnergyRequirements.map((req, index) =>
+            index === existingIndex ? newRequirement : req
+          )
+        : [...prev.taskEnergyRequirements, newRequirement]
+    }));
+  };
+
+  const getTaskEnergyRequirement = (taskId: string): TaskEnergyRequirement | null => {
+    return state.taskEnergyRequirements.find(req => req.taskId === taskId) || null;
+  };
+
+  const getSmartTaskFilter = (): any => {
+    const currentEmotion = getCurrentEmotion();
+    const tasks = [...state.tasks];
+
+    if (!currentEmotion) {
+      return {
+        currentEmotion: null,
+        matchingTasks: tasks,
+        suggestedAlternatives: [],
+        energyOptimization: "Set your current emotion to get personalized task suggestions"
+      };
+    }
+
+    // Filter tasks based on current emotion and energy requirements
+    const matchingTasks = tasks.filter(task => {
+      const requirement = getTaskEnergyRequirement(task.id);
+      if (!requirement) return true; // If no requirement set, show task
+
+      // Energy level matching
+      const energyMatch = requirement.energyLevel === 'low' ||
+                         (requirement.energyLevel === 'medium' && currentEmotion.intensity >= 4) ||
+                         (requirement.energyLevel === 'high' && currentEmotion.intensity >= 7);
+
+      // Focus type matching
+      const focusMatch = requirement.focusType === 'routine' ||
+                        (requirement.focusType === 'analytical' && currentEmotion.emotion !== 'brain-dead') ||
+                        (requirement.focusType === 'creative' && currentEmotion.emotion === 'energized') ||
+                        (requirement.focusType === 'mental' && currentEmotion.emotion !== 'tired');
+
+      return energyMatch && focusMatch;
+    });
+
+    // Suggest alternatives for low energy states
+    let suggestedAlternatives: Task[] = [];
+    if (currentEmotion.emotion === 'brain-dead' || currentEmotion.emotion === 'tired') {
+      suggestedAlternatives = tasks.filter(task => {
+        const requirement = getTaskEnergyRequirement(task.id);
+        return requirement && requirement.energyLevel === 'low' && requirement.focusType === 'routine';
+      });
+    }
+
+    const energyOptimization = currentEmotion.emotion === 'brain-dead'
+      ? "Try a simple, routine task or take a short break"
+      : currentEmotion.emotion === 'tired'
+      ? "Consider light tasks or a quick rest"
+      : currentEmotion.emotion === 'anxious'
+      ? "Start with something familiar and structured"
+      : "You're in a good state for meaningful work";
+
+    return {
+      currentEmotion,
+      matchingTasks,
+      suggestedAlternatives,
+      energyOptimization
+    };
+  };
+
+  const markTaskCompletedWithEmotion = (taskId: string) => {
+    const currentEmotion = getCurrentEmotion();
+    if (currentEmotion) {
+      setState(prev => ({
+        ...prev,
+        emotionStates: prev.emotionStates.map(emotion =>
+          emotion.id === currentEmotion.id
+            ? { ...emotion, tasksCompleted: [...emotion.tasksCompleted, taskId] }
+            : emotion
+        )
+      }));
+    }
+  };
+
+  // Reminder Functions
+  const reminderManager = new ReminderManager(
+    state.reminderSettings,
+    state.reminders,
+    state.snoozeReasons,
+    state.reminderPatterns
+  );
+
+  const createReminder = (task: Task, tone?: 'encouraging' | 'neutral' | 'humorous') => {
+    const reminder = reminderManager.createReminder(task, tone);
+    reminderManager.addReminder(reminder);
+
+    setState(prev => ({
+      ...prev,
+      ...reminderManager.data
+    }));
+
+    return reminder;
+  };
+
+  const snoozeReminder = (reminderId: string, reason: string) => {
+    const result = reminderManager.snoozeReminder(reminderId, reason);
+    if (result) {
+      setState(prev => ({
+        ...prev,
+        ...reminderManager.data
+      }));
+    }
+    return result;
+  };
+
+  const completeReminder = (reminderId: string) => {
+    const result = reminderManager.completeReminder(reminderId);
+    if (result) {
+      setState(prev => ({
+        ...prev,
+        ...reminderManager.data
+      }));
+    }
+    return result;
+  };
+
+  const updateReminderSettings = (newSettings: Partial<typeof state.reminderSettings>) => {
+    reminderManager.updateSettings(newSettings);
+
+    setState(prev => ({
+      ...prev,
+      ...reminderManager.data
+    }));
+  };
+
+  const getActiveReminders = () => {
+    return reminderManager.getActiveReminders();
+  };
+
+  const getSuggestedReasons = () => {
+    return reminderManager.getSuggestedReasons();
+  };
+
+  const getCompletionMessage = () => {
+    return reminderManager.getCompletionMessage();
+  };
+
+  // Emergency Mode Functions
+  const activateEmergencyMode = (deadline: Date) => {
+    // Perform rapid assessment
+    const assessment = performEmergencyAssessment(deadline);
+
+    setState(prev => ({
+      ...prev,
+      emergencyMode: {
+        ...prev.emergencyMode,
+        isActive: true,
+        activatedAt: new Date(),
+        deadline,
+        essentialTasks: assessment.essentialTasks,
+        timeBoxingEnabled: true,
+        enforcedBreaks: true
+      },
+      emergencyAssessments: [...prev.emergencyAssessments, assessment]
+    }));
+  };
+
+  const deactivateEmergencyMode = () => {
+    setState(prev => ({
+      ...prev,
+      emergencyMode: {
+        ...prev.emergencyMode,
+        isActive: false,
+        activatedAt: null,
+        deadline: null,
+        essentialTasks: []
+      }
+    }));
+  };
+
+  const getEmergencyModeInfo = () => {
+    const mode = state.emergencyMode;
+    const timeUntilDeadline = mode.deadline
+      ? Math.max(0, mode.deadline.getTime() - Date.now())
+      : null;
+
+    return {
+      ...mode,
+      timeUntilDeadline,
+      isEmergency: mode.isActive,
+      timeLeftFormatted: timeUntilDeadline
+        ? formatTimeLeft(timeUntilDeadline)
+        : null
+    };
+  };
+
+  const startEmergencyPomodoro = (taskIds: string[]) => {
+    // Start with the first essential task
+    const firstTaskId = taskIds[0];
+    if (firstTaskId) {
+      startTwoMinuteTimer(firstTaskId);
+    }
+  };
+
+  const completeEmergencyReflection = (reflection: string) => {
+    // Log the reflection and deactivate emergency mode
+    console.log('Emergency reflection:', reflection);
+
+    setState(prev => ({
+      ...prev,
+      emergencyMode: {
+        ...prev.emergencyMode,
+        isActive: false,
+        activatedAt: null,
+        deadline: null,
+        essentialTasks: []
+      }
+    }));
+  };
+
+  const performEmergencyAssessment = (deadline: Date): EmergencyAssessment => {
+    const totalTasks = state.tasks.length;
+    const timeAvailable = Math.max(0, deadline.getTime() - Date.now());
+    const timeAvailableMinutes = Math.floor(timeAvailable / (1000 * 60));
+
+    // Triage logic: prioritize incomplete tasks with highest urgency
+    const urgentTasks = state.tasks
+      .filter(task => !task.isCompleted)
+      .sort((a, b) => {
+        // Simple prioritization: newer tasks are more urgent, longer descriptions might be more complex
+        const aUrgency = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        const bComplexity = b.description ? b.description.length : 0;
+        const aComplexity = a.description ? a.description.length : 0;
+        return aUrgency - (bComplexity - aComplexity);
+      });
+
+    // Determine how many tasks we can realistically handle
+    const estimatedTaskTime = 15; // Assume 15 minutes per task for emergency mode
+    const essentialCount = Math.min(
+      urgentTasks.length,
+      Math.floor(timeAvailableMinutes / estimatedTaskTime)
+    );
+
+    const essentialTasks = urgentTasks.slice(0, essentialCount).map(t => t.id);
+    const cuttableTasks = urgentTasks.slice(essentialCount).length;
+
+    const recommendations = getEmergencyRecommendations(timeAvailableMinutes, essentialTasks.length);
+
+    return {
+      id: `assessment-${Date.now()}`,
+      assessmentTime: new Date(),
+      deadline,
+      totalTasks,
+      essentialTaskCount: essentialCount,
+      essentialTasks,
+      cuttableTasks,
+      timeAvailable: timeAvailableMinutes,
+      recommendations,
+      triageDecision: essentialCount > 0 ? 'urgent' : 'can_wait'
+    };
+  };
+
+  const getEmergencyRecommendations = (timeAvailable: number, essentialTaskCount: number): string[] => {
+    const recommendations: string[] = [];
+
+    if (timeAvailable < 30) {
+      recommendations.push("Focus on ONE critical task only");
+      recommendations.push("Use 5-minute time boxes");
+      recommendations.push("Skip planning, just start");
+    } else if (timeAvailable < 120) {
+      recommendations.push("Prioritize tasks by impact vs effort");
+      recommendations.push("Use 25-minute pomodoros with 5-minute breaks");
+      recommendations.push("Focus on completion, not perfection");
+    } else {
+      recommendations.push("You have time for proper planning");
+      recommendations.push("Break complex tasks into micro-steps");
+      recommendations.push("Use normal work patterns");
+    }
+
+    if (essentialTaskCount > 5) {
+      recommendations.push("Consider delegating or deferring non-critical items");
+    }
+
+    recommendations.push("Stay hydrated and take short breaks");
+    recommendations.push("Focus on progress, not perfection");
+
+    return recommendations;
+  };
+
+  const formatTimeLeft = (milliseconds: number): string => {
+    const totalMinutes = Math.floor(milliseconds / (1000 * 60));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else {
+      return `${minutes}m`;
+    }
+  };
+
   return {
     state,
     addTask,
@@ -452,7 +823,25 @@ export function useAppState() {
     getTimelineView,
     startWorkSession,
     endWorkSession,
-    getCurrentSession
+    getCurrentSession,
+    setCurrentEmotion,
+    getCurrentEmotion,
+    setTaskEnergyRequirement,
+    getTaskEnergyRequirement,
+    getSmartTaskFilter,
+    markTaskCompletedWithEmotion,
+    createReminder,
+    snoozeReminder,
+    completeReminder,
+    updateReminderSettings,
+    getActiveReminders,
+    getSuggestedReasons,
+    getCompletionMessage,
+    activateEmergencyMode,
+    deactivateEmergencyMode,
+    getEmergencyModeInfo,
+    startEmergencyPomodoro,
+    completeEmergencyReflection
   };
 }
 

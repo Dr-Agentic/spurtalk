@@ -87,6 +87,14 @@ export interface AppState {
   procrastinationData: ProcrastinationData;
   contextSnapshots: ContextSnapshot[];
   workSessions: WorkSession[];
+  emotionStates: EmotionState[];
+  taskEnergyRequirements: TaskEnergyRequirement[];
+  reminders: Reminder[];
+  reminderSettings: ReminderSettings;
+  snoozeReasons: SnoozeReason[];
+  reminderPatterns: ReminderPattern[];
+  emergencyMode: EmergencyMode;
+  emergencyAssessments: EmergencyAssessment[];
 }
 
 export interface ProcrastinationData {
@@ -137,6 +145,28 @@ export interface DeadlinePattern {
   commonExcuses: string[];
 }
 
+export interface EmotionState {
+  id: string;
+  emotion: 'energized' | 'anxious' | 'creative' | 'brain-dead' | 'focused' | 'tired' | 'motivated' | 'overwhelmed';
+  intensity: number; // 1-10
+  timestamp: Date;
+  tasksCompleted: string[]; // task IDs completed in this state
+}
+
+export interface TaskEnergyRequirement {
+  taskId: string;
+  energyLevel: 'low' | 'medium' | 'high';
+  focusType: 'creative' | 'analytical' | 'routine' | 'mental' | 'physical';
+  estimatedTime: number; // in minutes
+}
+
+export interface SmartTaskFilter {
+  currentEmotion: EmotionState | null;
+  matchingTasks: Task[];
+  suggestedAlternatives: Task[];
+  energyOptimization: string;
+}
+
 export interface ContextSnapshot {
   id: string;
   taskId: string;
@@ -157,4 +187,77 @@ export interface WorkSession {
   totalDuration: number; // in milliseconds
   interruptionCount: number;
   finalContext: string;
+}
+
+export interface Reminder {
+  id: string;
+  taskId: string;
+  title: string;
+  message: string;
+  tone: 'encouraging' | 'neutral' | 'humorous';
+  scheduledTime: Date;
+  isSnoozed: boolean;
+  snoozeReason?: string;
+  snoozeCount: number;
+  lastSnoozeTime: Date | null;
+  isCompleted: boolean;
+  completedAt: Date | null;
+  createdAt: Date;
+}
+
+export interface ReminderSettings {
+  enabled: boolean;
+  tone: 'encouraging' | 'neutral' | 'humorous';
+  maxSnoozes: number;
+  snoozeDuration: number; // in minutes
+  smartTiming: boolean;
+  spamProtection: boolean;
+  celebrationEnabled: boolean;
+}
+
+export interface SnoozeReason {
+  id: string;
+  reason: string;
+  frequency: number;
+  suggestedAlternatives: string[];
+}
+
+export interface ReminderPattern {
+  taskId: string;
+  snoozeHistory: Array<{
+    reason: string;
+    timestamp: Date;
+    duration: number;
+  }>;
+  optimalTiming: {
+    timeOfDay: number; // 0-23
+    dayOfWeek: number; // 0-6
+    energyLevel: 'low' | 'medium' | 'high';
+  };
+  completionRate: number;
+}
+
+export interface EmergencyMode {
+  isActive: boolean;
+  activatedAt: Date | null;
+  deadline: Date | null;
+  essentialTasks: string[]; // task IDs
+  timeBoxingEnabled: boolean;
+  timeBoxingDuration: number; // in minutes
+  enforcedBreaks: boolean;
+  breakDuration: number; // in minutes
+  reflectionPrompt: string;
+}
+
+export interface EmergencyAssessment {
+  id: string;
+  assessmentTime: Date;
+  deadline: Date;
+  totalTasks: number;
+  essentialTaskCount: number;
+  essentialTasks: string[]; // task IDs
+  cuttableTasks: number;
+  timeAvailable: number; // in minutes
+  recommendations: string[];
+  triageDecision: 'urgent' | 'important' | 'can_wait' | 'not_needed';
 }
