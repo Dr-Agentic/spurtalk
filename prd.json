@@ -115,11 +115,12 @@
         "Tasks tagged with required energy type (focus, creative, mundane)",
         "Smart filter shows tasks matching current state",
         "Suggests break or easier alternative when low energy",
-        "Learns from user's completion patterns"
+        "Learns from user's completion patterns",
+        "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": "Match tasks to current capacity"
+      "passes": true,
+      "notes": "Match tasks to current capacity - COMPLETE"
     },
     {
       "id": "US-008",
@@ -133,7 +134,7 @@
         "Celebration when user acts on reminder"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Nice to have - many users disable all reminders"
     },
     {
@@ -148,8 +149,8 @@
         "Post-crisis reflection: 'What could prevent this next time?'"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": "Damage control for crisis situations"
+      "passes": true,
+      "notes": "Damage control for crisis situations - IMPLEMENTED"
     },
     {
       "id": "US-010",
