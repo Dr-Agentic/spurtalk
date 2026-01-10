@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { AppState, Task, MicroStep, TaskBreakdown } from '../types';
+import { AppState, Task, MicroStep, TaskBreakdown, ProgressState, Achievement } from '../types';
 import { generateMicroSteps, simulateAiResponse } from '../utils/taskBreakdown';
+import { ProcrastinationInsights } from '../utils/procrastinationInsights';
 
 export function useAppState() {
   const [state, setState] = useState<AppState>(() => {
@@ -23,7 +24,31 @@ export function useAppState() {
               ...step,
               createdAt: new Date(step.createdAt)
             }))
-          }))
+          })),
+          progress: parsed.progress || {
+            totalStepsCompleted: 0,
+            currentStreak: 0,
+            longestStreak: 0,
+            lastActiveDate: null,
+            achievements: [],
+            dailyStats: []
+          },
+          timer: parsed.timer || {
+            isActive: false,
+            startTime: null,
+            duration: 0,
+            currentTaskId: null,
+            currentStepId: null
+          },
+          isPerfectionismMode: parsed.isPerfectionismMode ?? false,
+          procrastinationInsights: parsed.procrastinationInsights || [],
+          procrastinationData: parsed.procrastinationData || {
+            taskDelayHistory: [],
+            timeOfDayPatterns: [],
+            emotionalTriggers: [],
+            taskTypePatterns: [],
+            deadlinePatterns: []
+          }
         };
       } catch (e) {
         console.warn('Failed to parse saved state, using defaults');
@@ -32,7 +57,31 @@ export function useAppState() {
     return {
       tasks: [],
       breakdowns: [],
-      currentStep: null
+      currentStep: null,
+      progress: {
+        totalStepsCompleted: 0,
+        currentStreak: 0,
+        longestStreak: 0,
+        lastActiveDate: null,
+        achievements: [],
+        dailyStats: []
+      },
+      timer: {
+        isActive: false,
+        startTime: null,
+        duration: 0,
+        currentTaskId: null,
+        currentStepId: null
+      },
+      isPerfectionismMode: false,
+      procrastinationInsights: [],
+      procrastinationData: {
+        taskDelayHistory: [],
+        timeOfDayPatterns: [],
+        emotionalTriggers: [],
+        taskTypePatterns: [],
+        deadlinePatterns: []
+      }
     };
   });
 
@@ -54,6 +103,43 @@ export function useAppState() {
       ...prev,
       tasks: [...prev.tasks, newTask]
     }));
+  };
+
+  const trackProcrastinationPattern = (taskId: string, emotionalState?: string) => {
+    const task = state.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    // Use procrastination insights to track delay
+    const insights = new ProcrastinationInsights(state.procrastinationData);
+    insights.trackTaskDelay(task, emotionalState);
+
+    setState(prev => ({
+      ...prev,
+      procrastinationData: insights.data
+    }));
+  };
+
+  const markTaskStarted = (taskId: string, emotionalState?: string) => {
+    const insights = new ProcrastinationInsights(state.procrastinationData);
+    insights.markTaskStarted(taskId, emotionalState);
+
+    setState(prev => ({
+      ...prev,
+      procrastinationData: insights.data
+    }));
+  };
+
+  const generateInsights = (): any[] => {
+    const insights = new ProcrastinationInsights(state.procrastinationData);
+    const generatedInsights = insights.generateInsights();
+
+    // Update state with new insights
+    setState(prev => ({
+      ...prev,
+      procrastinationInsights: generatedInsights
+    }));
+
+    return generatedInsights;
   };
 
   const deleteTask = (taskId: string) => {
@@ -116,25 +202,141 @@ export function useAppState() {
   };
 
   const toggleStepCompletion = (breakdownId: string, stepId: string) => {
-    setState(prev => ({
-      ...prev,
-      breakdowns: prev.breakdowns.map(breakdown =>
-        breakdown.taskId === breakdownId
-          ? {
-              ...breakdown,
-              microSteps: breakdown.microSteps.map(step =>
-                step.id === stepId
-                  ? { ...step, isCompleted: !step.isCompleted }
-                  : step
-              )
-            }
-          : breakdown
-      )
-    }));
+    setState(prev => {
+      const newState = {
+        ...prev,
+        breakdowns: prev.breakdowns.map(breakdown =>
+          breakdown.taskId === breakdownId
+            ? {
+                ...breakdown,
+                microSteps: breakdown.microSteps.map(step =>
+                  step.id === stepId
+                    ? { ...step, isCompleted: !step.isCompleted }
+                    : step
+                )
+              }
+            : breakdown
+        )
+      };
+
+      // Update progress tracking
+      const completedSteps = newState.breakdowns
+        .flatMap(b => b.microSteps)
+        .filter(step => step.isCompleted).length;
+
+      // Track task completion if this is the first step completed
+      const step = newState.breakdowns
+        .flatMap(b => b.microSteps)
+        .find(s => s.id === stepId);
+
+      if (step && !step.isCompleted) {
+        // This is now completed, so mark task as started
+        const task = newState.tasks.find(t => t.id === breakdownId);
+        if (task) {
+          // Mark task as started in procrastination data
+          const insights = new ProcrastinationInsights(newState.procrastinationData);
+          insights.markTaskStarted(task.id);
+          newState.procrastinationData = insights.data;
+        }
+      }
+
+      return {
+        ...newState,
+        progress: updateProgressState(newState.progress, completedSteps)
+      };
+    });
   };
 
   const getCurrentBreakdown = (taskId: string) => {
     return state.breakdowns.find(b => b.taskId === taskId);
+  };
+
+  const startTwoMinuteTimer = (taskId: string, stepId?: string) => {
+    const now = new Date();
+    setState(prev => ({
+      ...prev,
+      timer: {
+        isActive: true,
+        startTime: now,
+        duration: 2 * 60 * 1000, // 2 minutes in milliseconds
+        currentTaskId: taskId,
+        currentStepId: stepId || null
+      }
+    }));
+  };
+
+  const stopTimer = () => {
+    setState(prev => ({
+      ...prev,
+      timer: {
+        ...prev.timer,
+        isActive: false,
+        startTime: null
+      }
+    }));
+  };
+
+  const pauseTimer = () => {
+    setState(prev => ({
+      ...prev,
+      timer: {
+        ...prev.timer,
+        isActive: false
+      }
+    }));
+  };
+
+  const resumeTimer = () => {
+    if (state.timer.currentTaskId) {
+      setState(prev => ({
+        ...prev,
+        timer: {
+          ...prev.timer,
+          isActive: true,
+          startTime: new Date()
+        }
+      }));
+    }
+  };
+
+  const getTimerProgress = () => {
+    if (!state.timer.isActive || !state.timer.startTime) return 0;
+
+    const elapsed = Date.now() - state.timer.startTime.getTime();
+    const progress = Math.min(elapsed / state.timer.duration, 1);
+    return progress;
+  };
+
+  const getRemainingTime = () => {
+    if (!state.timer.startTime) return state.timer.duration;
+
+    const elapsed = Date.now() - state.timer.startTime.getTime();
+    const remaining = Math.max(0, state.timer.duration - elapsed);
+    return remaining;
+  };
+
+  const isTimerFinished = () => {
+    return getRemainingTime() === 0;
+  };
+
+  const resetTimer = () => {
+    setState(prev => ({
+      ...prev,
+      timer: {
+        isActive: false,
+        startTime: null,
+        duration: 0,
+        currentTaskId: null,
+        currentStepId: null
+      }
+    }));
+  };
+
+  const togglePerfectionismMode = () => {
+    setState(prev => ({
+      ...prev,
+      isPerfectionismMode: !prev.isPerfectionismMode
+    }));
   };
 
   return {
@@ -146,6 +348,108 @@ export function useAppState() {
     rejectBreakdown,
     modifyBreakdown,
     toggleStepCompletion,
-    getCurrentBreakdown
+    getCurrentBreakdown,
+    startTwoMinuteTimer,
+    stopTimer,
+    pauseTimer,
+    resumeTimer,
+    getTimerProgress,
+    getRemainingTime,
+    isTimerFinished,
+    resetTimer,
+    togglePerfectionismMode,
+    trackProcrastinationPattern,
+    markTaskStarted,
+    generateInsights
   };
+}
+
+// Utility functions for progress tracking
+function updateProgressState(progress: ProgressState, completedSteps: number): ProgressState {
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+  // Update daily stats
+  let dailyStats = [...progress.dailyStats];
+  const todayIndex = dailyStats.findIndex(d => d.date === today);
+
+  if (todayIndex >= 0) {
+    dailyStats[todayIndex] = {
+      ...dailyStats[todayIndex],
+      stepsCompleted: completedSteps
+    };
+  } else {
+    dailyStats.push({
+      date: today,
+      stepsCompleted: completedSteps,
+      timeSpent: 0,
+      tasksStarted: []
+    });
+  }
+
+  // Update streaks
+  let currentStreak = progress.currentStreak;
+  let longestStreak = progress.longestStreak;
+
+  if (progress.lastActiveDate === yesterday) {
+    currentStreak += 1;
+    if (currentStreak > longestStreak) {
+      longestStreak = currentStreak;
+    }
+  } else if (progress.lastActiveDate !== today) {
+    currentStreak = 1;
+  }
+
+  // Check for achievements
+  const achievements = checkAchievements({
+    ...progress,
+    dailyStats,
+    currentStreak,
+    longestStreak,
+    lastActiveDate: today
+  });
+
+  return {
+    ...progress,
+    totalStepsCompleted: completedSteps,
+    currentStreak,
+    longestStreak,
+    lastActiveDate: today,
+    achievements,
+    dailyStats
+  };
+}
+
+function checkAchievements(progress: ProgressState): Achievement[] {
+  const existingAchievements = progress.achievements;
+  const newAchievements: Achievement[] = [];
+
+  // Check for 5 First Steps achievement
+  if (progress.totalStepsCompleted >= 5 &&
+      !existingAchievements.some(a => a.id === 'five_steps')) {
+    newAchievements.push({
+      id: 'five_steps',
+      title: '5 First Steps',
+      description: 'Complete 5 micro-steps',
+      icon: '👟',
+      unlockedAt: new Date(),
+      isUnlocked: true
+    });
+  }
+
+  // Check for Morning Warrior achievement (3 consecutive days with activity before 10 AM)
+  if (progress.currentStreak >= 3 &&
+      !existingAchievements.some(a => a.id === 'morning_warrior')) {
+    // This would need more sophisticated time tracking, simplified for now
+    newAchievements.push({
+      id: 'morning_warrior',
+      title: 'Morning Warrior',
+      description: '3 consecutive days of progress',
+      icon: '🌅',
+      unlockedAt: new Date(),
+      isUnlocked: true
+    });
+  }
+
+  return [...existingAchievements, ...newAchievements];
 }

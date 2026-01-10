@@ -1,4 +1,4 @@
 archive/
-prd.json
-progress.txt
+node_modules/
+dist/
 .last-branch

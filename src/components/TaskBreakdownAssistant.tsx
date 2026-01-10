@@ -1,17 +1,59 @@
 import React, { useState } from 'react';
 import { Task, MicroStep } from '../types';
 import { useAppState } from '../hooks/useAppState';
+import { TwoMinuteTimer } from './TwoMinuteTimer';
+import { soundEffects } from '../utils/soundEffects';
+import { getRandomCompletionMessage } from '../utils/perfectionismUtils';
 
 interface TaskBreakdownAssistantProps {
   task: Task;
 }
 
 export const TaskBreakdownAssistant: React.FC<TaskBreakdownAssistantProps> = ({ task }) => {
-  const { generateBreakdown, acceptBreakdown, rejectBreakdown, modifyBreakdown, getCurrentBreakdown } = useAppState();
+  const {
+    state,
+    generateBreakdown,
+    acceptBreakdown,
+    rejectBreakdown,
+    modifyBreakdown,
+    getCurrentBreakdown,
+    startTwoMinuteTimer,
+    toggleStepCompletion
+  } = useAppState();
   const [isGenerating, setIsGenerating] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [showTimer, setShowTimer] = useState(false);
+  const [currentStepId, setCurrentStepId] = useState<string | null>(null);
 
   const breakdown = getCurrentBreakdown(task.id);
+
+  const handleStartTwoMinuteTimer = (stepId?: string) => {
+    setCurrentStepId(stepId || null);
+    setShowTimer(true);
+    startTwoMinuteTimer(task.id, stepId);
+  };
+
+  const handleTimerCompletion = (keepGoing: boolean) => {
+    setShowTimer(false);
+    if (keepGoing) {
+      // Continue working on the same step
+      setTimeout(() => {
+        handleStartTwoMinuteTimer(currentStepId || undefined);
+      }, 1000);
+    }
+    // If not keeping going, just stop the timer (celebration already happened)
+  };
+
+  const handleStepToggle = (breakdownId: string, stepId: string) => {
+    toggleStepCompletion(breakdownId, stepId);
+    // Play celebration sound
+    soundEffects.playSuccess();
+
+    // Show different message based on perfectionism mode
+    if (state.isPerfectionismMode) {
+      console.log('🎉', getRandomCompletionMessage());
+    }
+  };
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -55,17 +97,56 @@ export const TaskBreakdownAssistant: React.FC<TaskBreakdownAssistantProps> = ({ 
     ));
   };
 
+  const getTwoMinuteLabel = () => {
+    return state.isPerfectionismMode
+      ? "🚀 Just 2 Minutes - Start Anywhere!"
+      : "⏱️ 2-Minute Start";
+  };
+
+  const getGlobalSubtitle = () => {
+    return state.isPerfectionismMode
+      ? "Good enough is good enough! Pick any step and just start. 🌟"
+      : "Pick the easiest step and commit to just 2 minutes. No pressure, just progress! 🌟";
+  };
+
   if (breakdown && breakdown.isAccepted) {
     return (
       <div className="breakdown-display">
         <h3>Task Breakdown</h3>
         <div className="steps-list">
           {breakdown.microSteps.map(step => (
-            <div key={step.id} className="step-item">
-              <span className="step-title">{step.title}</span>
+            <div key={step.id} className={`step-item ${step.isCompleted ? 'completed' : ''}`}>
+              <input
+                type="checkbox"
+                checked={step.isCompleted}
+                onChange={() => handleStepToggle(task.id, step.id)}
+                className="step-checkbox"
+              />
+              <span className={`step-title ${step.isCompleted ? 'completed' : ''}`}>
+                {step.title}
+              </span>
               <span className="step-time">(~{step.estimatedTime} min)</span>
+              <button
+                onClick={() => handleStartTwoMinuteTimer(step.id)}
+                className="two-minute-btn"
+              >
+                {getTwoMinuteLabel()}
+              </button>
             </div>
           ))}
+        </div>
+
+        {/* Global 2-Minute Rule Button */}
+        <div className="global-two-minute">
+          <button
+            onClick={() => handleStartTwoMinuteTimer()}
+            className="global-two-minute-btn"
+          >
+            🚀 Just 2 Minutes - Start Anywhere!
+          </button>
+          <p className="global-two-minute-subtitle">
+            {getGlobalSubtitle()}
+          </p>
         </div>
       </div>
     );
@@ -131,7 +212,18 @@ export const TaskBreakdownAssistant: React.FC<TaskBreakdownAssistantProps> = ({ 
         </div>
       )}
 
-      <style jsx>{`
+      {/* Two-Minute Timer Component */}
+      {showTimer && (
+        <div className="timer-section">
+          <TwoMinuteTimer
+            taskId={task.id}
+            stepId={currentStepId || undefined}
+            onCompletion={handleTimerCompletion}
+          />
+        </div>
+      )}
+
+      <style>{`
         .task-breakdown-assistant {
           background: white;
           border-radius: 12px;
@@ -315,6 +407,32 @@ export const TaskBreakdownAssistant: React.FC<TaskBreakdownAssistantProps> = ({ 
           border-radius: 6px;
           margin-bottom: 0.5rem;
           border: 1px solid #e5e7eb;
+          transition: all 0.3s ease;
+        }
+
+        .step-item.completed {
+          background: #f0fdf4;
+          border-color: #10b981;
+          animation: fadeIn 0.3s ease;
+        }
+
+        .step-checkbox {
+          width: 20px;
+          height: 20px;
+          margin-right: 1rem;
+          cursor: pointer;
+        }
+
+        .step-title {
+          font-weight: 500;
+          color: #374151;
+          flex: 1;
+        }
+
+        .step-title.completed {
+          text-decoration: line-through;
+          color: #6b7280;
+          opacity: 0.7;
         }
 
         .step-title {
@@ -328,6 +446,81 @@ export const TaskBreakdownAssistant: React.FC<TaskBreakdownAssistantProps> = ({ 
           background: #eef2ff;
           padding: 0.25rem 0.5rem;
           border-radius: 999px;
+        }
+
+        .two-minute-btn {
+          background: linear-gradient(135deg, #10b981, #14b8a6);
+          color: white;
+          border: none;
+          padding: 0.5rem 1rem;
+          border-radius: 20px;
+          font-weight: 600;
+          font-size: 0.875rem;
+          cursor: pointer;
+          transition: transform 0.2s;
+          box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+        }
+
+        .two-minute-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
+        }
+
+        .global-two-minute {
+          margin-top: 2rem;
+          padding: 1.5rem;
+          background: linear-gradient(135deg, #fef3c7, #fde68a);
+          border: 2px solid #f59e0b;
+          border-radius: 16px;
+          text-align: center;
+        }
+
+        .global-two-minute-btn {
+          background: linear-gradient(135deg, #f59e0b, #f97316);
+          color: white;
+          border: none;
+          padding: 1rem 2rem;
+          border-radius: 12px;
+          font-weight: 800;
+          font-size: 1.25rem;
+          cursor: pointer;
+          transition: transform 0.2s;
+          box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+
+        .global-two-minute-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(245, 158, 11, 0.6);
+        }
+
+        .global-two-minute-subtitle {
+          margin: 1rem 0 0 0;
+          color: #92400e;
+          font-weight: 600;
+          font-size: 1rem;
+        }
+
+        .timer-section {
+          margin-top: 2rem;
+          display: flex;
+          justify-content: center;
+        }
+
+        @media (max-width: 640px) {
+          .step-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+          }
+
+          .global-two-minute {
+            padding: 1rem;
+          }
+
+          .global-two-minute-btn {
+            font-size: 1rem;
+            padding: 0.75rem 1.5rem;
+          }
         }
       `}</style>
     </div>

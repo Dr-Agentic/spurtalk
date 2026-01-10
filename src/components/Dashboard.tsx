@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useAppState } from '../hooks/useAppState';
 import { TaskBreakdownAssistant } from './TaskBreakdownAssistant';
+import { ProgressDashboard } from './ProgressDashboard';
+import { AntiPerfectionismMode } from './AntiPerfectionismMode';
+import { ProcrastinationInsights } from './ProcrastinationInsights';
 
 export const Dashboard: React.FC = () => {
   const { state, addTask, deleteTask } = useAppState();
@@ -24,6 +27,12 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="dashboard">
+      <AntiPerfectionismMode className="anti-perfectionism-section" />
+
+      <ProgressDashboard progress={state.progress} />
+
+      <ProcrastinationInsights className="insights-section" />
+
       <div className="add-task-section">
         <h2>Add a task to break down</h2>
         <p>Enter any overwhelming task and our AI will help you break it into tiny, manageable steps.</p>
@@ -92,13 +101,21 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .dashboard {
           max-width: 800px;
           margin: 0 auto;
         }
 
-        .add-task-section {
+        .anti-perfectionism-section {
+      margin-bottom: 2rem;
+    }
+
+    .insights-section {
+      margin-bottom: 2rem;
+    }
+
+    .add-task-section {
           background: white;
           border-radius: 16px;
           padding: 2rem;

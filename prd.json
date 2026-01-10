@@ -1,0 +1,211 @@
+{
+  "project": "SpurTalk",
+  "branchName": "ralph/procrastinot-app",
+  "description": "A personal project management app specifically designed for procrastinators, focusing on psychological barriers, motivation, and breaking down overwhelming tasks into manageable pieces.",
+  "targetAudience": "Individuals who struggle with procrastination, perfectionism, and task paralysis",
+  "corePrinciplesAndGoals": [
+    "Reduce friction to starting tasks through micro-steps",
+    "Provide immediate dopamine hits for small wins",
+    "Eliminate guilt and shame from the UX",
+    "Work with human psychology, not against it",
+    "Make 'good enough' feel like victory"
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Task Breakdown Assistant",
+      "description": "As a procrastinator, I want an AI assistant that automatically breaks down overwhelming tasks into tiny, non-threatening steps (2-5 minutes each) so I can overcome the initial resistance to starting.",
+      "acceptanceCriteria": [
+        "User can input a large task (e.g., 'Write research paper')",
+        "System suggests 5-10 micro-steps with time estimates",
+        "Each step is small enough to feel achievable (2-5 min)",
+        "User can accept, reject, or modify suggested steps",
+        "System saves breakdown for later reference"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Core feature - essential for reducing overwhelm"
+    },
+    {
+      "id": "US-002",
+      "title": "The 2-Minute Rule Button",
+      "description": "As a user, I want to see only the absolute next smallest action I can take right now, with a prominent '2-Minute Start' button that commits me to just 2 minutes of work.",
+      "acceptanceCriteria": [
+        "Dashboard shows ONE primary action at a time",
+        "Large, friendly 'Just 2 Minutes' button",
+        "Timer automatically starts when clicked",
+        "After 2 minutes, gentle prompt: 'Keep going?' or 'Great job! Done for now?'",
+        "No guilt messaging if user stops after 2 minutes",
+        "Celebrates the completion regardless of continuation",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Friction reducer - makes starting feel safe"
+    },
+    {
+      "id": "US-003",
+      "title": "Progress Visualization & Dopamine Hits",
+      "description": "As a procrastinator, I want immediate visual feedback and rewards for tiny actions so my brain gets the dopamine it craves and motivates me to continue.",
+      "acceptanceCriteria": [
+        "Visual progress bar that fills with each micro-step",
+        "Satisfying animations/sounds when completing steps",
+        "Streak counter for consecutive days with any progress",
+        "Achievement badges for patterns (e.g., '5 First Steps', 'Morning Warrior')",
+        "Before/after view showing cumulative progress over time",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Motivation engine - brain rewards system - COMPLETE"
+    },
+    {
+      "id": "US-004",
+      "title": "Anti-Perfectionism Mode",
+      "description": "As a perfectionist procrastinator, I want a 'Good Enough' mode that actively encourages imperfect action over perfect inaction.",
+      "acceptanceCriteria": [
+        "Toggle 'Good Enough Mode' that changes UI messaging",
+        "Replaces 'Complete' with 'Done (for now)'",
+        "Shows quotes/mantras about imperfect action",
+        "Allows marking tasks as '80% is victory'",
+        "Hides quality/rating metrics that trigger perfectionism"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Perfectionism is a major blocker for many procrastinators - COMPLETE"
+    },
+    {
+      "id": "US-005",
+      "title": "Procrastination Pattern Insights",
+      "description": "As a user, I want to understand my procrastination patterns (when, why, what types of tasks) so I can work with my tendencies rather than against them.",
+      "acceptanceCriteria": [
+        "Tracks which tasks get delayed and by how long",
+        "Identifies patterns: time of day, task type, emotional state",
+        "Weekly insight report: 'You avoid creative tasks on Mondays'",
+        "Suggests optimal timing for different task types",
+        "Non-judgmental tone in all insights",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Self-awareness without judgment - COMPLETE"
+    },
+    {
+      "id": "US-006",
+      "title": "Context Preservation",
+      "description": "As a user who gets interrupted, I want the app to remember exactly where I was and what I was thinking so I can resume without the mental cost of context switching.",
+      "acceptanceCriteria": [
+        "Quick note field for 'What I was about to do next'",
+        "Auto-saves location in documents/links",
+        "Shows 'Last time you were...' when resuming",
+        "Suggested next action based on previous session",
+        "Timeline view of work session for memory trigger"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Reduces restart friction"
+    },
+    {
+      "id": "US-007",
+      "title": "Emotion-First Task Sorting",
+      "description": "As a procrastinator, I want to sort my tasks by how I feel right now (energized, anxious, creative, brain-dead) rather than traditional priority.",
+      "acceptanceCriteria": [
+        "Current mood/energy selector on dashboard",
+        "Tasks tagged with required energy type (focus, creative, mundane)",
+        "Smart filter shows tasks matching current state",
+        "Suggests break or easier alternative when low energy",
+        "Learns from user's completion patterns"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Match tasks to current capacity"
+    },
+    {
+      "id": "US-008",
+      "title": "Procrastination-Friendly Reminders",
+      "description": "As a user, I want reminders that are encouraging and understanding rather than guilt-inducing, with easy snooze options that don't make me feel worse.",
+      "acceptanceCriteria": [
+        "Reminder tone options: encouraging, neutral, humorous (never harsh)",
+        "Smart snooze with reason capture: 'Not now because...'",
+        "Learns from snooze patterns to adjust timing",
+        "No notification spam that trains user to ignore",
+        "Celebration when user acts on reminder"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Nice to have - many users disable all reminders"
+    },
+    {
+      "id": "US-009",
+      "title": "Emergency Deadline Mode",
+      "description": "As a procrastinator facing an imminent deadline, I want an emergency mode that helps me triage and execute under pressure without judgment.",
+      "acceptanceCriteria": [
+        "One-click 'Emergency Mode' button",
+        "Rapid assessment: 'What's actually due? What can be cut?'",
+        "Shows only essential tasks with time-boxing",
+        "Pomodoro timer with breaks enforced",
+        "Post-crisis reflection: 'What could prevent this next time?'"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Damage control for crisis situations"
+    },
+    {
+      "id": "US-010",
+      "title": "Accountability Partner Integration",
+      "description": "As a procrastinator, I want to optionally share specific tasks with an accountability partner who can send gentle check-ins without judgment.",
+      "acceptanceCriteria": [
+        "User can designate accountability partners",
+        "Share specific tasks (not entire list) with chosen partner",
+        "Partner receives gentle notification: 'X is working on Y today'",
+        "Partner can send encouragement messages",
+        "No shame-based notifications"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Social accountability for those who want it"
+    }
+  ],
+  "technicalConsiderations": [
+    "Cross-platform: Web, iOS, Android for maximum accessibility",
+    "Offline-first architecture for no-friction access",
+    "Privacy-focused: local-first data storage",
+    "Fast load times (< 1 second) to reduce friction",
+    "Minimal UI to reduce overwhelm",
+    "Accessible design for users with ADHD/anxiety"
+  ],
+  "successMetrics": [
+    "User completes at least one micro-step per day (7-day streak rate)",
+    "Time from task creation to first action taken",
+    "Task completion rate (even partial completion counts)",
+    "User retention after 30 days",
+    "Self-reported reduction in procrastination anxiety",
+    "Number of 2-minute sessions that extend longer"
+  ],
+  "outOfScope": [
+    "Team collaboration features",
+    "Complex project management (Gantt charts, dependencies)",
+    "Time tracking for billing purposes",
+    "Integration with enterprise tools (Jira, Asana)",
+    "Social networking features",
+    "Habit tracking beyond task completion"
+  ],
+  "appOverview": "Personal AI assistant for project management focused on overcoming procrastination. Users define high-level personal goals (e.g., \"Be a better husband\", \"Be a better parent\"). App decomposes goals into projects, tasks, and micro-tasks. Guides execution with anti-procrastination mechanics. Keeps user moving via nudges, momentum, and accountability.",
+  "coreFeatures": [
+    "Onboarding: User enters high-level goals, app suggests breakdown, selects daily triggers, requires accountability buddy.",
+    "Goal & Project Management: Support multiple projects, AI-driven decomposition, progressive disclosure.",
+    "Micro-Task Engine: 'Break this' button generates tiny steps, streak-based leveling.",
+    "Progress Visualization: Bold progress bar, completion rewards.",
+    "Trigger & Routine System: Anchor tasks to habits, learn trigger timing.",
+    "Focus Mode: One-tap full-screen lock, ambient sounds, emergency exit.",
+    "Accountability: Buddy pings, virtual body doubling.",
+    "Timing & Insights: Shadow timer, pre-task display, daily voice recap.",
+    "Public Commitment: One-tap share to anonymous wall or socials.",
+    "Forgiveness & Reset: Missed day gentle reset.",
+    "Adaptive Nudges: Visual shrinking ring countdown, optional voice reminder.",
+    "Anti-Perfectionism Mode: Toggle that changes UI messaging, replaces 'Complete' with 'Done (for now)', displays encouraging quotes/mantras, lets users mark tasks as '80% is victory', hides rating metrics that trigger perfectionism.",
+    "Emergency Deadline Mode: One-click activation for imminent deadlines, rapid triage to identify essential tasks, time-boxing with Pomodoro timers, enforced breaks, post-crisis reflection prompt.",
+    "Procrastination-Friendly Reminders: Tone options (encouraging, neutral, humorous), smart snooze with reason capture, learns from snooze patterns, celebrates when user acts, no guilt-inducing messages.",
+    "Accountability Partner Integration: Gentle notifications like 'X is working on Y today', user-selected partners can send encouragement, no shame-based alerts."
+  ]
+}

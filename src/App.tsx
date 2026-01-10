@@ -12,7 +12,7 @@ function App() {
         <Dashboard />
       </div>
 
-      <style jsx>{`
+      <style>{`
         * {
           box-sizing: border-box;
         }
