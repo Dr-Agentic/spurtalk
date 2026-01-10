@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AppState, Task, MicroStep, TaskBreakdown, ProgressState, Achievement } from '../types';
+import { AppState, Task, MicroStep, TaskBreakdown, ProgressState, Achievement, ContextSnapshot, WorkSession } from '../types';
 import { generateMicroSteps, simulateAiResponse } from '../utils/taskBreakdown';
 import { ProcrastinationInsights } from '../utils/procrastinationInsights';
 
@@ -48,7 +48,9 @@ export function useAppState() {
             emotionalTriggers: [],
             taskTypePatterns: [],
             deadlinePatterns: []
-          }
+          },
+          contextSnapshots: parsed.contextSnapshots || [],
+          workSessions: parsed.workSessions || []
         };
       } catch (e) {
         console.warn('Failed to parse saved state, using defaults');
@@ -81,7 +83,9 @@ export function useAppState() {
         emotionalTriggers: [],
         taskTypePatterns: [],
         deadlinePatterns: []
-      }
+      },
+      contextSnapshots: [],
+      workSessions: []
     };
   });
 
@@ -140,6 +144,87 @@ export function useAppState() {
     }));
 
     return generatedInsights;
+  };
+
+  // Context Preservation Functions
+  const createContextSnapshot = (taskId: string, stepId: string | null, contextNotes: string, locationData: string) => {
+    const snapshot: ContextSnapshot = {
+      id: `snapshot-${Date.now()}`,
+      taskId,
+      stepId,
+      timestamp: new Date(),
+      contextNotes,
+      locationData,
+      nextActionSuggestion: stepId ? "Continue with current step" : "Start with first step",
+      relatedTasks: []
+    };
+
+    setState(prev => ({
+      ...prev,
+      contextSnapshots: [...prev.contextSnapshots, snapshot]
+    }));
+  };
+
+  const addContextNote = (taskId: string, stepId: string | null, note: string) => {
+    createContextSnapshot(taskId, stepId, note, window.location.href);
+  };
+
+  const getPreviousContext = (taskId: string): ContextSnapshot | null => {
+    const snapshots = state.contextSnapshots
+      .filter(s => s.taskId === taskId)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+    return snapshots.length > 0 ? snapshots[0] : null;
+  };
+
+  const getTimelineView = (taskId: string): ContextSnapshot[] => {
+    return state.contextSnapshots
+      .filter(s => s.taskId === taskId)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  };
+
+  const startWorkSession = (taskId: string) => {
+    const session: WorkSession = {
+      id: `session-${Date.now()}`,
+      taskId,
+      startTime: new Date(),
+      endTime: null,
+      contextSnapshots: [],
+      totalDuration: 0,
+      interruptionCount: 0,
+      finalContext: ""
+    };
+
+    setState(prev => ({
+      ...prev,
+      workSessions: [...prev.workSessions, session]
+    }));
+  };
+
+  const endWorkSession = (sessionId: string, finalContext: string) => {
+    setState(prev => ({
+      ...prev,
+      workSessions: prev.workSessions.map(session =>
+        session.id === sessionId
+          ? {
+              ...session,
+              endTime: new Date(),
+              finalContext,
+              totalDuration: session.endTime
+                ? session.endTime.getTime() - session.startTime.getTime()
+                : Date.now() - session.startTime.getTime()
+            }
+          : session
+      )
+    }));
+  };
+
+  const getCurrentSession = (taskId: string): WorkSession | null => {
+    const session = state.workSessions
+      .filter(s => s.taskId === taskId && s.endTime === null)
+      .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
+
+    return session.length > 0 ? session[0] : null;
   };
 
   const deleteTask = (taskId: string) => {
@@ -360,7 +445,14 @@ export function useAppState() {
     togglePerfectionismMode,
     trackProcrastinationPattern,
     markTaskStarted,
-    generateInsights
+    generateInsights,
+    createContextSnapshot,
+    addContextNote,
+    getPreviousContext,
+    getTimelineView,
+    startWorkSession,
+    endWorkSession,
+    getCurrentSession
   };
 }
 

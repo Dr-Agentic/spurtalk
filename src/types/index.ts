@@ -85,6 +85,8 @@ export interface AppState {
   isPerfectionismMode: boolean;
   procrastinationInsights: ProcrastinationInsight[];
   procrastinationData: ProcrastinationData;
+  contextSnapshots: ContextSnapshot[];
+  workSessions: WorkSession[];
 }
 
 export interface ProcrastinationData {
@@ -133,4 +135,26 @@ export interface DeadlinePattern {
   completionRate: number;
   procrastinationIntensity: number; // 0-100
   commonExcuses: string[];
+}
+
+export interface ContextSnapshot {
+  id: string;
+  taskId: string;
+  stepId: string | null;
+  timestamp: Date;
+  contextNotes: string;
+  locationData: string; // URL, document position, etc.
+  nextActionSuggestion: string;
+  relatedTasks: string[];
+}
+
+export interface WorkSession {
+  id: string;
+  taskId: string;
+  startTime: Date;
+  endTime: Date | null;
+  contextSnapshots: ContextSnapshot[];
+  totalDuration: number; // in milliseconds
+  interruptionCount: number;
+  finalContext: string;
 }

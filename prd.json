@@ -99,11 +99,12 @@
         "Auto-saves location in documents/links",
         "Shows 'Last time you were...' when resuming",
         "Suggested next action based on previous session",
-        "Timeline view of work session for memory trigger"
+        "Timeline view of work session for memory trigger",
+        "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": "Reduces restart friction"
+      "passes": true,
+      "notes": "Reduces restart friction - COMPLETE"
     },
     {
       "id": "US-007",

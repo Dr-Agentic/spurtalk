@@ -4,6 +4,7 @@ import { TaskBreakdownAssistant } from './TaskBreakdownAssistant';
 import { ProgressDashboard } from './ProgressDashboard';
 import { AntiPerfectionismMode } from './AntiPerfectionismMode';
 import { ProcrastinationInsights } from './ProcrastinationInsights';
+import { ContextPreservation } from './ContextPreservation';
 
 export const Dashboard: React.FC = () => {
   const { state, addTask, deleteTask } = useAppState();
@@ -32,6 +33,8 @@ export const Dashboard: React.FC = () => {
       <ProgressDashboard progress={state.progress} />
 
       <ProcrastinationInsights className="insights-section" />
+
+      <ContextPreservation className="context-section" taskId={state.tasks[0]?.id || ''} />
 
       <div className="add-task-section">
         <h2>Add a task to break down</h2>
@@ -112,6 +115,10 @@ export const Dashboard: React.FC = () => {
     }
 
     .insights-section {
+      margin-bottom: 2rem;
+    }
+
+    .context-section {
       margin-bottom: 2rem;
     }
 
