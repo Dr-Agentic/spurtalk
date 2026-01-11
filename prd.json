@@ -164,8 +164,8 @@
         "No shame-based notifications"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": "Social accountability for those who want it"
+      "passes": true,
+      "notes": "Social accountability for those who want it - IMPLEMENTED"
     }
   ],
   "technicalConsiderations": [

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AppState, Task, MicroStep, TaskBreakdown, ProgressState, Achievement, ContextSnapshot, WorkSession, EmotionState, TaskEnergyRequirement, EmergencyAssessment } from '../types';
+import { AppState, Task, MicroStep, TaskBreakdown, ProgressState, Achievement, ContextSnapshot, WorkSession, EmotionState, TaskEnergyRequirement, EmergencyAssessment, AccountabilityPartner, TaskSharing, EncouragementMessage } from '../types';
 import { generateMicroSteps, simulateAiResponse } from '../utils/taskBreakdown';
 import { ProcrastinationInsights } from '../utils/procrastinationInsights';
 import { ReminderManager, defaultReminderSettings } from '../utils/reminderUtils';
@@ -69,7 +69,10 @@ export function useAppState() {
             breakDuration: 5, // 5 minutes default
             reflectionPrompt: "What did you accomplish? What could prevent this next time?"
           },
-          emergencyAssessments: parsed.emergencyAssessments || []
+          emergencyAssessments: parsed.emergencyAssessments || [],
+          accountabilityPartners: parsed.accountabilityPartners || [],
+          taskSharings: parsed.taskSharings || [],
+          encouragementMessages: parsed.encouragementMessages || []
         };
       } catch (e) {
         console.warn('Failed to parse saved state, using defaults');
@@ -122,7 +125,10 @@ export function useAppState() {
         breakDuration: 5, // 5 minutes default
         reflectionPrompt: "What did you accomplish? What could prevent this next time?"
       },
-      emergencyAssessments: []
+      emergencyAssessments: [],
+      accountabilityPartners: [],
+      taskSharings: [],
+      encouragementMessages: []
     };
   });
 
@@ -479,7 +485,11 @@ export function useAppState() {
 
   const getCurrentEmotion = (): EmotionState | null => {
     const emotions = state.emotionStates
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      .sort((a, b) => {
+        const aTime = a.timestamp?.getTime() ?? 0;
+        const bTime = b.timestamp?.getTime() ?? 0;
+        return bTime - aTime;
+      });
     return emotions.length > 0 ? emotions[0] : null;
   };
 
@@ -579,65 +589,106 @@ export function useAppState() {
   };
 
   // Reminder Functions
-  const reminderManager = new ReminderManager(
-    state.reminderSettings,
-    state.reminders,
-    state.snoozeReasons,
-    state.reminderPatterns
-  );
-
   const createReminder = (task: Task, tone?: 'encouraging' | 'neutral' | 'humorous') => {
+    const reminderManager = new ReminderManager(
+      state.reminderSettings,
+      state.reminders,
+      state.snoozeReasons,
+      state.reminderPatterns
+    );
     const reminder = reminderManager.createReminder(task, tone);
     reminderManager.addReminder(reminder);
 
     setState(prev => ({
       ...prev,
-      ...reminderManager.data
+      reminders: reminderManager.data.reminders,
+      snoozeReasons: reminderManager.data.snoozeReasons,
+      reminderPatterns: reminderManager.data.reminderPatterns
     }));
 
     return reminder;
   };
 
   const snoozeReminder = (reminderId: string, reason: string) => {
+    const reminderManager = new ReminderManager(
+      state.reminderSettings,
+      state.reminders,
+      state.snoozeReasons,
+      state.reminderPatterns
+    );
     const result = reminderManager.snoozeReminder(reminderId, reason);
     if (result) {
       setState(prev => ({
         ...prev,
-        ...reminderManager.data
+        reminders: reminderManager.data.reminders,
+        snoozeReasons: reminderManager.data.snoozeReasons,
+        reminderPatterns: reminderManager.data.reminderPatterns
       }));
     }
     return result;
   };
 
   const completeReminder = (reminderId: string) => {
+    const reminderManager = new ReminderManager(
+      state.reminderSettings,
+      state.reminders,
+      state.snoozeReasons,
+      state.reminderPatterns
+    );
     const result = reminderManager.completeReminder(reminderId);
     if (result) {
       setState(prev => ({
         ...prev,
-        ...reminderManager.data
+        reminders: reminderManager.data.reminders,
+        snoozeReasons: reminderManager.data.snoozeReasons,
+        reminderPatterns: reminderManager.data.reminderPatterns
       }));
     }
     return result;
   };
 
   const updateReminderSettings = (newSettings: Partial<typeof state.reminderSettings>) => {
+    const reminderManager = new ReminderManager(
+      state.reminderSettings,
+      state.reminders,
+      state.snoozeReasons,
+      state.reminderPatterns
+    );
     reminderManager.updateSettings(newSettings);
 
     setState(prev => ({
       ...prev,
-      ...reminderManager.data
+      reminderSettings: { ...prev.reminderSettings, ...newSettings }
     }));
   };
 
   const getActiveReminders = () => {
+    const reminderManager = new ReminderManager(
+      state.reminderSettings,
+      state.reminders,
+      state.snoozeReasons,
+      state.reminderPatterns
+    );
     return reminderManager.getActiveReminders();
   };
 
   const getSuggestedReasons = () => {
+    const reminderManager = new ReminderManager(
+      state.reminderSettings,
+      state.reminders,
+      state.snoozeReasons,
+      state.reminderPatterns
+    );
     return reminderManager.getSuggestedReasons();
   };
 
   const getCompletionMessage = () => {
+    const reminderManager = new ReminderManager(
+      state.reminderSettings,
+      state.reminders,
+      state.snoozeReasons,
+      state.reminderPatterns
+    );
     return reminderManager.getCompletionMessage();
   };
 
@@ -711,6 +762,143 @@ export function useAppState() {
         deadline: null,
         essentialTasks: []
       }
+    }));
+  };
+
+  // Accountability Partner Functions
+  const addAccountabilityPartner = (name: string, relationship: 'friend' | 'colleague' | 'mentor' | 'family' | 'other', email?: string) => {
+    const partner: AccountabilityPartner = {
+      id: `partner-${Date.now()}`,
+      name,
+      email,
+      relationship,
+      lastContact: null,
+      isActive: true,
+      preferences: {
+        notificationTime: 'daily',
+        notificationType: 'gentle',
+        maxNotificationsPerDay: 3
+      }
+    };
+
+    setState(prev => ({
+      ...prev,
+      accountabilityPartners: [...prev.accountabilityPartners, partner]
+    }));
+  };
+
+  const removeAccountabilityPartner = (partnerId: string) => {
+    setState(prev => ({
+      ...prev,
+      accountabilityPartners: prev.accountabilityPartners.filter(p => p.id !== partnerId),
+      taskSharings: prev.taskSharings.filter(s => s.partnerId !== partnerId),
+      encouragementMessages: prev.encouragementMessages.filter(m => {
+        const partner = prev.accountabilityPartners.find(p => p.id === partnerId);
+        if (!partner) return true;
+        return m.fromPartnerId !== partnerId;
+      })
+    }));
+  };
+
+  const shareTaskWithPartner = (taskId: string, partnerId: string, message?: string) => {
+    const task = state.tasks.find(t => t.id === taskId);
+    const partner = state.accountabilityPartners.find(p => p.id === partnerId);
+
+    if (!task || !partner) return false;
+
+    const sharing: TaskSharing = {
+      id: `sharing-${Date.now()}`,
+      taskId,
+      partnerId,
+      sharedAt: new Date(),
+      message: message || '',
+      status: 'pending',
+      lastUpdated: new Date(),
+      isEncouragementEnabled: true
+    };
+
+    setState(prev => ({
+      ...prev,
+      taskSharings: [...prev.taskSharings, sharing]
+    }));
+
+    return true;
+  };
+
+  const sendEncouragement = (fromPartnerId: string, toTaskId: string, message: string) => {
+    const partner = state.accountabilityPartners.find(p => p.id === fromPartnerId);
+
+    if (!partner) return false;
+
+    const encouragement: EncouragementMessage = {
+      id: `encouragement-${Date.now()}`,
+      fromPartnerId,
+      toTaskId,
+      message,
+      sentAt: new Date(),
+      isRead: false
+    };
+
+    setState(prev => ({
+      ...prev,
+      encouragementMessages: [...prev.encouragementMessages, encouragement]
+    }));
+
+    return true;
+  };
+
+  const getSharedTasks = (partnerId: string): Array<Task & { sharing: TaskSharing }> => {
+    const sharings = state.taskSharings.filter(s => s.partnerId === partnerId);
+    return sharings.map(sharing => {
+      const task = state.tasks.find(t => t.id === sharing.taskId);
+      return task ? { ...task, sharing } : null;
+    }).filter(Boolean) as Array<Task & { sharing: TaskSharing }>;
+  };
+
+  const getPartnerTasks = (taskId: string): Array<AccountabilityPartner & { sharing: TaskSharing }> => {
+    const sharings = state.taskSharings.filter(s => s.taskId === taskId);
+    return sharings.map(sharing => {
+      const partner = state.accountabilityPartners.find(p => p.id === sharing.partnerId);
+      return partner ? { ...partner, sharing } : null;
+    }).filter(Boolean) as Array<AccountabilityPartner & { sharing: TaskSharing }>;
+  };
+
+  const acceptTaskSharing = (sharingId: string) => {
+    setState(prev => ({
+      ...prev,
+      taskSharings: prev.taskSharings.map(sharing =>
+        sharing.id === sharingId
+          ? { ...sharing, status: 'accepted' as const, lastUpdated: new Date() }
+          : sharing
+      )
+    }));
+  };
+
+  const declineTaskSharing = (sharingId: string) => {
+    setState(prev => ({
+      ...prev,
+      taskSharings: prev.taskSharings.map(sharing =>
+        sharing.id === sharingId
+          ? { ...sharing, status: 'declined' as const, lastUpdated: new Date() }
+          : sharing
+      )
+    }));
+  };
+
+  const getUnreadEncouragementMessages = (taskId: string): EncouragementMessage[] => {
+    return state.encouragementMessages
+      .filter(m => m.toTaskId === taskId && !m.isRead)
+      .sort((a, b) => b.sentAt.getTime() - a.sentAt.getTime());
+  };
+
+  const markEncouragementRead = (messageId: string) => {
+    setState(prev => ({
+      ...prev,
+      encouragementMessages: prev.encouragementMessages.map(message =>
+        message.id === messageId
+          ? { ...message, isRead: true }
+          : message
+      )
     }));
   };
 
@@ -841,7 +1029,17 @@ export function useAppState() {
     deactivateEmergencyMode,
     getEmergencyModeInfo,
     startEmergencyPomodoro,
-    completeEmergencyReflection
+    completeEmergencyReflection,
+    addAccountabilityPartner,
+    removeAccountabilityPartner,
+    shareTaskWithPartner,
+    sendEncouragement,
+    getSharedTasks,
+    getPartnerTasks,
+    acceptTaskSharing,
+    declineTaskSharing,
+    getUnreadEncouragementMessages,
+    markEncouragementRead
   };
 }
 

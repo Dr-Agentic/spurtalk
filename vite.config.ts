@@ -9,4 +9,12 @@ export default defineConfig({
       '@': resolve(__dirname, './src'),
     },
   },
+  server: {
+    port: 8001,
+    strictPort: true, // Fail if port is taken
+  },
+  preview: {
+    port: 8002,
+    strictPort: true, // Fail if port is taken
+  },
 })

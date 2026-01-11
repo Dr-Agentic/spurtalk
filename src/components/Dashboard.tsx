@@ -9,6 +9,8 @@ import { EmotionSelector } from './EmotionSelector';
 import { SmartTaskFilter } from './SmartTaskFilter';
 import { ProcrastinationFriendlyReminders } from './ProcrastinationFriendlyReminders';
 import { EmergencyDeadlineMode } from './EmergencyDeadlineMode';
+import { AccountabilityPartnerList } from './AccountabilityPartnerList';
+import { ErrorBoundary } from './ErrorBoundary';
 
 export const Dashboard: React.FC = () => {
   const { state, addTask, deleteTask } = useAppState();
@@ -116,9 +118,13 @@ export const Dashboard: React.FC = () => {
 
           <SmartTaskFilter className="smart-filter-section" />
 
-          <ProcrastinationInsights className="insights-section" />
+          <ErrorBoundary fallback={<div>Something went wrong.</div>}>
+            <ProcrastinationInsights className="insights-section" />
+          </ErrorBoundary>
 
           <ContextPreservation className="context-section" taskId={state.tasks[0]?.id || ''} />
+
+          <AccountabilityPartnerList className="accountability-section" />
         </div>
       </div>
 
@@ -163,6 +169,10 @@ export const Dashboard: React.FC = () => {
         }
 
         .context-section {
+          margin-bottom: 0;
+        }
+
+        .accountability-section {
           margin-bottom: 0;
         }
 

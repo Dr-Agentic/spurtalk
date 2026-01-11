@@ -9,11 +9,27 @@ interface ProcrastinationInsightsProps {
 export const ProcrastinationInsights: React.FC<ProcrastinationInsightsProps> = ({ className = '' }) => {
   const { generateInsights } = useAppState();
 
-  // Generate insights from current data
-  const insights: any[] = generateInsights();
-  const actionablePatterns = insights
-    .flatMap((insight: any) => insight.patterns as any[])
-    .filter((pattern: any) => pattern.isActionable);
+  // State to store insights and derived data
+  const [insights, setInsights] = React.useState<any[]>([]);
+  const [actionablePatterns, setActionablePatterns] = React.useState<any[]>([]);
+  const fetchedRef = React.useRef(false); // Tracks whether insights have been generated
+
+  // Generate insights once on mount to avoid infinite re-renders
+  React.useEffect(() => {
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      const data = generateInsights();
+      setInsights(data);
+    }
+  }, []);
+
+  // Derive actionable patterns from the stored insights
+  React.useEffect(() => {
+    const patterns = insights
+      .flatMap((insight: any) => insight.patterns as any[])
+      .filter((pattern: any) => pattern.isActionable);
+    setActionablePatterns(patterns);
+  }, [insights]);
 
   const handleActionSuggestion = (suggestion: string) => {
     // For now, just log the action. In a real app, this might:
@@ -181,15 +197,19 @@ export const ProcrastinationInsights: React.FC<ProcrastinationInsightsProps> = (
               <div className="personalized-tips">
                 <h4>💡 Personalized Tips</h4>
                 <div className="tip-grid">
-                  {generatePersonalizedTips(actionablePatterns).map((tip, index) => (
-                    <div key={index} className="tip-card">
-                      <div className="tip-icon">{tip.icon}</div>
-                      <div className="tip-content">
-                        <h5>{tip.title}</h5>
-                        <p>{tip.description}</p>
+                  {React.useMemo(() => {
+                    // Guard against empty actionablePatterns
+                    if (!actionablePatterns?.length) return [];
+                    return generatePersonalizedTips(actionablePatterns).map((tip, index) => (
+                      <div key={tip.id ?? index} className="tip-card">
+                        <div className="tip-icon">{tip.icon}</div>
+                        <div className="tip-content">
+                          <h5>{tip.title}</h5>
+                          <p>{tip.description}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ));
+                  }, [actionablePatterns])}
                 </div>
               </div>
             )}
@@ -486,7 +506,7 @@ function generatePersonalizedTips(patterns: ProcrastinationPattern[]): Array<{ i
     tips.push({
       icon: '🎯',
       title: 'Use the 2-Minute Rule',
-      description: 'Start with just 2 minutes on tasks you typically avoid. You\'ll often find momentum.'
+      description: 'Start with just 2 minutes on tasks you typically avoid. You’ll often find momentum.'
     });
   }
 
@@ -494,7 +514,7 @@ function generatePersonalizedTips(patterns: ProcrastinationPattern[]): Array<{ i
     tips.push({
       icon: '💖',
       title: 'Practice Self-Compassion',
-      description: 'Notice emotions without judgment. They\'re data, not directives.'
+      description: 'Notice emotions without judgment. They’re data, not directives.'
     });
   }
 

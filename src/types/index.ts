@@ -95,6 +95,9 @@ export interface AppState {
   reminderPatterns: ReminderPattern[];
   emergencyMode: EmergencyMode;
   emergencyAssessments: EmergencyAssessment[];
+  accountabilityPartners: AccountabilityPartner[];
+  taskSharings: TaskSharing[];
+  encouragementMessages: EncouragementMessage[];
 }
 
 export interface ProcrastinationData {
@@ -260,4 +263,38 @@ export interface EmergencyAssessment {
   timeAvailable: number; // in minutes
   recommendations: string[];
   triageDecision: 'urgent' | 'important' | 'can_wait' | 'not_needed';
+}
+
+export interface AccountabilityPartner {
+  id: string;
+  name: string;
+  email?: string;
+  relationship: 'friend' | 'colleague' | 'mentor' | 'family' | 'other';
+  lastContact: Date | null;
+  isActive: boolean;
+  preferences: {
+    notificationTime: 'immediate' | 'daily' | 'weekly';
+    notificationType: 'gentle' | 'encouraging' | 'supportive';
+    maxNotificationsPerDay: number;
+  };
+}
+
+export interface TaskSharing {
+  id: string;
+  taskId: string;
+  partnerId: string;
+  sharedAt: Date;
+  message: string; // Optional custom message
+  status: 'pending' | 'accepted' | 'declined';
+  lastUpdated: Date;
+  isEncouragementEnabled: boolean;
+}
+
+export interface EncouragementMessage {
+  id: string;
+  fromPartnerId: string;
+  toTaskId: string;
+  message: string;
+  sentAt: Date;
+  isRead: boolean;
 }

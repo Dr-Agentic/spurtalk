@@ -25,7 +25,7 @@ export class SoundEffects {
     }
   }
 
-  private playTone(frequency: number, duration: number, type: OscillatorType = 'sine') {
+  public playTone(frequency: number, duration: number, type: OscillatorType = 'sine') {
     if (!this.audioContext) return;
 
     const oscillator = this.audioContext.createOscillator();
@@ -38,10 +38,10 @@ export class SoundEffects {
     oscillator.type = type;
 
     gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration / 1000);
 
     oscillator.start(this.audioContext.currentTime);
-    oscillator.stop(this.audioContext.currentTime + duration);
+    oscillator.stop(this.audioContext.currentTime + duration / 1000);
   }
 
   public async playSuccess() {

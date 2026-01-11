@@ -18,14 +18,20 @@ export const TaskBreakdownAssistant: React.FC<TaskBreakdownAssistantProps> = ({ 
     modifyBreakdown,
     getCurrentBreakdown,
     startTwoMinuteTimer,
-    toggleStepCompletion
+    toggleStepCompletion,
+    getCurrentEmotion,
+    setTaskEnergyRequirement,
+    getTaskEnergyRequirement
   } = useAppState();
   const [isGenerating, setIsGenerating] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [showTimer, setShowTimer] = useState(false);
   const [currentStepId, setCurrentStepId] = useState<string | null>(null);
+  const [showEnergyForm, setShowEnergyForm] = useState(false);
 
   const breakdown = getCurrentBreakdown(task.id);
+  const currentEmotion = getCurrentEmotion();
+  const taskEnergyRequirement = getTaskEnergyRequirement(task.id);
 
   const handleStartTwoMinuteTimer = (stepId?: string) => {
     setCurrentStepId(stepId || null);
@@ -109,10 +115,66 @@ export const TaskBreakdownAssistant: React.FC<TaskBreakdownAssistantProps> = ({ 
       : "Pick the easiest step and commit to just 2 minutes. No pressure, just progress! 🌟";
   };
 
+  const handleSetEnergyRequirement = (energyLevel: 'low' | 'medium' | 'high', focusType: 'creative' | 'analytical' | 'routine' | 'mental' | 'physical', estimatedTime: number) => {
+    setTaskEnergyRequirement(task.id, energyLevel, focusType, estimatedTime);
+    setShowEnergyForm(false);
+  };
+
+  const getEmotionMatchIndicator = () => {
+    if (!currentEmotion || !taskEnergyRequirement) return null;
+
+    const energyMatch = taskEnergyRequirement.energyLevel === 'low' ||
+                       (taskEnergyRequirement.energyLevel === 'medium' && currentEmotion.intensity >= 4) ||
+                       (taskEnergyRequirement.energyLevel === 'high' && currentEmotion.intensity >= 7);
+
+    const focusMatch = taskEnergyRequirement.focusType === 'routine' ||
+                      (taskEnergyRequirement.focusType === 'analytical' && currentEmotion.emotion !== 'brain-dead') ||
+                      (taskEnergyRequirement.focusType === 'creative' && currentEmotion.emotion === 'energized') ||
+                      (taskEnergyRequirement.focusType === 'mental' && currentEmotion.emotion !== 'tired');
+
+    if (energyMatch && focusMatch) {
+      return { emoji: '✅', color: '#10b981', text: 'Great match for your current state!' };
+    } else if (energyMatch || focusMatch) {
+      return { emoji: '⚠️', color: '#f59e0b', text: 'Partial match - consider alternatives' };
+    } else {
+      return { emoji: '❌', color: '#ef4444', text: 'Not ideal for your current state' };
+    }
+  };
+
   if (breakdown && breakdown.isAccepted) {
+    const emotionMatch = getEmotionMatchIndicator();
+
     return (
       <div className="breakdown-display">
-        <h3>Task Breakdown</h3>
+        <div className="task-header">
+          <h3>Task Breakdown</h3>
+          {currentEmotion && (
+            <div className="current-emotion-badge">
+              <span className="emotion-label">Current state: {currentEmotion.emotion} ({currentEmotion.intensity}/10)</span>
+            </div>
+          )}
+        </div>
+
+        {taskEnergyRequirement && (
+          <div className="energy-requirement-display">
+            <div className="requirement-header">
+              <h4>Energy Requirements</h4>
+              {emotionMatch && (
+                <div className="match-indicator" style={{ borderColor: emotionMatch.color }}>
+                  <span className="match-emoji">{emotionMatch.emoji}</span>
+                  <span className="match-text">{emotionMatch.text}</span>
+                </div>
+              )}
+            </div>
+            <div className="requirement-details">
+              <span className="requirement-badge">Energy: {taskEnergyRequirement.energyLevel.toUpperCase()}</span>
+              <span className="requirement-badge">Focus: {taskEnergyRequirement.focusType}</span>
+              <span className="requirement-badge">Time: {taskEnergyRequirement.estimatedTime} min</span>
+              <button onClick={() => setShowEnergyForm(true)} className="edit-energy-btn">Edit</button>
+            </div>
+          </div>
+        )}
+
         <div className="steps-list">
           {breakdown.microSteps.map(step => (
             <div key={step.id} className={`step-item ${step.isCompleted ? 'completed' : ''}`}>
@@ -134,6 +196,14 @@ export const TaskBreakdownAssistant: React.FC<TaskBreakdownAssistantProps> = ({ 
               </button>
             </div>
           ))}
+        </div>
+
+        <div className="energy-setup">
+          {!taskEnergyRequirement && (
+            <button onClick={() => setShowEnergyForm(true)} className="setup-energy-btn">
+              📊 Set Energy Requirements
+            </button>
+          )}
         </div>
 
         {/* Global 2-Minute Rule Button */}
@@ -208,6 +278,63 @@ export const TaskBreakdownAssistant: React.FC<TaskBreakdownAssistantProps> = ({ 
               <button onClick={handleReject} className="reject-btn">Not helpful</button>
               <button onClick={handleAccept} className="accept-btn">Looks good!</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Energy Setup Form */}
+      {showEnergyForm && (
+        <div className="energy-form-modal">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h4>Set Energy Requirements for "{task.title}"</h4>
+              {currentEmotion && (
+                <p className="current-emotion">Current state: {currentEmotion.emotion} ({currentEmotion.intensity}/10)</p>
+              )}
+              <button onClick={() => setShowEnergyForm(false)} className="close-btn">✕</button>
+            </div>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              handleSetEnergyRequirement(
+                formData.get('energyLevel') as any,
+                formData.get('focusType') as any,
+                parseInt(formData.get('estimatedTime') as string)
+              );
+            }} className="energy-form">
+              <div className="form-group">
+                <label>Energy Level Required</label>
+                <select name="energyLevel" defaultValue={taskEnergyRequirement?.energyLevel || 'medium'}>
+                  <option value="low">Low - Easy, routine tasks</option>
+                  <option value="medium">Medium - Requires some focus</option>
+                  <option value="high">High - Demanding, complex tasks</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Focus Type Required</label>
+                <select name="focusType" defaultValue={taskEnergyRequirement?.focusType || 'routine'}>
+                  <option value="routine">📋 Routine - Repetitive, structured</option>
+                  <option value="analytical">🧮 Analytical - Logical, problem-solving</option>
+                  <option value="creative">🎨 Creative - Imaginative, open-ended</option>
+                  <option value="mental">🧠 Mental - Concentration-heavy</option>
+                  <option value="physical">💪 Physical - Manual, active</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Estimated Time</label>
+                <input
+                  type="number"
+                  name="estimatedTime"
+                  defaultValue={taskEnergyRequirement?.estimatedTime || 30}
+                  min="1"
+                  max="240"
+                />
+              </div>
+              <div className="form-actions">
+                <button type="submit" className="save-btn">Save Requirements</button>
+                <button type="button" onClick={() => setShowEnergyForm(false)} className="cancel-btn">Cancel</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -387,6 +514,212 @@ export const TaskBreakdownAssistant: React.FC<TaskBreakdownAssistantProps> = ({ 
           transform: translateY(-1px);
         }
 
+        /* New emotion-first styles */
+        .task-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1rem;
+        }
+
+        .current-emotion-badge {
+          background: #eef2ff;
+          border: 1px solid #bfdbfe;
+          border-radius: 20px;
+          padding: 0.25rem 0.75rem;
+        }
+
+        .emotion-label {
+          font-size: 0.875rem;
+          color: #374151;
+          font-weight: 600;
+        }
+
+        .energy-requirement-display {
+          background: #fffbeb;
+          border: 1px solid #fde68a;
+          border-radius: 8px;
+          padding: 1rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .requirement-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.75rem;
+        }
+
+        .requirement-header h4 {
+          margin: 0;
+          color: #92400e;
+          font-size: 1rem;
+        }
+
+        .match-indicator {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.25rem 0.5rem;
+          border-radius: 20px;
+          font-size: 0.875rem;
+          font-weight: 600;
+        }
+
+        .match-emoji {
+          font-size: 1rem;
+        }
+
+        .match-text {
+          font-size: 0.875rem;
+        }
+
+        .requirement-details {
+          display: flex;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+
+        .requirement-badge {
+          background: white;
+          border: 1px solid #fde68a;
+          color: #92400e;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.75rem;
+          font-weight: 600;
+        }
+
+        .edit-energy-btn {
+          background: #f59e0b;
+          color: white;
+          border: none;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .energy-setup {
+          margin-bottom: 1.5rem;
+        }
+
+        .setup-energy-btn {
+          background: linear-gradient(135deg, #f59e0b, #f97316);
+          color: white;
+          border: none;
+          padding: 0.75rem 1.5rem;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: transform 0.2s;
+        }
+
+        .setup-energy-btn:hover {
+          transform: translateY(-1px);
+        }
+
+        /* Energy form modal */
+        .energy-form-modal {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0,0,0,0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+
+        .modal-content {
+          background: white;
+          border-radius: 12px;
+          padding: 2rem;
+          max-width: 500px;
+          width: 90%;
+        }
+
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1.5rem;
+        }
+
+        .modal-header h4 {
+          margin: 0;
+          color: #1f2937;
+        }
+
+        .current-emotion {
+          font-size: 0.875rem;
+          color: #6b7280;
+        }
+
+        .close-btn {
+          background: none;
+          border: none;
+          font-size: 1.5rem;
+          cursor: pointer;
+          color: #64748b;
+        }
+
+        .energy-form {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .form-group label {
+          font-weight: 600;
+          color: #374151;
+          font-size: 0.875rem;
+        }
+
+        .energy-form select,
+        .energy-form input {
+          padding: 0.5rem;
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          font-size: 1rem;
+        }
+
+        .form-actions {
+          display: flex;
+          gap: 1rem;
+          justify-content: flex-end;
+        }
+
+        .save-btn {
+          background: #10b981;
+          color: white;
+          border: none;
+          padding: 0.75rem 1.5rem;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .cancel-btn {
+          background: #e5e7eb;
+          color: #374151;
+          border: none;
+          padding: 0.75rem 1.5rem;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        /* Existing styles */
         .breakdown-display h3 {
           margin: 0 0 1rem 0;
           color: #374151;
@@ -433,11 +766,6 @@ export const TaskBreakdownAssistant: React.FC<TaskBreakdownAssistantProps> = ({ 
           text-decoration: line-through;
           color: #6b7280;
           opacity: 0.7;
-        }
-
-        .step-title {
-          font-weight: 500;
-          color: #374151;
         }
 
         .step-time {
@@ -520,6 +848,17 @@ export const TaskBreakdownAssistant: React.FC<TaskBreakdownAssistantProps> = ({ 
           .global-two-minute-btn {
             font-size: 1rem;
             padding: 0.75rem 1.5rem;
+          }
+
+          .task-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+          }
+
+          .requirement-details {
+            flex-direction: column;
+            align-items: flex-start;
           }
         }
       `}</style>
