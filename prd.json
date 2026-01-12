@@ -87,6 +87,7 @@
         "Session duration calculations"
       ],
       "priority": 2,
+      "passes": true,
       "testing": {
         "unit": ["Duration calculation", "Context encryption"],
         "integration": ["Session lifecycle", "Context storage"],
@@ -374,7 +375,7 @@
       "databaseQueryP95": "≤50ms",
       "websocketLatency": "≤100ms",
       "uptime": "99.9%",
-      "migrationSuccess": "95%"
+      "migrationSuccess": "≥95%"
     },
     "business": {
       "userRetention30d": "≥40%",
