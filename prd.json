@@ -47,6 +47,7 @@
         "Status filtering (active/completed/archived)"
       ],
       "priority": 1,
+      "passes": true,
       "testing": {
         "unit": ["Task service layer", "Validation schemas"],
         "integration": ["API endpoints", "Database queries"],
