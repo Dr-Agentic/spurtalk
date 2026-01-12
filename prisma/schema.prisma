@@ -60,3 +60,13 @@ model Session {
   updatedAt   DateTime @updatedAt
   user        User     @relation(fields: [userId], references: [id])
 }
+
+model Insight {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  content     String
+  generatedAt DateTime @default(now())
+  metadata    Json
+  user        User     @relation(fields: [userId], references: [id])
+}
