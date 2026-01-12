@@ -67,6 +67,7 @@
         "TypeScript interfaces matching Prisma schema"
       ],
       "priority": 1,
+      "passes": true,
       "testing": {
         "unit": ["AI service with mocks", "Pattern matching fallback"],
         "integration": ["OpenAI API integration", "Breakdown storage"],
