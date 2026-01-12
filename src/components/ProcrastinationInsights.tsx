@@ -201,7 +201,7 @@ export const ProcrastinationInsights: React.FC<ProcrastinationInsightsProps> = (
                     // Guard against empty actionablePatterns
                     if (!actionablePatterns?.length) return [];
                     return generatePersonalizedTips(actionablePatterns).map((tip, index) => (
-                      <div key={tip.id ?? index} className="tip-card">
+                      <div key={index} className="tip-card">
                         <div className="tip-icon">{tip.icon}</div>
                         <div className="tip-content">
                           <h5>{tip.title}</h5>

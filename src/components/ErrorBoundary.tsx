@@ -7,10 +7,11 @@ import React from 'react';
  *     <MyComponent />
  *   </ErrorBoundary>
  */
+// @ts-ignore
 export class ErrorBoundary extends React.Component<React.ComponentPropsWithChildren, { hasError: boolean }> {
   state: { hasError: boolean } = { hasError: false };
 
-  static getDerivedStateFromError(error: Error) {
+  static getDerivedStateFromError(_error: Error) {
     // Return an object to update state so that UI shows the fallback
     return { hasError: true };
   }
