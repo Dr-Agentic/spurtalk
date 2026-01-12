@@ -1,213 +1,430 @@
 {
-  "project": "SpurTalk",
-  "branchName": "ralph/procrastinot-app",
-  "description": "A personal project management app specifically designed for procrastinators, focusing on psychological barriers, motivation, and breaking down overwhelming tasks into manageable pieces.",
-  "targetAudience": "Individuals who struggle with procrastination, perfectionism, and task paralysis",
+  "project": "SpurTalk Backend & Infrastructure",
+  "version": "2.0",
+  "branchName": "ralph/backend-infrastructure",
+  "description": "Production-ready backend for SpurTalk with PostgreSQL, NextAuth.js, Redis, and comprehensive testing. Migrates from localStorage to persistent storage with full API layer, authentication, and real-time features.",
+  "targetAudience": "Procrastinators needing reliable, cross-device task management with privacy focus",
   "corePrinciplesAndGoals": [
-    "Reduce friction to starting tasks through micro-steps",
-    "Provide immediate dopamine hits for small wins",
-    "Eliminate guilt and shame from the UX",
-    "Work with human psychology, not against it",
-    "Make 'good enough' feel like victory"
+    "Self-contained infrastructure (Docker/Render)",
+    "Privacy-first encryption for sensitive data",
+    "Zero server maintenance for end users",
+    "Type-safety throughout stack",
+    "Comprehensive test coverage (90%+)",
+    "97% cost reduction vs AWS architecture",
+    "Seamless migration from localStorage"
   ],
   "userStories": [
     {
-      "id": "US-001",
-      "title": "Task Breakdown Assistant",
-      "description": "As a procrastinator, I want an AI assistant that automatically breaks down overwhelming tasks into tiny, non-threatening steps (2-5 minutes each) so I can overcome the initial resistance to starting.",
+      "id": "US-B001",
+      "title": "User Authentication & Management",
+      "description": "As a user, I want to sign in with Google/GitHub/email so I can access my tasks from any device without managing passwords.",
       "acceptanceCriteria": [
-        "User can input a large task (e.g., 'Write research paper')",
-        "System suggests 5-10 micro-steps with time estimates",
-        "Each step is small enough to feel achievable (2-5 min)",
-        "User can accept, reject, or modify suggested steps",
-        "System saves breakdown for later reference"
+        "NextAuth.js v5 integrated with 3 providers (Google, GitHub, Email)",
+        "User accounts stored in PostgreSQL with Prisma adapter",
+        "Session management with JWT tokens",
+        "Protected API routes that require authentication",
+        "User profile page with timezone and preferences",
+        "Type-safe session access in frontend"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "Core feature - essential for reducing overwhelm"
+      "testing": {
+        "unit": ["authOptions config", "session callbacks"],
+        "integration": ["API route protection", "Provider authentication flow"],
+        "e2e": ["Login/logout flows", "Protected route access"]
+      }
     },
     {
-      "id": "US-002",
-      "title": "The 2-Minute Rule Button",
-      "description": "As a user, I want to see only the absolute next smallest action I can take right now, with a prominent '2-Minute Start' button that commits me to just 2 minutes of work.",
+      "id": "US-B002",
+      "title": "Task CRUD API",
+      "description": "As a user, I want to create, read, update, and delete tasks through the API so data persists across devices.",
       "acceptanceCriteria": [
-        "Dashboard shows ONE primary action at a time",
-        "Large, friendly 'Just 2 Minutes' button",
-        "Timer automatically starts when clicked",
-        "After 2 minutes, gentle prompt: 'Keep going?' or 'Great job! Done for now?'",
-        "No guilt messaging if user stops after 2 minutes",
-        "Celebrates the completion regardless of continuation",
-        "Typecheck passes"
+        "RESTful endpoints: GET, POST, PUT, DELETE /api/tasks",
+        "Data validation with Zod schemas",
+        "User isolation (users can only access their own tasks)",
+        "Soft delete implementation (deleted_at timestamp)",
+        "Pagination support for large task lists",
+        "Status filtering (active/completed/archived)"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "Friction reducer - makes starting feel safe"
+      "testing": {
+        "unit": ["Task service layer", "Validation schemas"],
+        "integration": ["API endpoints", "Database queries"],
+        "e2e": ["Full task lifecycle", "User isolation enforcement"]
+      }
     },
     {
-      "id": "US-003",
-      "title": "Progress Visualization & Dopamine Hits",
-      "description": "As a procrastinator, I want immediate visual feedback and rewards for tiny actions so my brain gets the dopamine it craves and motivates me to continue.",
+      "id": "US-B003",
+      "title": "Micro-Step Management API",
+      "description": "As a user, I want AI-generated micro-steps stored in database so I can resume work sessions with full context.",
       "acceptanceCriteria": [
-        "Visual progress bar that fills with each micro-step",
-        "Satisfying animations/sounds when completing steps",
-        "Streak counter for consecutive days with any progress",
-        "Achievement badges for patterns (e.g., '5 First Steps', 'Morning Warrior')",
-        "Before/after view showing cumulative progress over time",
-        "Typecheck passes"
+        "POST /api/tasks/:id/breakdown - Generate steps via OpenAI",
+        "GET /api/tasks/:id/steps - Retrieve ordered micro-steps",
+        "PATCH /api/tasks/:id/steps/:stepId - Mark steps complete",
+        "Fallback pattern-matching when AI unavailable",
+        "Store breakdown metadata (confidence, token usage)",
+        "TypeScript interfaces matching Prisma schema"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "Motivation engine - brain rewards system - COMPLETE"
+      "testing": {
+        "unit": ["AI service with mocks", "Pattern matching fallback"],
+        "integration": ["OpenAI API integration", "Breakdown storage"],
+        "e2e": ["End-to-end breakdown workflow"]
+      }
     },
     {
-      "id": "US-004",
-      "title": "Anti-Perfectionism Mode",
-      "description": "As a perfectionist procrastinator, I want a 'Good Enough' mode that actively encourages imperfect action over perfect inaction.",
+      "id": "US-B004",
+      "title": "Work Session Tracking API",
+      "description": "As a user, I want automatic session tracking so I can review my work history and preserve context.",
       "acceptanceCriteria": [
-        "Toggle 'Good Enough Mode' that changes UI messaging",
-        "Replaces 'Complete' with 'Done (for now)'",
-        "Shows quotes/mantras about imperfect action",
-        "Allows marking tasks as '80% is victory'",
-        "Hides quality/rating metrics that trigger perfectionism"
+        "POST /api/sessions/start - Begin tracking with context",
+        "PUT /api/sessions/:id/end - Stop and log duration",
+        "GET /api/sessions/history - Paginated session history",
+        "Context snapshot storage (notes, location, thoughts)",
+        "Interruption counting and reporting",
+        "Session duration calculations"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Perfectionism is a major blocker for many procrastinators - COMPLETE"
+      "testing": {
+        "unit": ["Duration calculation", "Context encryption"],
+        "integration": ["Session lifecycle", "Context storage"],
+        "e2e": ["Multi-session workflow"]
+      }
     },
     {
-      "id": "US-005",
-      "title": "Procrastination Pattern Insights",
-      "description": "As a user, I want to understand my procrastination patterns (when, why, what types of tasks) so I can work with my tendencies rather than against them.",
+      "id": "US-B005",
+      "title": "Procrastination Pattern Analysis Engine",
+      "description": "As a user, I want AI-powered insights about my procrastination patterns so I can work with my tendencies.",
       "acceptanceCriteria": [
-        "Tracks which tasks get delayed and by how long",
-        "Identifies patterns: time of day, task type, emotional state",
-        "Weekly insight report: 'You avoid creative tasks on Mondays'",
-        "Suggests optimal timing for different task types",
-        "Non-judgmental tone in all insights",
-        "Typecheck passes"
+        "Background worker analyzes procrastination events",
+        "Pattern detection: time-of-day, task-type, emotional state",
+        "Weekly insight generation with OpenAI",
+        "GET /api/insights - Retrieves user insights",
+        "POST /api/insights/generate - Trigger analysis",
+        "Materialized views for performance"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Self-awareness without judgment - COMPLETE"
+      "testing": {
+        "unit": ["Pattern algorithms", "Insight generation logic"],
+        "integration": ["BullMQ queue processing", "OpenAI integration"],
+        "e2e": ["End-to-end insight generation"]
+      }
     },
     {
-      "id": "US-006",
-      "title": "Context Preservation",
-      "description": "As a user who gets interrupted, I want the app to remember exactly where I was and what I was thinking so I can resume without the mental cost of context switching.",
+      "id": "US-B006",
+      "title": "Smart Reminder System API",
+      "description": "As a user, I want reminders scheduled based on my patterns, not random times.",
       "acceptanceCriteria": [
-        "Quick note field for 'What I was about to do next'",
-        "Auto-saves location in documents/links",
-        "Shows 'Last time you were...' when resuming",
-        "Suggested next action based on previous session",
-        "Timeline view of work session for memory trigger",
-        "Typecheck passes"
-      ],
-      "priority": 2,
-      "passes": true,
-      "notes": "Reduces restart friction - COMPLETE"
-    },
-    {
-      "id": "US-007",
-      "title": "Emotion-First Task Sorting",
-      "description": "As a procrastinator, I want to sort my tasks by how I feel right now (energized, anxious, creative, brain-dead) rather than traditional priority.",
-      "acceptanceCriteria": [
-        "Current mood/energy selector on dashboard",
-        "Tasks tagged with required energy type (focus, creative, mundane)",
-        "Smart filter shows tasks matching current state",
-        "Suggests break or easier alternative when low energy",
-        "Learns from user's completion patterns",
-        "Typecheck passes"
-      ],
-      "priority": 2,
-      "passes": true,
-      "notes": "Match tasks to current capacity - COMPLETE"
-    },
-    {
-      "id": "US-008",
-      "title": "Procrastination-Friendly Reminders",
-      "description": "As a user, I want reminders that are encouraging and understanding rather than guilt-inducing, with easy snooze options that don't make me feel worse.",
-      "acceptanceCriteria": [
-        "Reminder tone options: encouraging, neutral, humorous (never harsh)",
-        "Smart snooze with reason capture: 'Not now because...'",
-        "Learns from snooze patterns to adjust timing",
-        "No notification spam that trains user to ignore",
-        "Celebration when user acts on reminder"
+        "POST /api/reminders - Create with tone options",
+        "PUT /api/reminders/:id/snooze - Smart snooze with reason",
+        "GET /api/reminders/active - List pending reminders",
+        "Pattern-aware scheduling (optimal times)",
+        "Rate limiting to prevent notification fatigue",
+        "Background worker sends notifications"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Nice to have - many users disable all reminders"
+      "testing": {
+        "unit": ["Reminder scheduling algorithm", "Tone logic"],
+        "integration": ["Notification delivery", "Snooze patterns"],
+        "e2e": ["Reminder lifecycle"]
+      }
     },
     {
-      "id": "US-009",
-      "title": "Emergency Deadline Mode",
-      "description": "As a procrastinator facing an imminent deadline, I want an emergency mode that helps me triage and execute under pressure without judgment.",
+      "id": "US-B007",
+      "title": "Accountability Partner API",
+      "description": "As a user, I want to share tasks with partners and receive encouragement.",
       "acceptanceCriteria": [
-        "One-click 'Emergency Mode' button",
-        "Rapid assessment: 'What's actually due? What can be cut?'",
-        "Shows only essential tasks with time-boxing",
-        "Pomodoro timer with breaks enforced",
-        "Post-crisis reflection: 'What could prevent this next time?'"
+        "POST /api/partners - Add partner with relationship",
+        "POST /api/partners/:id/share/:taskId - Share task",
+        "POST /api/partners/:id/encourage - Send message",
+        "GET /api/partners/shared-tasks - View shared tasks",
+        "WebSocket notifications for real-time encouragement",
+        "Privacy: no task details to partners without explicit share"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Damage control for crisis situations - IMPLEMENTED"
+      "testing": {
+        "unit": ["Permission checks", "Message validation"],
+        "integration": ["Sharing logic", "WebSocket notifications"],
+        "e2e": ["Partner workflow"]
+      }
     },
     {
-      "id": "US-010",
-      "title": "Accountability Partner Integration",
-      "description": "As a procrastinator, I want to optionally share specific tasks with an accountability partner who can send gentle check-ins without judgment.",
+      "id": "US-B008",
+      "title": "Emergency Mode API",
+      "description": "As a user facing crisis, I want emergency triage and time-boxing.",
       "acceptanceCriteria": [
-        "User can designate accountability partners",
-        "Share specific tasks (not entire list) with chosen partner",
-        "Partner receives gentle notification: 'X is working on Y today'",
-        "Partner can send encouragement messages",
-        "No shame-based notifications"
+        "POST /api/emergency/activate - Accept deadline, run triage",
+        "GET /api/emergency/status - Get current session info",
+        "POST /api/emergency/reflect - Store post-crisis learning",
+        "Rapid task assessment algorithm",
+        "Essential task isolation",
+        "Integration with 2-minute timer"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Social accountability for those who want it - IMPLEMENTED"
+      "testing": {
+        "unit": ["Triage algorithm", "Time calculation"],
+        "integration": ["Emergency workflow", "Timer integration"],
+        "e2e": ["Crisis simulation"]
+      }
+    },
+    {
+      "id": "US-B009",
+      "title": "Real-Time WebSocket Layer",
+      "description": "As a user, I want live updates for sessions, reminders, and partner messages.",
+      "acceptanceCriteria": [
+        "Socket.io server with JWT authentication",
+        "Room-based messaging (user, partner channels)",
+        "Events: session:tick, reminder:incoming, encouragement:received",
+        "Fallback to polling for connection issues",
+        "Presence tracking for accountability partners",
+        "Reconnection handling"
+      ],
+      "priority": 2,
+      "testing": {
+        "unit": ["Event emitters", "Room management"],
+        "integration": ["WebSocket connection", "Event flow"],
+        "e2e": ["Real-time message delivery"]
+      }
+    },
+    {
+      "id": "US-B010",
+      "title": "Data Migration & Backward Compatibility",
+      "description": "As an existing user, I want to migrate my localStorage data without losing progress.",
+      "acceptanceCriteria": [
+        "Browser-based migration script",
+        "One-click localStorage → PostgreSQL transfer",
+        "Conflict resolution for duplicates",
+        "Preservation of streaks and achievements",
+        "Migration status tracking",
+        "Rollback capability"
+      ],
+      "priority": 1,
+      "testing": {
+        "unit": ["Data transformation logic", "Conflict resolution"],
+        "integration": ["Migration API endpoints"],
+        "e2e": ["Full migration workflow"]
+      }
+    },
+    {
+      "id": "US-B011",
+      "title": "AI Cost Management & Rate Limiting",
+      "description": "As the platform owner, I need to control AI API costs and prevent abuse.",
+      "acceptanceCriteria": [
+        "Token bucket rate limiting per user",
+        "Daily token quota (configurable)",
+        "Cost tracking per request",
+        "Automatic fallback to local patterns",
+        "Usage dashboard for users",
+        "Admin alerts for high usage"
+      ],
+      "priority": 1,
+      "testing": {
+        "unit": ["Rate limiter logic", "Cost calculation"],
+        "integration": ["Token tracking", "Fallback behavior"],
+        "e2e": ["Abuse scenario prevention"]
+      }
+    },
+    {
+      "id": "US-B012",
+      "title": "Security & Encryption Layer",
+      "description": "As a privacy-conscious user, I want my sensitive notes encrypted.",
+      "acceptanceCriteria": [
+        "Field-level encryption for context notes",
+        "Zero-knowledge for emergency reflections (client-side)",
+        "JWT token signing and validation",
+        "SQL injection prevention (Prisma)",
+        "CORS configuration",
+        "Security headers (helmet)"
+      ],
+      "priority": 2,
+      "testing": {
+        "unit": ["Encryption functions", "JWT validation"],
+        "integration": ["API security middleware"],
+        "e2e": ["Penetration testing scenarios"]
+      }
+    },
+    {
+      "id": "US-B013",
+      "title": "Observability & Monitoring",
+      "description": "As a developer, I need insights into app performance and errors.",
+      "acceptanceCriteria": [
+        "Structured logging with Winston",
+        "Request tracing (correlation IDs)",
+        "Performance metrics (API latency, DB query time)",
+        "Error tracking with stack traces",
+        "Health check endpoints",
+        "Alert rules for anomalies"
+      ],
+      "priority": 2,
+      "testing": {
+        "unit": ["Logger configuration", "Metric collection"],
+        "integration": ["End-to-end logging", "Alert triggers"],
+        "e2e": ["Error reporting workflow"]
+      }
     }
   ],
-  "technicalConsiderations": [
-    "Cross-platform: Web, iOS, Android for maximum accessibility",
-    "Offline-first architecture for no-friction access",
-    "Privacy-focused: local-first data storage",
-    "Fast load times (< 1 second) to reduce friction",
-    "Minimal UI to reduce overwhelm",
-    "Accessible design for users with ADHD/anxiety"
-  ],
-  "successMetrics": [
-    "User completes at least one micro-step per day (7-day streak rate)",
-    "Time from task creation to first action taken",
-    "Task completion rate (even partial completion counts)",
-    "User retention after 30 days",
-    "Self-reported reduction in procrastination anxiety",
-    "Number of 2-minute sessions that extend longer"
-  ],
+  "testingRequirements": {
+    "testCoverage": "90% minimum",
+    "frameworks": {
+      "unit": "Jest + TypeScript",
+      "integration": "Supertest + Jest",
+      "e2e": "Playwright",
+      "api": "Postman/Newman collections"
+    },
+    "testCategories": {
+      "unit": [
+        "Service layer functions",
+        "Validation schemas",
+        "Utility functions",
+        "AI fallback logic",
+        "Encryption functions"
+      ],
+      "integration": [
+        "API endpoint behavior",
+        "Database operations",
+        "Authentication flows",
+        "Background job processing",
+        "WebSocket communication"
+      ],
+      "e2e": [
+        "User registration → task creation → completion",
+        "AI breakdown → accept → work session",
+        "Partner sharing → encouragement → response",
+        "Emergency mode activation → triage → reflection",
+        "Migration workflow"
+      ],
+      "security": [
+        "JWT validation",
+        "Rate limiting",
+        "SQL injection prevention",
+        "CORS bypass attempts",
+        "Data isolation enforcement"
+      ]
+    }
+  },
+  "technicalStack": {
+    "runtime": "Node.js 20 LTS",
+    "framework": "Next.js 14 (App Router)",
+    "authentication": "NextAuth.js v5",
+    "database": "PostgreSQL 15 + Prisma ORM",
+    "cache": "Redis 7 (BullMQ for queues)",
+    "ai": "OpenAI GPT-4 Turbo (with fallbacks)",
+    "realtime": "Socket.io",
+    "security": "bcrypt, AES-256, JWT",
+    "testing": "Jest, Supertest, Playwright",
+    "deployment": "Render + Vercel"
+  },
+  "architecture": {
+    "layers": [
+      "API Routes (Next.js App Router)",
+      "Service Layer (Business Logic)",
+      "Data Access Layer (Prisma)",
+      "Background Workers (BullMQ)",
+      "WebSocket Layer (Socket.io)",
+      "AI Integration (OpenAI + Patterns)"
+    ],
+    "dataFlow": "Client → API Gateway → Service → DB/Cache/AI → Response",
+    "selfHosted": true,
+    "localDevelopment": {
+      "docker": [
+        "PostgreSQL",
+        "Redis"
+      ],
+      "services": [
+        "Next.js dev server",
+        "Prisma Studio"
+      ],
+      "oneCommand": "npm run setup && npm run dev"
+    }
+  },
+  "migrationStrategy": {
+    "approach": "Browser-based one-click migration",
+    "phases": [
+      "1. Detect localStorage data",
+      "2. Authenticate user",
+      "3. Transfer data with validation",
+      "4. Preserve streaks/achievements",
+      "5. Verify and confirm",
+      "6. Optional cleanup"
+    ],
+    "validation": "Checksum verification, duplicate detection",
+    "rollback": "LocalStorage preserved until user confirms"
+  },
+  "infrastructure": {
+    "local": {
+      "postgres": "docker:5432",
+      "redis": "docker:6379",
+      "app": "localhost:3000"
+    },
+    "production": {
+      "hosting": "Render",
+      "webService": "Next.js (containerized)",
+      "database": "Render PostgreSQL (managed)",
+      "cache": "Render Redis (managed)",
+      "cost": "$21/month",
+      "cd": "GitHub Actions → Render"
+    }
+  },
+  "successMetrics": {
+    "technical": {
+      "testCoverage": "≥90%",
+      "apiResponseP95": "≤200ms",
+      "databaseQueryP95": "≤50ms",
+      "websocketLatency": "≤100ms",
+      "uptime": "99.9%",
+      "migrationSuccess": "95%"
+    },
+    "business": {
+      "userRetention30d": "≥40%",
+      "dailyActiveUsers": "≥60% of registered",
+      "taskCompletionRate": "≥35%",
+      "aiFeatureAdoption": "≥70%",
+      "migrationAdoption": "≥80% of existing users"
+    }
+  },
   "outOfScope": [
+    "Mobile app (React Native)",
+    "Desktop app (Electron)",
     "Team collaboration features",
-    "Complex project management (Gantt charts, dependencies)",
-    "Time tracking for billing purposes",
-    "Integration with enterprise tools (Jira, Asana)",
-    "Social networking features",
-    "Habit tracking beyond task completion"
+    "Enterprise SSO",
+    "On-premise deployment",
+    "Custom AI model training"
   ],
-  "appOverview": "Personal AI assistant for project management focused on overcoming procrastination. Users define high-level personal goals (e.g., \"Be a better husband\", \"Be a better parent\"). App decomposes goals into projects, tasks, and micro-tasks. Guides execution with anti-procrastination mechanics. Keeps user moving via nudges, momentum, and accountability.",
-  "coreFeatures": [
-    "Onboarding: User enters high-level goals, app suggests breakdown, selects daily triggers, requires accountability buddy.",
-    "Goal & Project Management: Support multiple projects, AI-driven decomposition, progressive disclosure.",
-    "Micro-Task Engine: 'Break this' button generates tiny steps, streak-based leveling.",
-    "Progress Visualization: Bold progress bar, completion rewards.",
-    "Trigger & Routine System: Anchor tasks to habits, learn trigger timing.",
-    "Focus Mode: One-tap full-screen lock, ambient sounds, emergency exit.",
-    "Accountability: Buddy pings, virtual body doubling.",
-    "Timing & Insights: Shadow timer, pre-task display, daily voice recap.",
-    "Public Commitment: One-tap share to anonymous wall or socials.",
-    "Forgiveness & Reset: Missed day gentle reset.",
-    "Adaptive Nudges: Visual shrinking ring countdown, optional voice reminder.",
-    "Anti-Perfectionism Mode: Toggle that changes UI messaging, replaces 'Complete' with 'Done (for now)', displays encouraging quotes/mantras, lets users mark tasks as '80% is victory', hides rating metrics that trigger perfectionism.",
-    "Emergency Deadline Mode: One-click activation for imminent deadlines, rapid triage to identify essential tasks, time-boxing with Pomodoro timers, enforced breaks, post-crisis reflection prompt.",
-    "Procrastination-Friendly Reminders: Tone options (encouraging, neutral, humorous), smart snooze with reason capture, learns from snooze patterns, celebrates when user acts, no guilt-inducing messages.",
-    "Accountability Partner Integration: Gentle notifications like 'X is working on Y today', user-selected partners can send encouragement, no shame-based alerts."
+  "dependencies": {
+    "production": [
+      "next@14",
+      "next-auth@5",
+      "@prisma/client",
+      "prisma",
+      "redis",
+      "bullmq",
+      "socket.io",
+      "openai",
+      "zod",
+      "bcrypt",
+      "winston",
+      "helmet",
+      "cors",
+      "express-rate-limit"
+    ],
+    "development": [
+      "@types/node",
+      "@types/jest",
+      "jest",
+      "supertest",
+      "@playwright/test",
+      "ts-jest",
+      "jest-mock-extended",
+      "prisma-mock",
+      "node-mocks-http"
+    ]
+  },
+  "docs": [
+    "API documentation (Swagger/OpenAPI)",
+    "Database schema diagram",
+    "Architecture decision records (ADRs)",
+    "Testing strategy document",
+    "Deployment runbook",
+    "Security audit checklist"
   ]
 }
