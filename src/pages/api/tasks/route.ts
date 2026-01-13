@@ -1,9 +1,15 @@
-import { auth } from "next-auth"
-import { NextResponse } from "next/server"
-import { PrismaClient } from "@prisma/client"
-import { authOptions } from "@/authOptions"
+import { auth } from "next-auth";
+import { NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
+import { authOptions } from "@/authOptions";
+import { z } from "zod";
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
+
+const taskSchema = z.object({
+  title: z.string(),
+  description: z.string().optional()
+});
 
 export async function GET(request: Request, { params }: { params: { page?: string } }) {
   const session = await auth(request, authOptions)
@@ -13,10 +19,15 @@ export async function GET(request: Request, { params }: { params: { page?: strin
 
   const userId = session.user.id
   const page = parseInt(params.page) || 1
-  const pageSize = 10
-
+  const pageSize = 10;
+  const status = new URL(request.url).searchParams.get('status');
+  const where = {
+    userId: userId,
+    deletedAt: null,
+    ...(status && ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED'].includes(status as any) && { status })
+  };
   const tasks = await prisma.task.findMany({
-    where: { userId: userId, deletedAt: null },
+    where,
     skip: (page - 1) * pageSize,
     take: pageSize,
     orderBy: { createdAt: "desc" }
@@ -32,12 +43,15 @@ export async function POST(request: Request, { params }: { params: {} }) {
   }
 
   const body = await request.json()
-  const { title, description } = body
+  const result = taskSchema.safeParse(body)
 
-  // Basic validation using Zod would be ideal; for now simple check
-  if (!title) {
-    return new NextResponse("Title is required", { status: 400 })
+  if (!result.success) {
+    return new NextResponse(JSON.stringify(result.error.errors), {
+      status: 400
+    })
   }
+
+  const { title, description } = result.data
 
   const newTask = await prisma.task.create({
     data: {
