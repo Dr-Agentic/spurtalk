@@ -2,3 +2,10 @@ archive/
 node_modules/
 dist/
 .last-branch
+.env
+.env.local
+*.log
+.DS_Store
+coverage/
+.next/
+.expo/
