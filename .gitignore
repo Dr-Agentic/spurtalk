@@ -1,11 +1,9 @@
 archive/
 node_modules/
 dist/
-.last-branch
-.env
-.env.local
 *.log
-.DS_Store
 coverage/
-.next/
-.expo/
+
+# Ignore all dot files and folders
+.*
+!.gitignore

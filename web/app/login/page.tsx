@@ -1,26 +1,28 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 import { useAuthStore } from "@/lib/store/auth";
 import { api } from "@/lib/api";
+import { FRIENDLY_ERRORS } from "@/lib/design-tokens";
+import { AuthCard } from "@/components/auth/AuthCard";
+import { PasswordInput } from "@/components/auth/PasswordInput";
+import { FriendlyError } from "@/components/auth/FriendlyError";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
   const setTokens = useAuthStore((state) => state.setTokens);
   const setUser = useAuthStore((state) => state.setUser);
   const router = useRouter();
@@ -28,68 +30,119 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true);
+
     try {
       const { data } = await api.post("/auth/login", { email, password });
       setTokens(data.tokens.accessToken, data.tokens.refreshToken);
       setUser(data.user);
       router.push("/deck");
-    } catch (err: any) {
-      setError(err.response?.data?.error || "Login failed");
+    } catch (err: unknown) {
+      // Use friendly error messages - never say "Failed"
+      const axiosError = err as { response?: { status?: number; data?: { error?: string } } };
+      if (axiosError.response?.status === 401) {
+        setError(FRIENDLY_ERRORS.invalidCredentials);
+      } else if (axiosError.response?.status === 0 || !axiosError.response) {
+        setError(FRIENDLY_ERRORS.networkError);
+      } else {
+        setError(FRIENDLY_ERRORS.genericError);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
-      <Card className="w-[350px]">
-        <CardHeader>
-          <CardTitle>Login</CardTitle>
-          <CardDescription>
-            Enter your email to access your workspace.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit}>
-            <div className="grid w-full items-center gap-4">
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  placeholder="name@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  type="email"
-                  required
-                />
-              </div>
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  type="password"
-                  required
-                />
-              </div>
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-            </div>
-            <div className="mt-4 flex justify-between">
-              <Button type="submit" className="w-full">
-                Login
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-        <CardFooter className="flex justify-center">
+    <AuthCard
+      title="Welcome back!"
+      subtitle="We're glad to see you again"
+      footer={
+        <>
+          <Link
+            href="/forgot-password"
+            className="text-muted-foreground transition-colors hover:text-primary"
+          >
+            Forgot password?
+          </Link>
           <Link
             href="/register"
-            className="text-sm text-blue-500 hover:underline"
+            className="text-primary transition-colors hover:text-primary/80"
           >
-            Don&apos;t have an account? Register
+            New here? Create account
           </Link>
-        </CardFooter>
-      </Card>
-    </div>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Email */}
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="Your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="email"
+            autoFocus
+            aria-describedby={error ? "error-message" : undefined}
+          />
+        </div>
+
+        {/* Password */}
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <PasswordInput
+            id="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+            error={error}
+          />
+        </div>
+
+        {/* Remember Me */}
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="remember"
+            checked={rememberMe}
+            onCheckedChange={(checked) => setRememberMe(checked === true)}
+          />
+          <Label
+            htmlFor="remember"
+            className="text-sm font-normal text-muted-foreground cursor-pointer"
+          >
+            Remember me
+          </Label>
+        </div>
+
+        {/* Error Message */}
+        <FriendlyError message={error} />
+
+        {/* Submit Button */}
+        <motion.div
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+        >
+          <Button
+            type="submit"
+            className="w-full h-11 text-base font-medium"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              "Let's go!"
+            )}
+          </Button>
+        </motion.div>
+      </form>
+    </AuthCard>
   );
 }
