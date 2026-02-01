@@ -105,4 +105,13 @@ router.delete("/account", authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
+router.get("/export-data", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const data = await authService.exportUserData(req.userId!);
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to export data", message: error.message });
+  }
+});
+
 export default router;

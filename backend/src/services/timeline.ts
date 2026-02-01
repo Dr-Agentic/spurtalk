@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { Timeline, TimelineTask } from "@spurtalk/shared";
+import { Timeline, TimelineTask, BufferDay, StressCluster } from "@spurtalk/shared";
 
 const prisma = new PrismaClient();
 
@@ -42,26 +42,130 @@ export class TimelineService {
       };
     });
 
-    // Logical dependency sequencing (Requirement 3.5)
-    // Implement basic topological sorting to ensure dependencies come before dependent tasks
+    // 1. Sequence tasks logically (topological sort)
     const sortedTasks = this.sortTasksByDependencies(timelineTasks, tasks);
 
-    // Store/Update timeline
-    // For now, we calculate on the fly, but persistence is good for "generatedAt"
+    // 2. Detect Stress Clusters (Requirement 1.4)
+    const stressClusters = this.detectStressClusters(sortedTasks, tasks);
+
+    // 3. Insert Buffer Days (Requirement 1.5, 8.2)
+    const bufferDays = this.insertBufferDays(stressClusters, sortedTasks);
 
     return {
-      id: "generated", // dynamic
+      id: `timeline_${userId}_${now.getTime()}`,
       userId,
       tasks: sortedTasks,
-      bufferDays: [], // Empathic planner adds these
-      stressClusters: [],
-      generatedAt: new Date(),
-      lastModified: new Date(),
+      bufferDays,
+      stressClusters,
+      generatedAt: now,
+      lastModified: now,
     };
   }
 
   async getTimeline(userId: string) {
     return this.generateTimeline(userId);
+  }
+
+  private detectStressClusters(
+    timelineTasks: TimelineTask[],
+    tasks: any[]
+  ): StressCluster[] {
+    const taskMap = new Map<string, any>();
+    tasks.forEach((t) => taskMap.set(t.id, t));
+
+    const effortWeights: Record<string, number> = {
+      Tiny: 1,
+      Small: 2,
+      Medium: 4,
+      Big: 8,
+    };
+
+    // Sort timeline tasks by date
+    const sortedByDate = [...timelineTasks].sort(
+      (a, b) => a.scheduledDate.getTime() - b.scheduledDate.getTime()
+    );
+
+    const clusters: StressCluster[] = [];
+    const windowDays = 3;
+    const stressThreshold = 10; // Effort total in window to consider "stressed"
+
+    for (let i = 0; i < sortedByDate.length; i++) {
+      const startDate = sortedByDate[i].scheduledDate;
+      const endDate = new Date(startDate.getTime() + windowDays * 24 * 60 * 60 * 1000);
+
+      let currentEffort = 0;
+      let clusterTasks = 0;
+
+      for (let j = i; j < sortedByDate.length; j++) {
+        if (sortedByDate[j].scheduledDate <= endDate) {
+          const originalTask = taskMap.get(sortedByDate[j].taskId);
+          currentEffort += effortWeights[originalTask?.effortLevel || "Small"];
+          clusterTasks++;
+        } else {
+          break;
+        }
+      }
+
+      if (currentEffort >= stressThreshold) {
+        clusters.push({
+          startDate: new Date(startDate),
+          endDate: new Date(endDate),
+          severity: currentEffort > 15 ? "high" : currentEffort > 12 ? "medium" : "low",
+          taskCount: clusterTasks,
+        });
+        // Skip ahead to end of cluster to avoid overlapping small clusters?
+        // Let's keep it simple for now and just find all windows.
+      }
+    }
+
+    // Merge overlapping clusters
+    return this.mergeClusters(clusters);
+  }
+
+  private mergeClusters(clusters: StressCluster[]): StressCluster[] {
+    if (clusters.length <= 1) return clusters;
+
+    const merged: StressCluster[] = [];
+    let current = clusters[0];
+
+    for (let i = 1; i < clusters.length; i++) {
+      if (clusters[i].startDate <= current.endDate) {
+        // Overlap
+        current.endDate = new Date(Math.max(current.endDate.getTime(), clusters[i].endDate.getTime()));
+        current.taskCount = Math.max(current.taskCount, clusters[i].taskCount);
+        // Take highest severity
+        const severities: Record<string, number> = { low: 1, medium: 2, high: 3 };
+        if (severities[clusters[i].severity] > severities[current.severity]) {
+          current.severity = clusters[i].severity;
+        }
+      } else {
+        merged.push(current);
+        current = clusters[i];
+      }
+    }
+    merged.push(current);
+    return merged;
+  }
+
+  private insertBufferDays(
+    clusters: StressCluster[],
+    timelineTasks: TimelineTask[]
+  ): BufferDay[] {
+    const bufferDays: BufferDay[] = [];
+
+    clusters.forEach((cluster) => {
+      // Requirement 1.5: "Rest periods automatically inserted before high-stress deadlines"
+      // We'll insert one day before the start of the cluster
+      const bufferDate = new Date(cluster.startDate.getTime() - 24 * 60 * 60 * 1000);
+
+      bufferDays.push({
+        date: bufferDate,
+        reason: `Rest period before ${cluster.severity} stress cluster`,
+        isInserted: true,
+      });
+    });
+
+    return bufferDays;
   }
 
   private sortTasksByDependencies(

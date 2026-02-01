@@ -42,6 +42,7 @@ exports.NanoStepSchema = zod_1.z.object({
     emotionalEffort: zod_1.z.enum(["zero", "minimal"]),
     isCompleted: zod_1.z.boolean(),
     parentTaskId: zod_1.z.string(),
+    generatedByAI: zod_1.z.boolean().optional(),
 });
 exports.TaskResponseSchema = exports.TaskSchema.extend({
     id: zod_1.z.string(),

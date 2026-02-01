@@ -2,7 +2,7 @@ import axios from "axios";
 import { useAuthStore } from "@/lib/store/auth";
 
 export const api = axios.create({
-  baseURL: "http://localhost:3000/api",
+  baseURL: "http://localhost:7101/api",
   headers: {
     "Content-Type": "application/json",
   },
@@ -27,7 +27,7 @@ api.interceptors.response.use(
         if (!refreshToken) throw new Error("No refresh token");
 
         const { data } = await axios.post(
-          "http://localhost:3000/api/auth/refresh",
+          "http://localhost:7101/api/auth/refresh",
           {
             refreshToken,
           }
@@ -36,9 +36,14 @@ api.interceptors.response.use(
         useAuthStore.getState().setTokens(data.accessToken, data.refreshToken);
         originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
         return api(originalRequest);
-      } catch (refreshError) {
+      } catch (refreshError: any) {
         useAuthStore.getState().logout();
-        return Promise.reject(refreshError);
+        // Create a more specific error for failed token refresh
+        const authError = new Error(
+          "Authentication failed - please login again"
+        );
+        authError.name = "AuthenticationError";
+        return Promise.reject(authError);
       }
     }
     return Promise.reject(error);

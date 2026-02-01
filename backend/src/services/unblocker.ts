@@ -1,19 +1,17 @@
 import { PrismaClient } from "@prisma/client";
 import { NanoStep } from "@spurtalk/shared";
+import { aiService } from "./ai";
 
 const prisma = new PrismaClient();
 
 export class UnblockerService {
   async detectStalls(userId: string): Promise<string[]> {
-    // Requirement 4.2: Task in Active state > 24 hours
-    // Requirement 311: User configurable timeout (default 24h)
-
+    // ... same as before
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { preferences: true },
     });
 
-    // Default to 24 if preferences missing/invalid
     const timeoutHours =
       (user?.preferences as any)?.stallDetectionTimeout || 24;
     const timeoutDate = new Date(Date.now() - timeoutHours * 60 * 60 * 1000);
@@ -25,21 +23,18 @@ export class UnblockerService {
         updatedAt: {
           lt: timeoutDate,
         },
-        stallDetectedAt: null, // Only detect once until cleared
+        stallDetectedAt: null,
       },
     });
 
     const stalledIds: string[] = [];
 
-    // Mark them as stalled (Requirement 4.2 implies automatic trigger)
-    // We update stallDetectedAt. Requirement 4.3 says "decompose".
-    // Let's mark them first.
     for (const task of stalledTasks) {
       await prisma.task.update({
         where: { id: task.id },
         data: {
           stallDetectedAt: new Date(),
-          state: "Stalled", // Explicit state change per design
+          state: "Stalled",
         },
       });
       stalledIds.push(task.id);
@@ -48,54 +43,35 @@ export class UnblockerService {
     return stalledIds;
   }
 
-  async decomposeTask(userId: string, taskId: string): Promise<NanoStep[]> {
+  async decomposeTask(userId: string, taskId: string): Promise<any> {
     const task = await prisma.task.findFirst({
       where: { id: taskId, userId },
     });
 
     if (!task) throw new Error("Task not found");
 
-    // Requirement 4.3: Decompose into 3-5 Nano_Steps
-    // Requirement 4.4: First step < 2 mins, zero emotional effort
+    // Requirement 4.3: Decompose into 3-5 Nano_Steps using AI
+    const aiSteps = await aiService.decomposeTask(task.title, task.description);
 
-    // Placeholder rule-based decomposition (AI to replace later)
-    const steps: NanoStep[] = [
-      {
-        id: crypto.randomUUID(),
-        text: "Open the project folder/document",
-        estimatedSeconds: 30,
-        emotionalEffort: "zero",
-        isCompleted: false,
-        parentTaskId: taskId,
-      },
-      {
-        id: crypto.randomUUID(),
-        text: "Read the specific requirement or prompt",
-        estimatedSeconds: 60,
-        emotionalEffort: "zero",
-        isCompleted: false,
-        parentTaskId: taskId,
-      },
-      {
-        id: crypto.randomUUID(),
-        text: "Write the very first sentence/line",
-        estimatedSeconds: 90,
-        emotionalEffort: "minimal",
-        isCompleted: false,
-        parentTaskId: taskId,
-      },
-    ];
+    const steps: NanoStep[] = aiSteps.map((step) => ({
+      id: crypto.randomUUID(),
+      text: step.text,
+      estimatedSeconds: step.estimatedSeconds,
+      emotionalEffort: step.emotionalEffort,
+      isCompleted: false,
+      parentTaskId: taskId,
+      generatedByAI: true,
+    }));
 
-    await prisma.task.update({
+    const updatedTask = await prisma.task.update({
       where: { id: taskId },
       data: {
         nanoSteps: steps as any,
-        state: "Active", // Move back to active to work on steps? Or keep Stalled?
-        // UX usually implies "Unblocked" -> Active. Let's set Active.
+        // stay in Deck state so user can decide to snooze or start
       },
     });
 
-    return steps;
+    return updatedTask;
   }
 }
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-SpurTalk is a procrastination-friendly project management application built on the "Anti-Guilt" standard. The system transforms traditional productivity tools into empathetic, neurodivergent-friendly interfaces that reduce anxiety and decision paralysis. The architecture emphasizes psychological safety through calming design, intelligent task decomposition, and persistent progress visualization.
+SpurTalk is a procrastination-friendly project management application built on the "Anti-Guilt" standard. The system transforms traditional productivity tools into empathetic, anti-guilt interfaces that reduce anxiety and decision paralysis. The architecture emphasizes psychological safety through calming design, intelligent task decomposition, and persistent progress visualization.
 
 The application consists of a unified backend API serving both a responsive web application and an Expo-based mobile app. The core innovation lies in AI-powered empathic planning and nano-step task decomposition, designed to lower barriers to task initiation while maintaining user motivation through positive reinforcement.
 

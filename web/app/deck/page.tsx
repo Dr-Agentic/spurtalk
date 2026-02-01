@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/store/auth";
 import { api } from "@/lib/api";
+import axios from "axios";
 import { CardStack } from "@/components/deck/CardStack";
 import { Task, NanoStep } from "@spurtalk/shared";
 import { Button } from "@/components/ui/button";
@@ -33,15 +34,20 @@ export default function DeckPage() {
       try {
         const { data } = await api.get<Task[]>("/tasks/deck");
         setTasks(data);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Failed to fetch deck", error);
+        // Handle authentication errors specifically
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          logout();
+          router.push("/login");
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchDeck();
-  }, [user, router]);
+  }, [user, router, logout]);
 
   const handleSwipe = async (
     taskId: string,

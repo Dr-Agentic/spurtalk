@@ -1,27 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
-import OpenAI from "openai";
 import { default as pdfParse } from "pdf-parse";
 import mammoth from "mammoth";
-import dotenv from "dotenv";
-
-dotenv.config();
+import { aiService } from "./ai";
 
 const prisma = new PrismaClient();
-
-// Initialize OpenRouter client only when needed
-let openrouter: OpenAI | null = null;
-
-function getOpenRouterClient(): OpenAI {
-  if (!openrouter) {
-    openrouter = new OpenAI({
-      apiKey: process.env.OPENROUTER_API_KEY,
-      baseURL: "https://openrouter.ai/api/v1",
-    });
-  }
-  return openrouter;
-}
 
 export class DocumentService {
   async processDocument(
@@ -48,21 +32,19 @@ export class DocumentService {
           break;
         case "powerpoint":
         case "spreadsheet":
-          // For now, treat as binary files
           extractedText = `[${documentType.toUpperCase()} file: ${originalName}]`;
           break;
         default:
           extractedText = `[Unsupported file type: ${fileExtension}]`;
       }
 
-      // Send to Gemini Flash for analysis
-      const analysisResult = await this.analyzeDocumentWithGemini(
+      // Send to AI for analysis
+      const analysisResult = await aiService.analyzeDocument(
         extractedText,
         documentType,
         originalName
       );
 
-      // Save document metadata to database
       const document = await prisma.document.create({
         data: {
           userId,
@@ -76,7 +58,6 @@ export class DocumentService {
         },
       });
 
-      // Clean up uploaded file
       fs.unlinkSync(filePath);
 
       return {
@@ -112,7 +93,6 @@ export class DocumentService {
 
   private async extractTextFromPDF(filePath: string): Promise<string> {
     try {
-      // Use require for CommonJS module
       const pdfParse = require("pdf-parse");
       const dataBuffer = fs.readFileSync(filePath);
       const data = await pdfParse(dataBuffer);
@@ -131,55 +111,6 @@ export class DocumentService {
       console.error("Word extraction error:", error);
       return `[Word extraction failed: ${filePath}]`;
     }
-  }
-
-  private async analyzeDocumentWithGemini(
-    extractedText: string,
-    documentType: string,
-    fileName: string
-  ) {
-    // Get OpenRouter client
-    const client = getOpenRouterClient();
-
-    // Send to Gemini Flash model
-    const response = await client.chat.completions.create({
-      model: "google/gemini-2.0-flash-exp:free",
-      messages: [
-        {
-          role: "user",
-          content: `Analyze this ${documentType} document (${fileName}) and extract:
-          
-          Document content:
-          ${extractedText.substring(0, 8000)}...${extractedText.length > 8000 ? " (truncated)" : ""}
-          
-          Extraction instructions:
-          1. Extract all actionable tasks with deadlines
-          2. Identify important dates and events
-          3. Find key information that should be tracked
-          4. Provide confidence scores (0.0-1.0) for each extraction
-          5. Return structured JSON with fields: extractedText, parsedTasks, confidence
-          
-          Example task format:
-          {
-            "title": "Complete project proposal",
-            "description": "Write and submit the Q3 project proposal",
-            "deadline": "2024-12-15",
-            "priority": "high",
-            "confidence": 0.95
-          }`,
-        },
-      ],
-      response_format: { type: "json_object" },
-    });
-
-    // Parse the response
-    const result = JSON.parse(response.choices[0].message.content || "{}");
-
-    return {
-      extractedText: result.extractedText || extractedText,
-      parsedTasks: result.parsedTasks || [],
-      confidence: result.confidence || 0.8,
-    };
   }
 }
 

@@ -6,6 +6,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 describe("Property 10: Focus Deck Card Interaction", () => {
+  jest.setTimeout(30000); // Higher timeout for DB-heavy property tests
   let testUserId: string;
   let createdTaskIds: string[] = [];
 
@@ -27,9 +28,15 @@ describe("Property 10: Focus Deck Card Interaction", () => {
         where: { id: { in: createdTaskIds } },
       });
     }
-    await prisma.user.delete({
-      where: { id: testUserId },
-    });
+    if (testUserId) {
+      try {
+        await prisma.user.delete({
+          where: { id: testUserId },
+        });
+      } catch (e) {
+        // Ignore
+      }
+    }
   });
 
   it("should correctly transition state based on swipe direction", async () => {

@@ -20,7 +20,7 @@ REFRESH_SECRET="your_refresh_secret_key"
 REFRESH_EXPIRES_IN="7d"
 
 # Server
-PORT=3000
+PORT=7101
 NODE_ENV=development
 ```
 
@@ -56,7 +56,7 @@ cd backend
 npm run dev
 ```
 
-The backend will start on `http://localhost:3000`
+The backend will start on `http://localhost:7101`
 
 #### Frontend Server
 
@@ -65,7 +65,7 @@ cd web
 npm run dev
 ```
 
-The frontend will start on `http://localhost:3001`
+The frontend will start on `http://localhost:7102`
 
 ## 🧪 Testing
 
@@ -89,15 +89,15 @@ npm test
 
 #### Test Document Processing
 
-1. Navigate to `http://localhost:3001/documents`
+1. Navigate to `http://localhost:7102/documents`
 2. Drag and drop a PDF, Word, or text file
 3. Verify tasks are extracted and displayed
 
 #### Test Core Features
 
-1. **Focus Deck**: `http://localhost:3001/deck`
-2. **Garden**: `http://localhost:3001/garden`
-3. **Timeline**: `http://localhost:3001/timeline`
+1. **Focus Deck**: `http://localhost:7102/deck`
+2. **Garden**: `http://localhost:7102/garden`
+3. **Timeline**: `http://localhost:7102/timeline`
 
 ### Test Scripts
 
@@ -273,7 +273,7 @@ cd ../web && npm start
 docker build -t spurtalk .
 
 # Run Docker container
-docker run -p 3000:3000 -p 3001:3001 spurtalk
+docker run -p 7101:7101 -p 7102:7102 spurtalk
 ```
 
 ## 🆘 Troubleshooting
@@ -311,9 +311,9 @@ docker run -p 3000:3000 -p 3001:3001 spurtalk
 ps aux | grep node
 
 # Check port usage
-lsof -i :3000
-lsof -i :3001
+lsof -i :7101
+lsof -i :7102
 
 # Kill processes on port
-kill -9 $(lsof -t -i :3000)
+kill -9 $(lsof -t -i :7101)
 ```

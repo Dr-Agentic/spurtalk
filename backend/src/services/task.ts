@@ -1,5 +1,7 @@
 import { PrismaClient, Task, Prisma } from "@prisma/client";
 import { CreateTask, UpdateTask, UserPreferences } from "@spurtalk/shared";
+import { aiService } from "./ai";
+import { unblockerService } from "./unblocker";
 
 const prisma = new PrismaClient();
 
@@ -18,6 +20,11 @@ export class TaskService {
       }
     }
 
+    let compellingEvent = data.compellingEvent;
+    if (!compellingEvent && data.motivationCategory) {
+      compellingEvent = await aiService.generateCompellingEvent(data.title, data.motivationCategory);
+    }
+
     const task = await prisma.task.create({
       data: {
         userId,
@@ -27,7 +34,7 @@ export class TaskService {
         emotionalTag: data.emotionalTag,
         fuzzyDeadline: data.fuzzyDeadline,
         hardDeadline: data.hardDeadline,
-        compellingEvent: data.compellingEvent,
+        compellingEvent: compellingEvent,
         motivationCategory: data.motivationCategory,
         dependencies: data.dependencies || [],
         tags: data.tags || [],
@@ -147,45 +154,12 @@ export class TaskService {
         deckOrder: task.deckOrder ? task.deckOrder + 1 : 1,
       });
     } else if (direction === "down") {
-      // Down Swipe: Break Down -> Trigger Nano-Step Unblocker
-      // Requirement 5.4 triggers unblocker.
-      // We'll implement a basic unblocker here or call a service.
-      // For now, let's just create placeholder nano-steps if none exist.
+      // Down Swipe: Break Down -> Trigger Nano-Step Unblocker (Requirement 5.4)
       if (
         !task.nanoSteps ||
         (Array.isArray(task.nanoSteps) && task.nanoSteps.length === 0)
       ) {
-        // Simple rule-based decomposition
-        const steps = [
-          {
-            id: "1",
-            text: "Open the necessary file/app",
-            estimatedSeconds: 30,
-            emotionalEffort: "zero",
-            isCompleted: false,
-            parentTaskId: taskId,
-          },
-          {
-            id: "2",
-            text: "Read the first sentence/instruction",
-            estimatedSeconds: 60,
-            emotionalEffort: "zero",
-            isCompleted: false,
-            parentTaskId: taskId,
-          },
-          {
-            id: "3",
-            text: "Type the first word",
-            estimatedSeconds: 45,
-            emotionalEffort: "minimal",
-            isCompleted: false,
-            parentTaskId: taskId,
-          },
-        ];
-        // We need to cast this because Prisma Json type is flexible
-        return this.updateTask(userId, taskId, {
-          nanoSteps: steps as any,
-        } as UpdateTask);
+        return unblockerService.decomposeTask(userId, taskId);
       }
       return task;
     }

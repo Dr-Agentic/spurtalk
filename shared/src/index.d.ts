@@ -102,20 +102,23 @@ export declare const NanoStepSchema: z.ZodObject<{
     emotionalEffort: z.ZodEnum<["zero", "minimal"]>;
     isCompleted: z.ZodBoolean;
     parentTaskId: z.ZodString;
+    generatedByAI: z.ZodOptional<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
     id: string;
+    parentTaskId: string;
     text: string;
     estimatedSeconds: number;
     emotionalEffort: "zero" | "minimal";
     isCompleted: boolean;
-    parentTaskId: string;
+    generatedByAI?: boolean | undefined;
 }, {
     id: string;
+    parentTaskId: string;
     text: string;
     estimatedSeconds: number;
     emotionalEffort: "zero" | "minimal";
     isCompleted: boolean;
-    parentTaskId: string;
+    generatedByAI?: boolean | undefined;
 }>;
 export declare const TaskResponseSchema: z.ZodObject<{
     title: z.ZodString;
@@ -139,20 +142,23 @@ export declare const TaskResponseSchema: z.ZodObject<{
         emotionalEffort: z.ZodEnum<["zero", "minimal"]>;
         isCompleted: z.ZodBoolean;
         parentTaskId: z.ZodString;
+        generatedByAI: z.ZodOptional<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
         id: string;
+        parentTaskId: string;
         text: string;
         estimatedSeconds: number;
         emotionalEffort: "zero" | "minimal";
         isCompleted: boolean;
-        parentTaskId: string;
+        generatedByAI?: boolean | undefined;
     }, {
         id: string;
+        parentTaskId: string;
         text: string;
         estimatedSeconds: number;
         emotionalEffort: "zero" | "minimal";
         isCompleted: boolean;
-        parentTaskId: string;
+        generatedByAI?: boolean | undefined;
     }>, "many">>;
     createdAt: z.ZodDate;
     updatedAt: z.ZodDate;
@@ -166,17 +172,18 @@ export declare const TaskResponseSchema: z.ZodObject<{
     effortLevel: "Tiny" | "Small" | "Medium" | "Big";
     fuzzyDeadline: "Soon" | "This Week" | "Eventually";
     hardDeadline: Date;
-    dependencies: string[];
-    tags: string[];
     state: "Deck" | "River" | "Garden" | "Stalled" | "Active" | "Completed";
     nanoSteps: {
         id: string;
+        parentTaskId: string;
         text: string;
         estimatedSeconds: number;
         emotionalEffort: "zero" | "minimal";
         isCompleted: boolean;
-        parentTaskId: string;
+        generatedByAI?: boolean | undefined;
     }[];
+    dependencies: string[];
+    tags: string[];
     description?: string | undefined;
     emotionalTag?: "Boring" | "Scary" | "Fun" | undefined;
     compellingEvent?: string | undefined;
@@ -196,17 +203,18 @@ export declare const TaskResponseSchema: z.ZodObject<{
     emotionalTag?: "Boring" | "Scary" | "Fun" | undefined;
     compellingEvent?: string | undefined;
     motivationCategory?: "Relief" | "Energy" | "Achievement" | "Identity" | undefined;
-    dependencies?: string[] | undefined;
-    tags?: string[] | undefined;
-    deckOrder?: number | undefined;
     nanoSteps?: {
         id: string;
+        parentTaskId: string;
         text: string;
         estimatedSeconds: number;
         emotionalEffort: "zero" | "minimal";
         isCompleted: boolean;
-        parentTaskId: string;
+        generatedByAI?: boolean | undefined;
     }[] | undefined;
+    dependencies?: string[] | undefined;
+    tags?: string[] | undefined;
+    deckOrder?: number | undefined;
 }>;
 export declare const CreateTaskSchema: z.ZodObject<{
     title: z.ZodString;
@@ -266,20 +274,23 @@ export declare const UpdateTaskSchema: z.ZodObject<{
         emotionalEffort: z.ZodEnum<["zero", "minimal"]>;
         isCompleted: z.ZodBoolean;
         parentTaskId: z.ZodString;
+        generatedByAI: z.ZodOptional<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
         id: string;
+        parentTaskId: string;
         text: string;
         estimatedSeconds: number;
         emotionalEffort: "zero" | "minimal";
         isCompleted: boolean;
-        parentTaskId: string;
+        generatedByAI?: boolean | undefined;
     }, {
         id: string;
+        parentTaskId: string;
         text: string;
         estimatedSeconds: number;
         emotionalEffort: "zero" | "minimal";
         isCompleted: boolean;
-        parentTaskId: string;
+        generatedByAI?: boolean | undefined;
     }>, "many">>;
 }, "strip", z.ZodTypeAny, {
     title?: string | undefined;
@@ -290,18 +301,19 @@ export declare const UpdateTaskSchema: z.ZodObject<{
     hardDeadline?: Date | undefined;
     compellingEvent?: string | undefined;
     motivationCategory?: "Relief" | "Energy" | "Achievement" | "Identity" | undefined;
-    dependencies?: string[] | undefined;
-    tags?: string[] | undefined;
-    deckOrder?: number | undefined;
     state?: "Deck" | "River" | "Garden" | "Stalled" | "Active" | "Completed" | undefined;
     nanoSteps?: {
         id: string;
+        parentTaskId: string;
         text: string;
         estimatedSeconds: number;
         emotionalEffort: "zero" | "minimal";
         isCompleted: boolean;
-        parentTaskId: string;
+        generatedByAI?: boolean | undefined;
     }[] | undefined;
+    dependencies?: string[] | undefined;
+    tags?: string[] | undefined;
+    deckOrder?: number | undefined;
 }, {
     title?: string | undefined;
     description?: string | undefined;
@@ -311,18 +323,19 @@ export declare const UpdateTaskSchema: z.ZodObject<{
     hardDeadline?: string | Date | undefined;
     compellingEvent?: string | undefined;
     motivationCategory?: "Relief" | "Energy" | "Achievement" | "Identity" | undefined;
-    dependencies?: string[] | undefined;
-    tags?: string[] | undefined;
-    deckOrder?: number | undefined;
     state?: "Deck" | "River" | "Garden" | "Stalled" | "Active" | "Completed" | undefined;
     nanoSteps?: {
         id: string;
+        parentTaskId: string;
         text: string;
         estimatedSeconds: number;
         emotionalEffort: "zero" | "minimal";
         isCompleted: boolean;
-        parentTaskId: string;
+        generatedByAI?: boolean | undefined;
     }[] | undefined;
+    dependencies?: string[] | undefined;
+    tags?: string[] | undefined;
+    deckOrder?: number | undefined;
 }>;
 export type UserPreferences = z.infer<typeof UserPreferencesSchema>;
 export type Task = z.infer<typeof TaskResponseSchema>;

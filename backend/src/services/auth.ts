@@ -183,6 +183,32 @@ export class AuthService {
     };
   }
 
+  async exportUserData(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        tasks: true,
+        documents: true,
+      },
+    });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Convert Decimals to numbers for JSON serialization
+    const sanitizedDocuments = user.documents.map((doc: any) => ({
+      ...doc,
+      confidence: doc.confidence ? Number(doc.confidence) : null,
+    }));
+
+    const { passwordHash, ...sanitizedUser } = user;
+    return {
+      ...sanitizedUser,
+      documents: sanitizedDocuments,
+    };
+  }
+
   private sanitizeUser(user: any) {
     const { passwordHash, ...sanitized } = user;
     return sanitized;

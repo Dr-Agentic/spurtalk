@@ -42,6 +42,7 @@ export const NanoStepSchema = z.object({
   emotionalEffort: z.enum(["zero", "minimal"]),
   isCompleted: z.boolean(),
   parentTaskId: z.string(),
+  generatedByAI: z.boolean().optional(),
 });
 
 export const TaskResponseSchema = TaskSchema.extend({

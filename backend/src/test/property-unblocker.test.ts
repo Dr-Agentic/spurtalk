@@ -4,6 +4,21 @@ import { PrismaClient } from "@prisma/client";
 import { taskService } from "../services/task";
 import { CreateTask } from "@spurtalk/shared";
 
+jest.mock("../services/ai", () => ({
+  aiService: {
+    decomposeTask: jest.fn().mockResolvedValue([
+      { text: "Mock Step 1", estimatedSeconds: 30, emotionalEffort: "zero" },
+      { text: "Mock Step 2", estimatedSeconds: 60, emotionalEffort: "zero" },
+    ]),
+    generateCompellingEvent: jest.fn().mockResolvedValue("Mock Compelling Event"),
+    analyzeDocument: jest.fn().mockResolvedValue({
+      extractedText: "Mock text",
+      parsedTasks: [],
+      confidence: 0.9,
+    }),
+  },
+}));
+
 const prisma = new PrismaClient();
 
 describe("Property 7: Stall Detection", () => {
@@ -28,9 +43,13 @@ describe("Property 7: Stall Detection", () => {
       });
     }
     if (testUserId) {
-      await prisma.user.delete({
-        where: { id: testUserId },
-      });
+      try {
+        await prisma.user.delete({
+          where: { id: testUserId },
+        });
+      } catch (e) {
+        // Ignore
+      }
     }
   });
 
@@ -102,9 +121,13 @@ describe("Property 8: First Step Barrier Minimization", () => {
       });
     }
     if (testUserId) {
-      await prisma.user.delete({
-        where: { id: testUserId },
-      });
+      try {
+        await prisma.user.delete({
+          where: { id: testUserId },
+        });
+      } catch (e) {
+        // Ignore
+      }
     }
   });
 
@@ -121,7 +144,8 @@ describe("Property 8: First Step Barrier Minimization", () => {
         });
         createdTaskIds.push(task.id);
 
-        const steps = await unblockerService.decomposeTask(testUserId, task.id);
+        const updatedTask = await unblockerService.decomposeTask(testUserId, task.id);
+        const steps = updatedTask.nanoSteps as any[];
 
         if (steps.length === 0) return false;
 
