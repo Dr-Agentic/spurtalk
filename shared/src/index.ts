@@ -7,14 +7,14 @@ export const UserPreferencesSchema = z.object({
     soon: z.number().default(2),
     thisWeek: z.number().default(7),
     eventually: z.number().default(30),
-  }),
+  }).default({}),
   notificationSettings: z.object({
     taskReminders: z.boolean().default(true),
     stallDetection: z.boolean().default(true),
     milestoneCelebrations: z.boolean().default(true),
-  }),
+  }).default({}),
   timezone: z.string().default("UTC"),
-});
+}).default({});
 
 export const TaskSchema = z.object({
   title: z.string().min(1, "Title is required").max(500),
