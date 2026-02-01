@@ -1,4 +1,4 @@
-import { Router, Request } from "express";
+import { Router } from "express";
 import { taskService } from "../services/task";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
 import { CreateTaskSchema, UpdateTaskSchema } from "@spurtalk/shared";
@@ -13,11 +13,12 @@ router.post("/", async (req: AuthRequest, res) => {
     const validatedData = CreateTaskSchema.parse(req.body);
     const task = await taskService.createTask(req.userId!, validatedData);
     res.status(201).json(task);
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    res.status(500).json({ error: error.message });
+    const message = error instanceof Error ? error.message : "Failed to create task";
+    res.status(500).json({ error: message });
   }
 });
 
@@ -25,7 +26,7 @@ router.get("/deck", async (req: AuthRequest, res) => {
   try {
     const deck = await taskService.getDeck(req.userId!);
     res.json(deck);
-  } catch (error: any) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch focus deck" });
   }
 });
@@ -43,11 +44,11 @@ router.post("/deck/:id/swipe", async (req: AuthRequest, res) => {
       direction
     );
     res.json(task);
-  } catch (error: any) {
-    if (error.message === "Task not found") {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === "Task not found") {
       return res.status(404).json({ error: error.message });
     }
-    if (error.message === "Task is not in Deck state") {
+    if (error instanceof Error && error.message === "Task is not in Deck state") {
       return res.status(400).json({ error: error.message });
     }
     res.status(500).json({ error: "Failed to process swipe" });
@@ -60,7 +61,7 @@ router.get("/", async (req: AuthRequest, res) => {
       state: req.query.state as string,
     });
     res.json(tasks);
-  } catch (error: any) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch tasks" });
   }
 });
@@ -69,8 +70,8 @@ router.get("/:id", async (req: AuthRequest, res) => {
   try {
     const task = await taskService.getTask(req.userId!, req.params.id);
     res.json(task);
-  } catch (error: any) {
-    if (error.message === "Task not found") {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === "Task not found") {
       return res.status(404).json({ error: error.message });
     }
     res.status(500).json({ error: "Failed to fetch task" });
@@ -86,14 +87,15 @@ router.put("/:id", async (req: AuthRequest, res) => {
       validatedData
     );
     res.json(task);
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    if (error.message === "Task not found") {
+    if (error instanceof Error && error.message === "Task not found") {
       return res.status(404).json({ error: error.message });
     }
-    res.status(500).json({ error: error.message });
+    const message = error instanceof Error ? error.message : "Failed to update task";
+    res.status(500).json({ error: message });
   }
 });
 
@@ -101,8 +103,8 @@ router.delete("/:id", async (req: AuthRequest, res) => {
   try {
     await taskService.deleteTask(req.userId!, req.params.id);
     res.status(204).send();
-  } catch (error: any) {
-    if (error.message === "Task not found") {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === "Task not found") {
       return res.status(404).json({ error: error.message });
     }
     res.status(500).json({ error: "Failed to delete task" });

@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
-import { GardenState, GardenElement, Task } from "@spurtalk/shared";
+import { GardenState, GardenElement } from "@spurtalk/shared";
+import type { Prisma } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -97,7 +98,7 @@ export class GardenService {
     // Persist
     await prisma.user.update({
       where: { id: userId },
-      data: { gardenState: state as any },
+      data: { gardenState: state as unknown as Prisma.InputJsonValue },
     });
 
     return state;

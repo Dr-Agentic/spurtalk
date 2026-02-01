@@ -28,10 +28,8 @@ export default function DashboardPage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const [currentMood, setCurrentMood] = React.useState<MoodOption>();
-  const [isTimerActive, setIsTimerActive] = React.useState(false);
 
   const handleStartTimer = () => {
-    setIsTimerActive(true);
     // In production, this would open a timer modal or navigate to focus mode
     router.push(`/focus/${MOCK_TASK.id}?timer=2`);
   };

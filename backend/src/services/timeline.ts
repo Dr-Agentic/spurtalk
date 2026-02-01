@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Task } from "@prisma/client";
 import { Timeline, TimelineTask, BufferDay, StressCluster } from "@spurtalk/shared";
 
 const prisma = new PrismaClient();
@@ -68,9 +68,9 @@ export class TimelineService {
 
   private detectStressClusters(
     timelineTasks: TimelineTask[],
-    tasks: any[]
+    tasks: Task[]
   ): StressCluster[] {
-    const taskMap = new Map<string, any>();
+    const taskMap = new Map<string, Task>();
     tasks.forEach((t) => taskMap.set(t.id, t));
 
     const effortWeights: Record<string, number> = {
@@ -149,7 +149,7 @@ export class TimelineService {
 
   private insertBufferDays(
     clusters: StressCluster[],
-    timelineTasks: TimelineTask[]
+    _timelineTasks: TimelineTask[]
   ): BufferDay[] {
     const bufferDays: BufferDay[] = [];
 
@@ -170,10 +170,10 @@ export class TimelineService {
 
   private sortTasksByDependencies(
     timelineTasks: TimelineTask[],
-    tasks: any[]
+    tasks: Task[]
   ): TimelineTask[] {
     // Create a map of taskId to task for easy lookup
-    const taskMap = new Map<string, any>();
+    const taskMap = new Map<string, Task>();
     tasks.forEach((task) => taskMap.set(task.id, task));
 
     // Create a map of taskId to its dependencies

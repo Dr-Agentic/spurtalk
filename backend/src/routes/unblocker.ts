@@ -1,4 +1,4 @@
-import { Router, Request } from "express";
+import { Router } from "express";
 import { unblockerService } from "../services/unblocker";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
 
@@ -11,7 +11,7 @@ router.post("/check-stalls", async (req: AuthRequest, res) => {
   try {
     const stalledIds = await unblockerService.detectStalls(req.userId!);
     res.json({ stalledTasks: stalledIds });
-  } catch (error: any) {
+  } catch {
     res.status(500).json({ error: "Failed to detect stalls" });
   }
 });
@@ -24,8 +24,8 @@ router.post("/:taskId/decompose", async (req: AuthRequest, res) => {
       req.params.taskId
     );
     res.json(steps);
-  } catch (error: any) {
-    if (error.message === "Task not found") {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === "Task not found") {
       return res.status(404).json({ error: error.message });
     }
     res.status(500).json({ error: "Failed to decompose task" });

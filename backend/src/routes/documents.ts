@@ -25,8 +25,8 @@ router.post(
       );
 
       res.json(result);
-    } catch (error: any) {
-      console.error("Document processing error:", error);
+    } catch {
+      console.error("Document processing error");
       res.status(500).json({ error: "Failed to process document" });
     }
   }
@@ -37,7 +37,7 @@ router.get("/", async (req: AuthRequest, res) => {
   try {
     const documents = await documentService.getUserDocuments(req.userId!);
     res.json(documents);
-  } catch (error: any) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch documents" });
   }
 });

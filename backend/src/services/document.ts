@@ -1,7 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
-import { default as pdfParse } from "pdf-parse";
 import mammoth from "mammoth";
 import { aiService } from "./ai";
 
@@ -93,6 +92,8 @@ export class DocumentService {
 
   private async extractTextFromPDF(filePath: string): Promise<string> {
     try {
+      // Dynamic import to handle optional pdf-parse dependency
+      // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
       const pdfParse = require("pdf-parse");
       const dataBuffer = fs.readFileSync(filePath);
       const data = await pdfParse(dataBuffer);

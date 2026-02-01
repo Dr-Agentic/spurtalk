@@ -16,8 +16,9 @@ jest.mock("../services/ai", () => ({
   },
 }));
 
-// Import test app
-const app = require("../../test-server.ts");
+// Import test app - uses CommonJS export
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const app = require("../../test-server");
 
 describe("Route Integration Tests - Real User Flow", () => {
   let authToken: string;

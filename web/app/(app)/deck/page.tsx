@@ -146,7 +146,7 @@ export default function DeckPage() {
               <Layers className="h-16 w-16 text-muted-foreground/50 mb-4" />
               <h2 className="text-h3 text-foreground mb-2">Deck is clear!</h2>
               <p className="text-body-small text-muted-foreground max-w-xs">
-                All your tasks are organized. Add a new one when you're ready, 
+                All your tasks are organized. Add a new one when you&apos;re ready,
                 or enjoy your accomplishments in the garden.
               </p>
             </motion.div>

@@ -1,7 +1,7 @@
 import * as fc from "fast-check";
 import { timelineService } from "../services/timeline";
 import { PrismaClient } from "@prisma/client";
-import { CreateTask } from "@spurtalk/shared";
+import { CreateTask, TimelineTask } from "@spurtalk/shared";
 import { taskService } from "../services/task";
 
 const prisma = new PrismaClient();
@@ -59,7 +59,7 @@ describe("Property 5: River Timeline Visual Hierarchy", () => {
 
           const timeline = await timelineService.getTimeline(testUserId);
           const timelineTask = timeline.tasks.find(
-            (t: any) => t.taskId === task.id
+            (t: TimelineTask) => t.taskId === task.id
           );
 
           if (!timelineTask) return false;

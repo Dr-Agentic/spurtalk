@@ -2,7 +2,7 @@ import * as fc from "fast-check";
 import { gardenService } from "../services/garden";
 import { PrismaClient } from "@prisma/client";
 import { taskService } from "../services/task";
-import { CreateTask } from "@spurtalk/shared";
+import { CreateTask, GardenElement } from "@spurtalk/shared";
 
 jest.mock("../services/ai", () => ({
   aiService: {
@@ -60,7 +60,7 @@ describe("Property 12: Garden Element Generation", () => {
         async (effortLevel) => {
           const taskData: CreateTask = {
             title: `Garden Task ${Date.now()}`,
-            effortLevel: effortLevel as any,
+            effortLevel: effortLevel as CreateTask["effortLevel"],
             fuzzyDeadline: "Soon",
             hardDeadline: new Date(),
             dependencies: [],
@@ -75,7 +75,7 @@ describe("Property 12: Garden Element Generation", () => {
             task.id
           );
           const element = newState.elements.find(
-            (e: any) => e.taskId === task.id
+            (e: GardenElement) => e.taskId === task.id
           );
 
           if (!element) return false;

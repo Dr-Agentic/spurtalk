@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import jwt, { SignOptions } from "jsonwebtoken";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, User, Document } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -197,11 +197,12 @@ export class AuthService {
     }
 
     // Convert Decimals to numbers for JSON serialization
-    const sanitizedDocuments = user.documents.map((doc: any) => ({
+    const sanitizedDocuments = user.documents.map((doc: Document) => ({
       ...doc,
       confidence: doc.confidence ? Number(doc.confidence) : null,
     }));
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...sanitizedUser } = user;
     return {
       ...sanitizedUser,
@@ -209,7 +210,8 @@ export class AuthService {
     };
   }
 
-  private sanitizeUser(user: any) {
+  private sanitizeUser(user: User) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...sanitized } = user;
     return sanitized;
   }

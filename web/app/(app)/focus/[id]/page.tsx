@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Play, 
-  Pause, 
-  CheckCircle2, 
-  ArrowLeft, 
+import {
+  Play,
+  Pause,
+  CheckCircle2,
+  ArrowLeft,
   Timer,
   Sparkles,
   ChevronDown
@@ -33,7 +33,7 @@ const MOCK_TASK = {
 };
 
 export default function FocusModePage() {
-  const params = useParams();
+  const _params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const timerMinutes = searchParams.get("timer");
@@ -82,7 +82,7 @@ export default function FocusModePage() {
   const handleComplete = () => {
     setCelebration(getRandomCelebration());
     setShowCelebration(true);
-    
+
     setTimeout(() => {
       router.push("/deck");
     }, 2000);
@@ -110,7 +110,7 @@ export default function FocusModePage() {
               className="flex flex-col items-center gap-4 text-center"
             >
               <motion.div
-                animate={{ 
+                animate={{
                   rotate: [0, 10, -10, 0],
                   scale: [1, 1.2, 1]
                 }}
@@ -142,7 +142,7 @@ export default function FocusModePage() {
 
           {/* Timer */}
           <div className="flex items-center gap-3">
-            <Badge 
+            <Badge
               variant={isTimerActive ? "default" : "secondary"}
               className={cn(
                 "gap-1 font-mono text-lg px-3 py-1",
@@ -211,7 +211,7 @@ export default function FocusModePage() {
             <ChevronDown className="h-5 w-5" />
             Tiny Steps
           </h3>
-          
+
           {task.nanoSteps.map((step, index) => {
             const isCompleted = completedSteps.includes(step.id);
             return (
@@ -231,8 +231,8 @@ export default function FocusModePage() {
                   <CardContent className="flex items-center gap-3 py-3 px-4">
                     <div className={cn(
                       "flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors",
-                      isCompleted 
-                        ? "bg-success border-success text-success-foreground" 
+                      isCompleted
+                        ? "bg-success border-success text-success-foreground"
                         : "border-muted-foreground/30"
                     )}>
                       {isCompleted && <CheckCircle2 className="h-4 w-4" />}

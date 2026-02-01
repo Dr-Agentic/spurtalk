@@ -40,7 +40,7 @@ export default function DocumentsPage() {
       case "pdf":
         return <FileText className="h-5 w-5 text-destructive" />;
       case "image":
-        return <Image className="h-5 w-5 text-secondary" />;
+        return <Image className="h-5 w-5 text-secondary" aria-label="Image document" />;
       case "spreadsheet":
         return <FileSpreadsheet className="h-5 w-5 text-success" />;
       default:
@@ -66,10 +66,9 @@ export default function DocumentsPage() {
       </header>
 
       {/* Upload Zone */}
-      <Card 
-        className={`mb-8 border-2 border-dashed transition-colors ${
-          isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/30"
-        }`}
+      <Card
+        className={`mb-8 border-2 border-dashed transition-colors ${isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/30"
+          }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -100,7 +99,7 @@ export default function DocumentsPage() {
       {/* Documents List */}
       <div className="space-y-4">
         <h2 className="text-subheader text-foreground">Recent Documents</h2>
-        
+
         {documents.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-8 text-center">

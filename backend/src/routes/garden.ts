@@ -1,4 +1,4 @@
-import { Router, Request } from "express";
+import { Router } from "express";
 import { gardenService } from "../services/garden";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
 
@@ -10,7 +10,7 @@ router.get("/", async (req: AuthRequest, res) => {
   try {
     const garden = await gardenService.getGardenState(req.userId!);
     res.json(garden);
-  } catch (error: any) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch garden" });
   }
 });
@@ -22,8 +22,8 @@ router.post("/complete/:taskId", async (req: AuthRequest, res) => {
       req.params.taskId
     );
     res.json(garden);
-  } catch (error: any) {
-    if (error.message === "Task not found") {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === "Task not found") {
       return res.status(404).json({ error: error.message });
     }
     res.status(500).json({ error: "Failed to update garden" });

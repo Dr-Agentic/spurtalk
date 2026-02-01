@@ -1,5 +1,4 @@
 import { AiService } from "../../services/ai";
-import OpenAI from "openai";
 
 // Mock OpenAI
 jest.mock("openai", () => {
@@ -14,11 +13,11 @@ jest.mock("openai", () => {
 
 describe("AiService Unit Tests", () => {
     let aiService: AiService;
-    let mockOpenAI: any;
+    let mockOpenAI: { chat: { completions: { create: jest.Mock } } };
 
     beforeEach(() => {
         aiService = new AiService();
-        mockOpenAI = (aiService as any).client;
+        mockOpenAI = (aiService as unknown as { client: typeof mockOpenAI }).client;
         jest.clearAllMocks();
     });
 

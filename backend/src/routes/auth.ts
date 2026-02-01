@@ -1,4 +1,4 @@
-import { Router, Request } from "express";
+import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import { authService } from "../services/auth";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
@@ -16,8 +16,8 @@ router.post("/register", async (req, res) => {
 
     const result = await authService.register(email, password);
     res.status(201).json(result);
-  } catch (error: any) {
-    if (error.message === "User already exists") {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === "User already exists") {
       return res.status(409).json({ error: error.message });
     }
     res.status(500).json({ error: "Registration failed" });
@@ -34,8 +34,8 @@ router.post("/login", async (req, res) => {
 
     const result = await authService.login(email, password);
     res.json(result);
-  } catch (error: any) {
-    if (error.message === "Invalid credentials") {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === "Invalid credentials") {
       return res.status(401).json({ error: error.message });
     }
     res.status(500).json({ error: "Login failed" });
@@ -52,7 +52,7 @@ router.post("/refresh", async (req, res) => {
 
     const tokens = await authService.refreshToken(refreshToken);
     res.json(tokens);
-  } catch (error: any) {
+  } catch {
     res.status(401).json({ error: "Invalid refresh token" });
   }
 });
@@ -67,6 +67,7 @@ router.get("/profile", authenticateToken, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...sanitizedUser } = user;
     res.json(sanitizedUser);
   } catch (error) {
@@ -86,6 +87,7 @@ router.put("/profile", authenticateToken, async (req: AuthRequest, res) => {
       },
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...sanitizedUser } = user;
     res.json(sanitizedUser);
   } catch (error) {
@@ -109,8 +111,9 @@ router.get("/export-data", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const data = await authService.exportUserData(req.userId!);
     res.json(data);
-  } catch (error: any) {
-    res.status(500).json({ error: "Failed to export data", message: error.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    res.status(500).json({ error: "Failed to export data", message });
   }
 });
 

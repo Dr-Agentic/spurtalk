@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, type Prisma } from "@prisma/client";
 import { NanoStep } from "@spurtalk/shared";
 import { aiService } from "./ai";
 
@@ -13,7 +13,7 @@ export class UnblockerService {
     });
 
     const timeoutHours =
-      (user?.preferences as any)?.stallDetectionTimeout || 24;
+      (user?.preferences as Prisma.JsonObject | null)?.stallDetectionTimeout as number || 24;
     const timeoutDate = new Date(Date.now() - timeoutHours * 60 * 60 * 1000);
 
     const stalledTasks = await prisma.task.findMany({
@@ -43,7 +43,7 @@ export class UnblockerService {
     return stalledIds;
   }
 
-  async decomposeTask(userId: string, taskId: string): Promise<any> {
+  async decomposeTask(userId: string, taskId: string): Promise<Prisma.TaskGetPayload<NonNullable<unknown>>> {
     const task = await prisma.task.findFirst({
       where: { id: taskId, userId },
     });
@@ -66,7 +66,7 @@ export class UnblockerService {
     const updatedTask = await prisma.task.update({
       where: { id: taskId },
       data: {
-        nanoSteps: steps as any,
+        nanoSteps: steps as unknown as Prisma.InputJsonValue,
         // stay in Deck state so user can decide to snooze or start
       },
     });

@@ -1,6 +1,6 @@
 import * as fc from "fast-check";
 import { taskService } from "../services/task";
-import { UserPreferences } from "@spurtalk/shared";
+import { UserPreferences, CreateTaskSchema } from "@spurtalk/shared";
 
 describe("Property 14: Task Metadata Assignment", () => {
   // effort level: 'Tiny' | 'Small' | 'Medium' | 'Big'
@@ -31,8 +31,7 @@ describe("Property 14: Task Metadata Assignment", () => {
           // Since we don't want to mock the DB for every run of fast-check (too slow),
           // we'll rely on our service's/schema's static validation logic or a lightweight check.
           // For now, let's verify that our Schema accepts these generated values.
-
-          const { CreateTaskSchema } = require("@spurtalk/shared");
+          // Import at top of file instead using CreateTaskSchema from line 3
           const result = CreateTaskSchema.safeParse(taskData);
           return result.success;
         }

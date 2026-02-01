@@ -1,4 +1,4 @@
-import { TaskSchema, CreateTaskSchema, UserPreferencesSchema } from "./index";
+import { TaskSchema, UserPreferencesSchema } from "./index";
 
 describe("Shared Schemas", () => {
     describe("TaskSchema", () => {

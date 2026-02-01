@@ -1,7 +1,13 @@
 import { TimelineService } from "../../services/timeline";
-import { AiService } from "../../services/ai";
 import { AuthService } from "../../services/auth";
 import { PrismaClient } from "@prisma/client";
+
+// Define mock Prisma type
+type MockPrisma = {
+    user: { findUnique: jest.Mock };
+    task: { findMany: jest.Mock; create: jest.Mock; update: jest.Mock };
+    document: { findMany: jest.Mock };
+};
 
 // Mock Prisma
 jest.mock("@prisma/client", () => {
@@ -21,7 +27,7 @@ jest.mock("@prisma/client", () => {
     return { PrismaClient: jest.fn(() => mPrisma) };
 });
 
-const prisma = new PrismaClient() as any;
+const prisma = new PrismaClient() as unknown as MockPrisma;
 
 describe("Empathic Planning Unit Tests", () => {
     let timelineService: TimelineService;
@@ -52,7 +58,7 @@ describe("Empathic Planning Unit Tests", () => {
 
             // Access private method for testing or use public generateTimeline
             // For coverage of the new logic, we test the detection
-            const clusters = (timelineService as any).detectStressClusters(timelineTasks, mockTasks);
+            const clusters = (timelineService as unknown as { detectStressClusters: (tasks: typeof timelineTasks, original: typeof mockTasks) => { severity: string }[] }).detectStressClusters(timelineTasks, mockTasks);
             expect(clusters.length).toBeGreaterThan(0);
             expect(clusters[0].severity).toBe("high");
         });
@@ -65,7 +71,7 @@ describe("Empathic Planning Unit Tests", () => {
                 taskCount: 3
             }];
 
-            const bufferDays = (timelineService as any).insertBufferDays(clusters, []);
+            const bufferDays = (timelineService as unknown as { insertBufferDays: (c: { startDate: Date; endDate: Date; severity: "high" | "medium" | "low"; taskCount: number }[], t: never[]) => { date: Date; reason: string }[] }).insertBufferDays(clusters, []);
             expect(bufferDays.length).toBe(1);
             expect(bufferDays[0].reason).toContain("high stress cluster");
             // One day before

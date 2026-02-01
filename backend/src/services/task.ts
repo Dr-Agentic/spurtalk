@@ -1,4 +1,4 @@
-import { PrismaClient, Task, Prisma } from "@prisma/client";
+import { PrismaClient, Task } from "@prisma/client";
 import { CreateTask, UpdateTask, UserPreferences } from "@spurtalk/shared";
 import { aiService } from "./ai";
 import { unblockerService } from "./unblocker";
@@ -68,7 +68,8 @@ export class TaskService {
   }
 
   async updateTask(userId: string, taskId: string, data: UpdateTask) {
-    const task = await this.getTask(userId, taskId);
+    // Ensure task exists and user owns it
+    await this.getTask(userId, taskId);
 
     // Prevent circular dependencies if updating dependencies
     if (data.dependencies) {
@@ -185,7 +186,7 @@ export class TaskService {
   }
 
   // Helper to validate task metadata based on Requirements 7.1, 7.2, 7.4, 7.5
-  validateTaskMetadata(task: Task) {
+  validateTaskMetadata(_task: Task) {
     // Validated by Types/Schema, but this method can be used for complex business rules
     // if needed in the future.
     return true;

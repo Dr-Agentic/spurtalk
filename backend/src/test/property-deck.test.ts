@@ -1,7 +1,24 @@
 import * as fc from "fast-check";
 import { taskService } from "../services/task";
-import { CreateTask, UpdateTask, CreateTaskSchema } from "@spurtalk/shared";
+import { CreateTask } from "@spurtalk/shared";
+import type { NanoStep } from "@spurtalk/shared";
 import { PrismaClient } from "@prisma/client";
+
+// Mock AI service to avoid external dependencies in tests
+jest.mock("../services/ai", () => ({
+  aiService: {
+    decomposeTask: jest.fn().mockResolvedValue([
+      { text: "Mock Step 1", estimatedSeconds: 30, emotionalEffort: "zero" },
+      { text: "Mock Step 2", estimatedSeconds: 60, emotionalEffort: "zero" },
+    ]),
+    generateCompellingEvent: jest.fn().mockResolvedValue("Mock Compelling Event"),
+    analyzeDocument: jest.fn().mockResolvedValue({
+      extractedText: "Mock text",
+      parsedTasks: [],
+      confidence: 0.9,
+    }),
+  },
+}));
 
 const prisma = new PrismaClient();
 
@@ -62,7 +79,7 @@ describe("Property 10: Focus Deck Card Interaction", () => {
           const updatedTask = await taskService.handleSwipe(
             testUserId,
             task.id,
-            direction as any
+            direction as "right" | "left" | "down"
           );
 
           // Verification
@@ -71,7 +88,7 @@ describe("Property 10: Focus Deck Card Interaction", () => {
           } else if (direction === "left") {
             return updatedTask.state === "Deck";
           } else if (direction === "down") {
-            const steps = updatedTask.nanoSteps as any[];
+            const steps = updatedTask.nanoSteps as NanoStep[];
             return (
               updatedTask.state === "Deck" &&
               Array.isArray(steps) &&

@@ -36,7 +36,7 @@ api.interceptors.response.use(
         useAuthStore.getState().setTokens(data.accessToken, data.refreshToken);
         originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
         return api(originalRequest);
-      } catch (refreshError: any) {
+      } catch {
         useAuthStore.getState().logout();
         // Create a more specific error for failed token refresh
         const authError = new Error(

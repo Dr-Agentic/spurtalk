@@ -97,8 +97,8 @@ describe("Focus Deck", () => {
         "down"
       );
 
-      // We cast to any because we know it's an array in our simple implementation
-      const steps = updatedTask.nanoSteps as any[];
+      // We cast to NanoStep[] because we know it's an array in our simple implementation
+      const steps = updatedTask.nanoSteps as { text?: string; emotionalEffort?: string }[];
       expect(steps.length).toBeGreaterThan(0);
       expect(steps[0].emotionalEffort).toBe("zero");
     });

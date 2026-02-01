@@ -2,7 +2,7 @@ import * as fc from "fast-check";
 import { unblockerService } from "../services/unblocker";
 import { PrismaClient } from "@prisma/client";
 import { taskService } from "../services/task";
-import { CreateTask } from "@spurtalk/shared";
+import { NanoStep } from "@spurtalk/shared";
 
 jest.mock("../services/ai", () => ({
   aiService: {
@@ -145,7 +145,7 @@ describe("Property 8: First Step Barrier Minimization", () => {
         createdTaskIds.push(task.id);
 
         const updatedTask = await unblockerService.decomposeTask(testUserId, task.id);
-        const steps = updatedTask.nanoSteps as any[];
+        const steps = updatedTask.nanoSteps as NanoStep[];
 
         if (steps.length === 0) return false;
 
