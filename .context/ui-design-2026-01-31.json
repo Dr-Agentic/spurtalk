@@ -1,0 +1,2181 @@
+{
+    "project": "SpurTalk",
+    "version": "1.0.0",
+    "designDate": "2026-01-31",
+    "description": "Comprehensive UI Design Specification for SpurTalk - An Anti-Guilt Project Management Application",
+    "designPrinciples": {
+        "psychologicalSafety": {
+            "colorPalette": {
+                "primary": {
+                    "hex": "#14b8a6",
+                    "token": "var(--color-primary)"
+                },
+                "neutral": {
+                    "hex": "#faf9f7",
+                    "token": "var(--color-neutral)"
+                },
+                "success": {
+                    "hex": "#10b981",
+                    "token": "var(--color-success)"
+                },
+                "secondary": {
+                    "hex": "#8b7cf6",
+                    "token": "var(--color-secondary)"
+                },
+                "warning": {
+                    "hex": "#f59e0b",
+                    "token": "var(--color-warning)"
+                },
+                "forbidden": [
+                    "#FF0000",
+                    "#DC2626",
+                    "#FFFFFF"
+                ]
+            },
+            "typography": {
+                "family": "Inter, system-ui, sans-serif",
+                "rounded": true,
+                "scale": {
+                    "h1": {
+                        "fontSize": "32px",
+                        "lineHeight": "40px",
+                        "fontWeight": "600"
+                    },
+                    "h2": {
+                        "fontSize": "28px",
+                        "lineHeight": "36px",
+                        "fontWeight": "600"
+                    },
+                    "h3": {
+                        "fontSize": "24px",
+                        "lineHeight": "32px",
+                        "fontWeight": "600"
+                    },
+                    "subheader": {
+                        "fontSize": "20px",
+                        "lineHeight": "28px",
+                        "fontWeight": "500"
+                    },
+                    "body": {
+                        "fontSize": "16px",
+                        "lineHeight": "24px",
+                        "fontWeight": "400"
+                    },
+                    "bodySmall": {
+                        "fontSize": "14px",
+                        "lineHeight": "20px",
+                        "fontWeight": "400"
+                    },
+                    "caption": {
+                        "fontSize": "12px",
+                        "lineHeight": "16px",
+                        "fontWeight": "400"
+                    }
+                }
+            },
+            "spacing": {
+                "baseUnit": "4px",
+                "scale": {
+                    "1": "4px",
+                    "2": "8px",
+                    "3": "12px",
+                    "4": "16px",
+                    "6": "24px",
+                    "8": "32px"
+                }
+            },
+            "borderRadius": {
+                "sm": "4px",
+                "md": "8px",
+                "lg": "12px",
+                "xl": "16px"
+            },
+            "animation": {
+                "microInteraction": "200-300ms",
+                "transition": "400-600ms",
+                "easing": "cubic-bezier(0.4, 0, 0.2, 1)"
+            }
+        },
+        "forbiddenPatterns": [
+            "Red colors for overdue/errors",
+            "Stark white backgrounds",
+            "Words: 'Overdue', 'Late', 'Urgent', 'Failed'",
+            "Aggressive notifications",
+            "Shame-based messaging"
+        ]
+    },
+    "globalComponents": {
+        "NavigationHeader": {
+            "id": "GC-001",
+            "description": "Top navigation bar with app logo, navigation links, and user menu",
+            "elements": [
+                {
+                    "id": "logo",
+                    "type": "image",
+                    "description": "SpurTalk logo with calming colors"
+                },
+                {
+                    "id": "navLinks",
+                    "type": "nav",
+                    "items": [
+                        "Dashboard",
+                        "Deck",
+                        "Timeline",
+                        "Garden",
+                        "Documents"
+                    ]
+                },
+                {
+                    "id": "userMenu",
+                    "type": "dropdown",
+                    "items": [
+                        "Profile",
+                        "Settings",
+                        "Help",
+                        "Logout"
+                    ]
+                }
+            ],
+            "styling": {
+                "className": "c-header",
+                "background": "var(--color-neutral)",
+                "height": "64px",
+                "shadow": "c-shadow-subtle"
+            },
+            "acceptanceTests": [
+                {
+                    "id": "GC-001-T1",
+                    "test": "GIVEN user is logged in, WHEN header renders, THEN all nav links are visible and clickable"
+                },
+                {
+                    "id": "GC-001-T2",
+                    "test": "GIVEN user clicks logo, WHEN navigation occurs, THEN redirect to dashboard"
+                },
+                {
+                    "id": "GC-001-T3",
+                    "test": "GIVEN header, WHEN inspected, THEN no red or stark white colors present"
+                },
+                {
+                    "id": "GC-001-T4",
+                    "test": "GIVEN keyboard user, WHEN using tab navigation, THEN all items accessible in logical order"
+                }
+            ],
+            "requirements": [
+                "Req-2.1",
+                "Req-2.2",
+                "Req-13.1"
+            ]
+        },
+        "FooterGarden": {
+            "id": "GC-002",
+            "description": "Persistent footer showing mini garden view accessible from all screens",
+            "elements": [
+                {
+                    "id": "gardenPreview",
+                    "type": "canvas",
+                    "description": "Mini garden visualization"
+                },
+                {
+                    "id": "expandButton",
+                    "type": "button",
+                    "label": "View Garden"
+                },
+                {
+                    "id": "streakIndicator",
+                    "type": "badge",
+                    "description": "Current streak count"
+                }
+            ],
+            "styling": {
+                "className": "c-footer",
+                "background": "var(--color-neutral-elevated)",
+                "height": "100px",
+                "borderTop": "1px solid var(--color-success)"
+            },
+            "acceptanceTests": [
+                {
+                    "id": "GC-002-T1",
+                    "test": "GIVEN user on any page, WHEN footer renders, THEN garden preview is visible"
+                },
+                {
+                    "id": "GC-002-T2",
+                    "test": "GIVEN user clicks expand, WHEN animation completes, THEN full garden view opens"
+                },
+                {
+                    "id": "GC-002-T3",
+                    "test": "GIVEN screen reader, WHEN reading garden, THEN alt text describes progress"
+                }
+            ],
+            "requirements": [
+                "Req-6.5",
+                "Req-13.5"
+            ]
+        },
+        "NotificationToast": {
+            "id": "GC-003",
+            "description": "Non-intrusive notification system using encouraging language",
+            "variants": {
+                "success": {
+                    "icon": "sparkles",
+                    "background": "var(--color-primary)",
+                    "tone": "celebratory"
+                },
+                "info": {
+                    "icon": "lightbulb",
+                    "background": "var(--color-secondary)",
+                    "tone": "friendly"
+                },
+                "attention": {
+                    "icon": "star",
+                    "background": "var(--color-warning)",
+                    "tone": "gentle"
+                }
+            },
+            "forbiddenVariants": [
+                "error-red",
+                "warning-aggressive"
+            ],
+            "acceptanceTests": [
+                {
+                    "id": "GC-003-T1",
+                    "test": "GIVEN task completion, WHEN toast appears, THEN uses celebratory language"
+                },
+                {
+                    "id": "GC-003-T2",
+                    "test": "GIVEN any notification, WHEN inspected, THEN no red colors used"
+                },
+                {
+                    "id": "GC-003-T3",
+                    "test": "GIVEN attention needed, WHEN toast shown, THEN uses sand500 (not red)"
+                }
+            ],
+            "requirements": [
+                "Req-2.3",
+                "Req-2.5",
+                "Req-2.6"
+            ]
+        },
+        "LoadingState": {
+            "id": "GC-004",
+            "description": "Loading indicators with calming animations",
+            "variants": {
+                "spinner": {
+                    "animation": "gentle-pulse",
+                    "color": "var(--color-primary)"
+                },
+                "skeleton": {
+                    "animation": "shimmer",
+                    "color": "cream200"
+                },
+                "progress": {
+                    "animation": "flow",
+                    "color": "var(--color-secondary)"
+                }
+            },
+            "acceptanceTests": [
+                {
+                    "id": "GC-004-T1",
+                    "test": "GIVEN loading state, WHEN 5+ seconds, THEN encouraging message appears"
+                },
+                {
+                    "id": "GC-004-T2",
+                    "test": "GIVEN AI processing, WHEN loading, THEN progress feedback shown"
+                }
+            ],
+            "requirements": [
+                "Req-11.3"
+            ]
+        }
+    },
+    "pages": {
+        "authentication": {
+            "LoginPage": {
+                "id": "PG-001",
+                "path": "/login",
+                "description": "Welcoming login page with minimal friction",
+                "layout": "centered-card",
+                "sections": {
+                    "header": {
+                        "elements": [
+                            {
+                                "id": "logo",
+                                "type": "image"
+                            },
+                            {
+                                "id": "welcomeText",
+                                "type": "h1",
+                                "content": "Welcome back!"
+                            }
+                        ]
+                    },
+                    "form": {
+                        "elements": [
+                            {
+                                "id": "emailInput",
+                                "type": "input",
+                                "placeholder": "Your email",
+                                "validation": "email"
+                            },
+                            {
+                                "id": "passwordInput",
+                                "type": "input",
+                                "inputType": "password",
+                                "placeholder": "Password"
+                            },
+                            {
+                                "id": "rememberMe",
+                                "type": "checkbox",
+                                "label": "Remember me"
+                            },
+                            {
+                                "id": "submitBtn",
+                                "type": "button",
+                                "label": "Let's go!",
+                                "variant": "primary"
+                            }
+                        ]
+                    },
+                    "footer": {
+                        "elements": [
+                            {
+                                "id": "forgotPassword",
+                                "type": "link",
+                                "label": "Forgot password?"
+                            },
+                            {
+                                "id": "registerLink",
+                                "type": "link",
+                                "label": "New here? Create account"
+                            }
+                        ]
+                    }
+                },
+                "styling": {
+                    "className": "c-card c-centered",
+                    "background": "var(--color-neutral-gradient)",
+                    "cardBackground": "var(--color-neutral-elevated)",
+                    "cardBorderRadius": "var(--radius-xl)",
+                    "maxWidth": "400px"
+                },
+                "acceptanceTests": [
+                    {
+                        "id": "PG-001-T1",
+                        "test": "GIVEN valid credentials, WHEN submit clicked, THEN redirect to dashboard within 2 seconds"
+                    },
+                    {
+                        "id": "PG-001-T2",
+                        "test": "GIVEN invalid credentials, WHEN submit clicked, THEN gentle error message shown (no 'Failed' word)"
+                    },
+                    {
+                        "id": "PG-001-T3",
+                        "test": "GIVEN login form, WHEN rendered, THEN all inputs have proper ARIA labels"
+                    },
+                    {
+                        "id": "PG-001-T4",
+                        "test": "GIVEN keyboard navigation, WHEN tabbing, THEN logical focus order maintained"
+                    },
+                    {
+                        "id": "PG-001-T5",
+                        "test": "GIVEN page load, WHEN rendered, THEN no stark white backgrounds"
+                    }
+                ],
+                "requirements": [
+                    "Req-9.1",
+                    "Req-9.3",
+                    "Req-11.2",
+                    "Req-13.1",
+                    "Req-13.2"
+                ]
+            },
+            "RegisterPage": {
+                "id": "PG-002",
+                "path": "/register",
+                "description": "Encouraging registration with minimal required fields",
+                "layout": "centered-card",
+                "sections": {
+                    "header": {
+                        "elements": [
+                            {
+                                "id": "logo",
+                                "type": "image"
+                            },
+                            {
+                                "id": "welcomeText",
+                                "type": "h1",
+                                "content": "Ready to start?"
+                            },
+                            {
+                                "id": "subtext",
+                                "type": "p",
+                                "content": "No pressure. Just possibilities."
+                            }
+                        ]
+                    },
+                    "form": {
+                        "elements": [
+                            {
+                                "id": "emailInput",
+                                "type": "input",
+                                "placeholder": "Your email"
+                            },
+                            {
+                                "id": "passwordInput",
+                                "type": "input",
+                                "inputType": "password",
+                                "placeholder": "Create password"
+                            },
+                            {
+                                "id": "confirmPassword",
+                                "type": "input",
+                                "inputType": "password",
+                                "placeholder": "Confirm password"
+                            },
+                            {
+                                "id": "termsCheckbox",
+                                "type": "checkbox",
+                                "label": "I agree to the terms"
+                            },
+                            {
+                                "id": "submitBtn",
+                                "type": "button",
+                                "label": "Create my space",
+                                "variant": "primary"
+                            }
+                        ]
+                    }
+                },
+                "acceptanceTests": [
+                    {
+                        "id": "PG-002-T1",
+                        "test": "GIVEN valid registration, WHEN submitted, THEN account created and redirect to onboarding"
+                    },
+                    {
+                        "id": "PG-002-T2",
+                        "test": "GIVEN password mismatch, WHEN submitted, THEN friendly error without 'Failed' language"
+                    },
+                    {
+                        "id": "PG-002-T3",
+                        "test": "GIVEN form, WHEN inspected, THEN uses psychological safety colors only"
+                    }
+                ],
+                "requirements": [
+                    "Req-9.1",
+                    "Req-9.4",
+                    "Req-18.7"
+                ]
+            }
+        },
+        "dashboard": {
+            "MainDashboard": {
+                "id": "PG-003",
+                "path": "/",
+                "description": "Central hub showing one primary action with calming overview",
+                "layout": "single-focus",
+                "sections": {
+                    "hero": {
+                        "description": "Single primary action card - reduces decision paralysis",
+                        "elements": [
+                            {
+                                "id": "greeting",
+                                "type": "h1",
+                                "dynamic": true,
+                                "example": "Good morning! Ready for a small step?"
+                            },
+                            {
+                                "id": "primaryTask",
+                                "type": "TaskCard",
+                                "variant": "hero"
+                            },
+                            {
+                                "id": "twoMinButton",
+                                "type": "button",
+                                "label": "Just 2 Minutes",
+                                "variant": "primary-large",
+                                "animation": "gentle-pulse"
+                            }
+                        ]
+                    },
+                    "quickStats": {
+                        "description": "Encouraging progress indicators",
+                        "elements": [
+                            {
+                                "id": "streakCard",
+                                "type": "stat",
+                                "label": "Your streak",
+                                "icon": "flame"
+                            },
+                            {
+                                "id": "completedToday",
+                                "type": "stat",
+                                "label": "Small wins today",
+                                "icon": "sparkles"
+                            },
+                            {
+                                "id": "gardenGrowth",
+                                "type": "stat",
+                                "label": "Garden growth",
+                                "icon": "plant"
+                            }
+                        ]
+                    },
+                    "moodSelector": {
+                        "description": "Emotion-first task filtering",
+                        "elements": [
+                            {
+                                "id": "moodQuestion",
+                                "type": "h3",
+                                "content": "How are you feeling?"
+                            },
+                            {
+                                "id": "moodOptions",
+                                "type": "button-group",
+                                "options": [
+                                    "Energized",
+                                    "Low energy",
+                                    "Creative",
+                                    "Need a win"
+                                ]
+                            }
+                        ]
+                    }
+                },
+                "acceptanceTests": [
+                    {
+                        "id": "PG-003-T1",
+                        "test": "GIVEN dashboard, WHEN rendered, THEN shows only ONE primary task (not a list)"
+                    },
+                    {
+                        "id": "PG-003-T2",
+                        "test": "GIVEN 2-min button clicked, WHEN timer starts, THEN visual countdown begins"
+                    },
+                    {
+                        "id": "PG-003-T3",
+                        "test": "GIVEN mood selected, WHEN tasks filter, THEN matching tasks prioritized"
+                    },
+                    {
+                        "id": "PG-003-T4",
+                        "test": "GIVEN dashboard load, WHEN timed, THEN renders within 2 seconds"
+                    },
+                    {
+                        "id": "PG-003-T5",
+                        "test": "GIVEN user returns, WHEN dashboard shows, THEN context from last session displayed"
+                    }
+                ],
+                "requirements": [
+                    "US-002",
+                    "US-007",
+                    "US-006",
+                    "Req-5.1",
+                    "Req-11.2"
+                ]
+            }
+        },
+        "focusDeck": {
+            "DeckPage": {
+                "id": "PG-004",
+                "path": "/deck",
+                "description": "Card-based task interface showing one task at a time with swipe interactions",
+                "layout": "full-screen-cards",
+                "sections": {
+                    "cardStack": {
+                        "description": "Tinder-style card stack with depth visualization",
+                        "elements": [
+                            {
+                                "id": "topCard",
+                                "type": "TaskCard",
+                                "interactive": true
+                            },
+                            {
+                                "id": "stackPreview",
+                                "type": "CardStackPreview",
+                                "visibleCards": 3
+                            }
+                        ],
+                        "gestures": {
+                            "swipeRight": {
+                                "action": "enterFocusMode",
+                                "animation": "slide-right-fade"
+                            },
+                            "swipeLeft": {
+                                "action": "moveToBottom",
+                                "animation": "slide-left-rotate"
+                            },
+                            "swipeDown": {
+                                "action": "triggerUnblocker",
+                                "animation": "slide-down-expand"
+                            }
+                        }
+                    },
+                    "controls": {
+                        "description": "Button alternatives for accessibility",
+                        "elements": [
+                            {
+                                "id": "doNowBtn",
+                                "type": "button",
+                                "label": "Do this now",
+                                "icon": "play"
+                            },
+                            {
+                                "id": "notNowBtn",
+                                "type": "button",
+                                "label": "Not right now",
+                                "icon": "clock"
+                            },
+                            {
+                                "id": "helpBtn",
+                                "type": "button",
+                                "label": "Break this down",
+                                "icon": "split"
+                            }
+                        ]
+                    },
+                    "hints": {
+                        "elements": [
+                            {
+                                "id": "swipeHints",
+                                "type": "overlay",
+                                "content": "Swipe right to start • Left for later • Down to break down"
+                            }
+                        ]
+                    }
+                },
+                "acceptanceTests": [
+                    {
+                        "id": "PG-004-T1",
+                        "test": "GIVEN deck page, WHEN rendered, THEN shows exactly one top card"
+                    },
+                    {
+                        "id": "PG-004-T2",
+                        "test": "GIVEN swipe right, WHEN animation completes, THEN focus mode activates"
+                    },
+                    {
+                        "id": "PG-004-T3",
+                        "test": "GIVEN swipe left, WHEN completed, THEN card moves to bottom of deck"
+                    },
+                    {
+                        "id": "PG-004-T4",
+                        "test": "GIVEN swipe down, WHEN completed, THEN nano-step unblocker modal appears"
+                    },
+                    {
+                        "id": "PG-004-T5",
+                        "test": "GIVEN swipe animation, WHEN measured, THEN maintains 60fps"
+                    },
+                    {
+                        "id": "PG-004-T6",
+                        "test": "GIVEN keyboard user, WHEN using controls, THEN all swipe actions available via buttons"
+                    },
+                    {
+                        "id": "PG-004-T7",
+                        "test": "GIVEN touch target, WHEN measured, THEN minimum 44x44pt size"
+                    }
+                ],
+                "requirements": [
+                    "Req-5.1",
+                    "Req-5.2",
+                    "Req-5.3",
+                    "Req-5.4",
+                    "Req-5.5",
+                    "Req-13.1"
+                ]
+            }
+        },
+        "focusMode": {
+            "FocusPage": {
+                "id": "PG-005",
+                "path": "/focus",
+                "description": "Full-screen immersive focus mode with cinema-style dimming",
+                "layout": "full-screen-immersive",
+                "sections": {
+                    "header": {
+                        "elements": [
+                            {
+                                "id": "exitBtn",
+                                "type": "button",
+                                "label": "Exit",
+                                "variant": "ghost",
+                                "position": "top-left"
+                            },
+                            {
+                                "id": "timer",
+                                "type": "Timer",
+                                "display": "large",
+                                "color": "var(--color-primary)"
+                            }
+                        ]
+                    },
+                    "main": {
+                        "description": "Single task or nano-step display with minimal distractions",
+                        "elements": [
+                            {
+                                "id": "taskTitle",
+                                "type": "h1",
+                                "animation": "fade-in"
+                            },
+                            {
+                                "id": "nanoStepList",
+                                "type": "NanoStepList",
+                                "showOne": true,
+                                "cinemaMode": true
+                            },
+                            {
+                                "id": "compellingEvent",
+                                "type": "p",
+                                "styling": "motivational-quote"
+                            }
+                        ]
+                    },
+                    "controls": {
+                        "elements": [
+                            {
+                                "id": "doneBtn",
+                                "type": "button",
+                                "label": "Done (for now)!",
+                                "variant": "primary-large"
+                            },
+                            {
+                                "id": "stuckBtn",
+                                "type": "button",
+                                "label": "I'm stuck",
+                                "variant": "secondary"
+                            },
+                            {
+                                "id": "pauseBtn",
+                                "type": "button",
+                                "label": "Take a breath",
+                                "variant": "ghost"
+                            }
+                        ]
+                    }
+                },
+                "styling": {
+                    "className": "c-immersive-focus",
+                    "background": "var(--color-dim-overlay)",
+                    "dimLevel": "70%",
+                    "focusSpotlight": true
+                },
+                "acceptanceTests": [
+                    {
+                        "id": "PG-005-T1",
+                        "test": "GIVEN focus mode, WHEN activated, THEN screen dims with spotlight on task"
+                    },
+                    {
+                        "id": "PG-005-T2",
+                        "test": "GIVEN nano-steps, WHEN displayed, THEN shows one step at a time (cinema mode)"
+                    },
+                    {
+                        "id": "PG-005-T3",
+                        "test": "GIVEN 'Done' clicked, WHEN completing, THEN celebratory animation plays"
+                    },
+                    {
+                        "id": "PG-005-T4",
+                        "test": "GIVEN 'I'm stuck' clicked, WHEN activated, THEN unblocker generates nano-steps"
+                    },
+                    {
+                        "id": "PG-005-T5",
+                        "test": "GIVEN 2-min timer, WHEN complete, THEN gentle prompt: 'Keep going?' or 'Great job!'"
+                    },
+                    {
+                        "id": "PG-005-T6",
+                        "test": "GIVEN user stops at 2 min, WHEN choosing 'Done', THEN celebration (no guilt)"
+                    }
+                ],
+                "requirements": [
+                    "Req-4.5",
+                    "US-002",
+                    "US-001",
+                    "Req-2.5"
+                ]
+            }
+        },
+        "riverTimeline": {
+            "TimelinePage": {
+                "id": "PG-006",
+                "path": "/timeline",
+                "description": "Vertical flowing timeline with progressive blur for future tasks",
+                "layout": "vertical-scroll",
+                "sections": {
+                    "header": {
+                        "elements": [
+                            {
+                                "id": "title",
+                                "type": "h1",
+                                "content": "Your River"
+                            },
+                            {
+                                "id": "filterBar",
+                                "type": "FilterBar",
+                                "options": [
+                                    "All",
+                                    "This week",
+                                    "Soon",
+                                    "Eventually"
+                                ]
+                            }
+                        ]
+                    },
+                    "timeline": {
+                        "description": "Flowing vertical timeline with visual hierarchy",
+                        "elements": [
+                            {
+                                "id": "todayMarker",
+                                "type": "Divider",
+                                "label": "Today"
+                            },
+                            {
+                                "id": "immediateZone",
+                                "type": "TaskZone",
+                                "blur": 0,
+                                "label": "Right now"
+                            },
+                            {
+                                "id": "soonZone",
+                                "type": "TaskZone",
+                                "blur": 0.3,
+                                "label": "Soon"
+                            },
+                            {
+                                "id": "thisWeekZone",
+                                "type": "TaskZone",
+                                "blur": 0.5,
+                                "label": "This week"
+                            },
+                            {
+                                "id": "eventuallyZone",
+                                "type": "TaskZone",
+                                "blur": 0.7,
+                                "label": "Eventually"
+                            }
+                        ],
+                        "styling": {
+                            "flowAnimation": true,
+                            "waterRipples": "subtle",
+                            "missedDeadlineStyle": "gentle-glow-sand"
+                        }
+                    },
+                    "bufferDays": {
+                        "description": "Automatically inserted rest periods",
+                        "elements": [
+                            {
+                                "id": "bufferIndicator",
+                                "type": "BufferDay",
+                                "icon": "rest",
+                                "message": "Rest day before deadline"
+                            }
+                        ]
+                    }
+                },
+                "acceptanceTests": [
+                    {
+                        "id": "PG-006-T1",
+                        "test": "GIVEN timeline, WHEN rendered, THEN immediate tasks are clear (no blur)"
+                    },
+                    {
+                        "id": "PG-006-T2",
+                        "test": "GIVEN future tasks, WHEN rendered, THEN progressively blurred based on distance"
+                    },
+                    {
+                        "id": "PG-006-T3",
+                        "test": "GIVEN missed deadline, WHEN displayed, THEN uses sand color (NOT red)"
+                    },
+                    {
+                        "id": "PG-006-T4",
+                        "test": "GIVEN high-stress period detected, WHEN timeline generates, THEN buffer days inserted"
+                    },
+                    {
+                        "id": "PG-006-T5",
+                        "test": "GIVEN dependencies, WHEN rendering, THEN prerequisite tasks appear before dependents"
+                    },
+                    {
+                        "id": "PG-006-T6",
+                        "test": "GIVEN timeline, WHEN inspected, THEN no 'Overdue' or 'Late' labels present"
+                    }
+                ],
+                "requirements": [
+                    "Req-3.1",
+                    "Req-3.2",
+                    "Req-3.3",
+                    "Req-3.4",
+                    "Req-3.5",
+                    "Req-1.5",
+                    "Req-2.6"
+                ]
+            }
+        },
+        "garden": {
+            "GardenPage": {
+                "id": "PG-007",
+                "path": "/garden",
+                "description": "Full garden visualization showing all completed task achievements",
+                "layout": "full-screen-canvas",
+                "sections": {
+                    "header": {
+                        "elements": [
+                            {
+                                "id": "title",
+                                "type": "h1",
+                                "content": "Your Garden"
+                            },
+                            {
+                                "id": "stats",
+                                "type": "GardenStats",
+                                "items": [
+                                    "Total flowers",
+                                    "Total trees",
+                                    "Longest streak"
+                                ]
+                            }
+                        ]
+                    },
+                    "gardenView": {
+                        "description": "Interactive SVG/Canvas garden with persistent elements",
+                        "elements": [
+                            {
+                                "id": "sky",
+                                "type": "SkyBackground",
+                                "sunBrightness": "dynamic"
+                            },
+                            {
+                                "id": "flowers",
+                                "type": "FlowerCollection",
+                                "generated": "tiny-tasks"
+                            },
+                            {
+                                "id": "trees",
+                                "type": "TreeCollection",
+                                "generated": "big-tasks"
+                            },
+                            {
+                                "id": "achievements",
+                                "type": "AchievementBadges",
+                                "floating": true
+                            }
+                        ],
+                        "interactions": {
+                            "hover": "showTaskDetails",
+                            "click": "viewTaskHistory",
+                            "zoom": "pinch-to-zoom"
+                        }
+                    }
+                },
+                "acceptanceTests": [
+                    {
+                        "id": "PG-007-T1",
+                        "test": "GIVEN tiny task completed, WHEN garden updates, THEN new flower appears"
+                    },
+                    {
+                        "id": "PG-007-T2",
+                        "test": "GIVEN big task completed, WHEN garden updates, THEN new tree appears"
+                    },
+                    {
+                        "id": "PG-007-T3",
+                        "test": "GIVEN streak maintained, WHEN garden renders, THEN sun brightness increases"
+                    },
+                    {
+                        "id": "PG-007-T4",
+                        "test": "GIVEN garden elements, WHEN session ends, THEN persist permanently"
+                    },
+                    {
+                        "id": "PG-007-T5",
+                        "test": "GIVEN screen reader, WHEN navigating garden, THEN alt text for all elements"
+                    },
+                    {
+                        "id": "PG-007-T6",
+                        "test": "GIVEN garden hover, WHEN over element, THEN task details shown"
+                    }
+                ],
+                "requirements": [
+                    "Req-6.1",
+                    "Req-6.2",
+                    "Req-6.3",
+                    "Req-6.4",
+                    "Req-6.5",
+                    "Req-13.5"
+                ]
+            }
+        },
+        "documents": {
+            "DocumentsPage": {
+                "id": "PG-008",
+                "path": "/documents",
+                "description": "Document upload and parsing interface for automatic task extraction",
+                "layout": "split-panel",
+                "sections": {
+                    "upload": {
+                        "elements": [
+                            {
+                                "id": "dropZone",
+                                "type": "DropZone",
+                                "accept": [
+                                    "pdf",
+                                    "image",
+                                    "text"
+                                ],
+                                "label": "Drop files here or click to upload"
+                            },
+                            {
+                                "id": "voiceNote",
+                                "type": "VoiceRecorder",
+                                "label": "Or record a voice note"
+                            }
+                        ]
+                    },
+                    "processing": {
+                        "elements": [
+                            {
+                                "id": "processingIndicator",
+                                "type": "Progress",
+                                "animation": "flow"
+                            },
+                            {
+                                "id": "statusMessage",
+                                "type": "p",
+                                "dynamic": true,
+                                "example": "Extracting tasks..."
+                            }
+                        ]
+                    },
+                    "results": {
+                        "elements": [
+                            {
+                                "id": "extractedTasks",
+                                "type": "TaskList",
+                                "editable": true
+                            },
+                            {
+                                "id": "suggestedTimeline",
+                                "type": "TimelinePreview"
+                            },
+                            {
+                                "id": "confirmBtn",
+                                "type": "button",
+                                "label": "Add to my tasks",
+                                "variant": "primary"
+                            }
+                        ]
+                    }
+                },
+                "acceptanceTests": [
+                    {
+                        "id": "PG-008-T1",
+                        "test": "GIVEN PDF upload, WHEN parsed, THEN tasks extracted and displayed"
+                    },
+                    {
+                        "id": "PG-008-T2",
+                        "test": "GIVEN image upload, WHEN OCR completes, THEN text extracted and tasks suggested"
+                    },
+                    {
+                        "id": "PG-008-T3",
+                        "test": "GIVEN voice note, WHEN transcribed, THEN tasks extracted from speech"
+                    },
+                    {
+                        "id": "PG-008-T4",
+                        "test": "GIVEN processing, WHEN >5 seconds, THEN progress feedback shown"
+                    },
+                    {
+                        "id": "PG-008-T5",
+                        "test": "GIVEN extracted tasks, WHEN user edits, THEN changes preserved"
+                    },
+                    {
+                        "id": "PG-008-T6",
+                        "test": "GIVEN high-stress dates detected, WHEN timeline suggests, THEN buffer days included"
+                    }
+                ],
+                "requirements": [
+                    "Req-1.1",
+                    "Req-1.2",
+                    "Req-1.3",
+                    "Req-1.4",
+                    "Req-1.5"
+                ]
+            }
+        },
+        "settings": {
+            "SettingsPage": {
+                "id": "PG-009",
+                "path": "/settings",
+                "description": "User preferences and configuration",
+                "layout": "sidebar-content",
+                "sections": {
+                    "sidebar": {
+                        "elements": [
+                            {
+                                "id": "navProfile",
+                                "type": "navItem",
+                                "label": "Profile"
+                            },
+                            {
+                                "id": "navPreferences",
+                                "type": "navItem",
+                                "label": "Preferences"
+                            },
+                            {
+                                "id": "navNotifications",
+                                "type": "navItem",
+                                "label": "Reminders"
+                            },
+                            {
+                                "id": "navAccessibility",
+                                "type": "navItem",
+                                "label": "Accessibility"
+                            },
+                            {
+                                "id": "navPrivacy",
+                                "type": "navItem",
+                                "label": "Privacy & Data"
+                            },
+                            {
+                                "id": "navSubscription",
+                                "type": "navItem",
+                                "label": "Subscription"
+                            }
+                        ]
+                    },
+                    "profile": {
+                        "elements": [
+                            {
+                                "id": "avatar",
+                                "type": "ImageUpload"
+                            },
+                            {
+                                "id": "name",
+                                "type": "input",
+                                "label": "Name"
+                            },
+                            {
+                                "id": "email",
+                                "type": "input",
+                                "label": "Email",
+                                "disabled": true
+                            },
+                            {
+                                "id": "timezone",
+                                "type": "select",
+                                "label": "Timezone"
+                            }
+                        ]
+                    },
+                    "preferences": {
+                        "elements": [
+                            {
+                                "id": "stallTimeout",
+                                "type": "slider",
+                                "label": "Stall detection timeout",
+                                "min": 12,
+                                "max": 48,
+                                "unit": "hours"
+                            },
+                            {
+                                "id": "colorPalette",
+                                "type": "select",
+                                "options": [
+                                    "Default",
+                                    "High contrast"
+                                ],
+                                "label": "Color palette"
+                            },
+                            {
+                                "id": "fuzzyLabels",
+                                "type": "toggle",
+                                "label": "Use fuzzy deadline labels"
+                            },
+                            {
+                                "id": "goodEnoughMode",
+                                "type": "toggle",
+                                "label": "Anti-Perfectionism Mode"
+                            }
+                        ]
+                    },
+                    "notifications": {
+                        "elements": [
+                            {
+                                "id": "reminderTone",
+                                "type": "select",
+                                "options": [
+                                    "Encouraging",
+                                    "Neutral",
+                                    "Humorous"
+                                ],
+                                "label": "Reminder tone"
+                            },
+                            {
+                                "id": "reminderFrequency",
+                                "type": "slider",
+                                "label": "Reminder frequency"
+                            },
+                            {
+                                "id": "quietHours",
+                                "type": "timeRange",
+                                "label": "Quiet hours"
+                            }
+                        ]
+                    },
+                    "accessibility": {
+                        "elements": [
+                            {
+                                "id": "highContrast",
+                                "type": "toggle",
+                                "label": "High contrast mode"
+                            },
+                            {
+                                "id": "fontSize",
+                                "type": "slider",
+                                "label": "Font size",
+                                "min": 14,
+                                "max": 24
+                            },
+                            {
+                                "id": "reduceMotion",
+                                "type": "toggle",
+                                "label": "Reduce motion"
+                            },
+                            {
+                                "id": "screenReader",
+                                "type": "toggle",
+                                "label": "Enhanced screen reader support"
+                            }
+                        ]
+                    },
+                    "privacy": {
+                        "elements": [
+                            {
+                                "id": "exportData",
+                                "type": "button",
+                                "label": "Export my data"
+                            },
+                            {
+                                "id": "deleteAccount",
+                                "type": "button",
+                                "label": "Delete my account",
+                                "variant": "danger-soft"
+                            }
+                        ]
+                    }
+                },
+                "acceptanceTests": [
+                    {
+                        "id": "PG-009-T1",
+                        "test": "GIVEN stall timeout changed, WHEN saved, THEN setting persists across sessions"
+                    },
+                    {
+                        "id": "PG-009-T2",
+                        "test": "GIVEN export data clicked, WHEN processed, THEN downloadable file provided"
+                    },
+                    {
+                        "id": "PG-009-T3",
+                        "test": "GIVEN high contrast enabled, WHEN UI renders, THEN 4.5:1 contrast minimum"
+                    },
+                    {
+                        "id": "PG-009-T4",
+                        "test": "GIVEN font size changed, WHEN applied, THEN all text scales proportionally"
+                    },
+                    {
+                        "id": "PG-009-T5",
+                        "test": "GIVEN delete account, WHEN confirmed, THEN data removed within 30 days"
+                    }
+                ],
+                "requirements": [
+                    "Req-22.1",
+                    "Req-22.2",
+                    "Req-22.4",
+                    "Req-13.3",
+                    "Req-13.4",
+                    "Req-18.3",
+                    "Req-18.5"
+                ]
+            },
+            "PricingPage": {
+                "id": "PG-010",
+                "path": "/pricing",
+                "description": "Transparent billing and subscription management",
+                "layout": "centered-card-rows",
+                "sections": {
+                    "header": {
+                        "elements": [
+                            {
+                                "id": "title",
+                                "type": "h1",
+                                "content": "Focus on what matters"
+                            },
+                            {
+                                "id": "subtitle",
+                                "type": "p",
+                                "content": "Simple plans to support your journey."
+                            }
+                        ]
+                    },
+                    "tiers": {
+                        "elements": [
+                            {
+                                "id": "freeTier",
+                                "type": "PricingCard",
+                                "title": "Free",
+                                "price": "$0",
+                                "features": [
+                                    "Core task management",
+                                    "River Timeline",
+                                    "Basic Garden view"
+                                ],
+                                "buttonLabel": "Current Plan",
+                                "variant": "outline"
+                            },
+                            {
+                                "id": "premiumTier",
+                                "type": "PricingCard",
+                                "title": "Premium",
+                                "price": "$9/mo",
+                                "features": [
+                                    "Advanced AI Unblocker",
+                                    "Unlimited document parsing",
+                                    "Detailed Garden analytics",
+                                    "Priority support"
+                                ],
+                                "buttonLabel": "Upgrade to Premium",
+                                "variant": "primary-large"
+                            }
+                        ]
+                    },
+                    "comparison": {
+                        "id": "featureTable",
+                        "type": "ComparisonTable",
+                        "rows": [
+                            {
+                                "feature": "AI Nano-steps",
+                                "free": "Basic",
+                                "premium": "Advanced"
+                            },
+                            {
+                                "feature": "Document Uploads",
+                                "free": "3/month",
+                                "premium": "Unlimited"
+                            }
+                        ]
+                    }
+                },
+                "styling": {
+                    "className": "c-pricing-view",
+                    "background": "var(--color-neutral-gradient)"
+                },
+                "acceptanceTests": [
+                    {
+                        "id": "PG-010-T1",
+                        "test": "GIVEN pricing page, WHEN viewed, THEN clear distinction between Free and Premium tiers"
+                    },
+                    {
+                        "id": "PG-010-T2",
+                        "test": "GIVEN upgrade clicked, WHEN processed, THEN secure payment provider (Stripe/PayPal) interface appears"
+                    },
+                    {
+                        "id": "PG-010-T3",
+                        "test": "GIVEN premium user, WHEN viewing pricing, THEN current plan clearly marked"
+                    },
+                    {
+                        "id": "PG-010-T4",
+                        "test": "GIVEN billing history, WHEN requested, THEN downloadable history available"
+                    }
+                ],
+                "requirements": [
+                    "Req-14.1",
+                    "Req-14.2",
+                    "Req-14.3",
+                    "Req-14.5",
+                    "Req-14.6"
+                ]
+            }
+        }
+    },
+    "sharedComponents": {
+        "TaskCard": {
+            "id": "SC-001",
+            "description": "Core task display card with effort indicators and emotional context",
+            "props": {
+                "task": "Task",
+                "variant": "default | hero | compact",
+                "interactive": "boolean"
+            },
+            "elements": [
+                {
+                    "id": "title",
+                    "type": "h3"
+                },
+                {
+                    "id": "effortBadge",
+                    "type": "Badge",
+                    "values": [
+                        "Tiny",
+                        "Small",
+                        "Medium",
+                        "Big"
+                    ]
+                },
+                {
+                    "id": "emotionalTag",
+                    "type": "Badge",
+                    "values": [
+                        "Boring",
+                        "Scary",
+                        "Fun"
+                    ],
+                    "optional": true
+                },
+                {
+                    "id": "fuzzyDeadline",
+                    "type": "Badge",
+                    "values": [
+                        "Soon",
+                        "This Week",
+                        "Eventually"
+                    ]
+                },
+                {
+                    "id": "compellingEvent",
+                    "type": "p",
+                    "className": "c-text c-emphasis italic"
+                }
+            ],
+            "acceptanceTests": [
+                {
+                    "id": "SC-001-T1",
+                    "test": "GIVEN task data, WHEN card renders, THEN all metadata displayed correctly"
+                },
+                {
+                    "id": "SC-001-T2",
+                    "test": "GIVEN fuzzy deadline, WHEN displayed, THEN shows 'Soon' not actual date"
+                },
+                {
+                    "id": "SC-001-T3",
+                    "test": "GIVEN card, WHEN inspected, THEN no red or stark white colors"
+                },
+                {
+                    "id": "SC-001-T4",
+                    "test": "GIVEN screen reader, WHEN reading card, THEN all info accessible"
+                }
+            ],
+            "requirements": [
+                "Req-7.1",
+                "Req-7.2",
+                "Req-7.3",
+                "Req-7.4"
+            ]
+        },
+        "NanoStepList": {
+            "id": "SC-002",
+            "description": "List of micro-steps with completion indicators",
+            "props": {
+                "steps": "NanoStep[]",
+                "showOne": "boolean",
+                "cinemaMode": "boolean"
+            },
+            "elements": [
+                {
+                    "id": "stepItem",
+                    "type": "ListItem",
+                    "checkable": true
+                },
+                {
+                    "id": "timeEstimate",
+                    "type": "Badge",
+                    "content": "<2 min"
+                },
+                {
+                    "id": "effortIndicator",
+                    "type": "Icon",
+                    "values": [
+                        "zero-effort",
+                        "minimal"
+                    ]
+                }
+            ],
+            "styling": {
+                "cinemaModeBackground": "dimmed",
+                "spotlightActiveStep": true
+            },
+            "acceptanceTests": [
+                {
+                    "id": "SC-002-T1",
+                    "test": "GIVEN nano-steps, WHEN first step shown, THEN <2 min and zero effort"
+                },
+                {
+                    "id": "SC-002-T2",
+                    "test": "GIVEN cinema mode, WHEN active, THEN shows only one step with spotlight"
+                },
+                {
+                    "id": "SC-002-T3",
+                    "test": "GIVEN step completed, WHEN checked, THEN celebratory micro-animation"
+                }
+            ],
+            "requirements": [
+                "Req-4.3",
+                "Req-4.4",
+                "Req-4.5"
+            ]
+        },
+        "UnblockerModal": {
+            "id": "SC-003",
+            "description": "Modal for I'm Stuck / break down task flow",
+            "triggers": [
+                "swipeDown",
+                "helpButton",
+                "stuckButton",
+                "24hourTimeout"
+            ],
+            "sections": {
+                "header": {
+                    "elements": [
+                        {
+                            "id": "title",
+                            "type": "h2",
+                            "content": "Let's break this down"
+                        },
+                        {
+                            "id": "closeBtn",
+                            "type": "button",
+                            "icon": "x"
+                        }
+                    ]
+                },
+                "content": {
+                    "elements": [
+                        {
+                            "id": "originalTask",
+                            "type": "TaskCard",
+                            "variant": "compact"
+                        },
+                        {
+                            "id": "generatingIndicator",
+                            "type": "Loading",
+                            "message": "Finding tiny steps..."
+                        },
+                        {
+                            "id": "nanoSteps",
+                            "type": "NanoStepList"
+                        }
+                    ]
+                },
+                "actions": {
+                    "elements": [
+                        {
+                            "id": "startFirstStep",
+                            "type": "button",
+                            "label": "Start with step 1",
+                            "variant": "primary"
+                        },
+                        {
+                            "id": "editSteps",
+                            "type": "button",
+                            "label": "Edit these",
+                            "variant": "secondary"
+                        }
+                    ]
+                }
+            },
+            "acceptanceTests": [
+                {
+                    "id": "SC-003-T1",
+                    "test": "GIVEN 'I'm stuck' clicked, WHEN modal opens, THEN unblocker activates"
+                },
+                {
+                    "id": "SC-003-T2",
+                    "test": "GIVEN task > 24hr active, WHEN timeout triggers, THEN unblocker auto-activates"
+                },
+                {
+                    "id": "SC-003-T3",
+                    "test": "GIVEN decomposition, WHEN complete, THEN 3-5 nano-steps generated"
+                },
+                {
+                    "id": "SC-003-T4",
+                    "test": "GIVEN first step, WHEN displayed, THEN requires <2 min, zero emotional effort"
+                }
+            ],
+            "requirements": [
+                "Req-4.1",
+                "Req-4.2",
+                "Req-4.3",
+                "Req-4.4",
+                "Req-8.4",
+                "Req-8.5"
+            ]
+        },
+        "TwoMinuteTimer": {
+            "id": "SC-004",
+            "description": "The 2-minute start timer with gentle completion prompts",
+            "states": [
+                "idle",
+                "running",
+                "paused",
+                "complete"
+            ],
+            "display": {
+                "format": "mm:ss",
+                "color": "var(--color-primary)",
+                "animation": "gentle-pulse-on-complete"
+            },
+            "completionPrompt": {
+                "message": "2 minutes done! What would you like to do?",
+                "options": [
+                    {
+                        "label": "Keep going!",
+                        "action": "continue"
+                    },
+                    {
+                        "label": "Great job! Done.",
+                        "action": "complete",
+                        "celebration": true
+                    }
+                ]
+            },
+            "acceptanceTests": [
+                {
+                    "id": "SC-004-T1",
+                    "test": "GIVEN button clicked, WHEN timer starts, THEN visual countdown begins"
+                },
+                {
+                    "id": "SC-004-T2",
+                    "test": "GIVEN 2 min elapsed, WHEN complete, THEN gentle prompt appears"
+                },
+                {
+                    "id": "SC-004-T3",
+                    "test": "GIVEN user stops at 2 min, WHEN choosing 'Done', THEN celebration (no guilt)"
+                },
+                {
+                    "id": "SC-004-T4",
+                    "test": "GIVEN user chooses 'Keep going', WHEN continuing, THEN timer continues upward"
+                }
+            ],
+            "requirements": [
+                "US-002"
+            ]
+        },
+        "ProgressBar": {
+            "id": "SC-005",
+            "description": "Visual progress indicator with dopamine-triggering animations",
+            "props": {
+                "value": "number",
+                "max": "number",
+                "variant": "default | celebration"
+            },
+            "animations": {
+                "increment": "satisfying-fill",
+                "complete": "sparkle-burst"
+            },
+            "acceptanceTests": [
+                {
+                    "id": "SC-005-T1",
+                    "test": "GIVEN progress increment, WHEN bar fills, THEN satisfying animation plays"
+                },
+                {
+                    "id": "SC-005-T2",
+                    "test": "GIVEN 100% progress, WHEN complete, THEN celebration animation triggers"
+                }
+            ],
+            "requirements": [
+                "US-003"
+            ]
+        },
+        "AchievementBadge": {
+            "id": "SC-006",
+            "description": "Achievement badges for patterns and milestones",
+            "examples": [
+                "5 First Steps",
+                "Morning Warrior",
+                "Week Streak",
+                "Garden Grower"
+            ],
+            "display": {
+                "unlocked": {
+                    "animation": "pop-in-sparkle",
+                    "color": "var(--color-secondary)"
+                },
+                "locked": {
+                    "opacity": 0.3,
+                    "color": "var(--color-success)"
+                }
+            },
+            "acceptanceTests": [
+                {
+                    "id": "SC-006-T1",
+                    "test": "GIVEN achievement unlocked, WHEN badge appears, THEN satisfying animation plays"
+                },
+                {
+                    "id": "SC-006-T2",
+                    "test": "GIVEN locked badge, WHEN displayed, THEN shows muted preview"
+                }
+            ],
+            "requirements": [
+                "US-003"
+            ]
+        },
+        "EmergencyModeCard": {
+            "id": "SC-007",
+            "description": "Emergency deadline mode activation and interface",
+            "trigger": {
+                "id": "emergencyBtn",
+                "label": "I need to focus NOW",
+                "variant": "sand-urgent"
+            },
+            "interface": {
+                "elements": [
+                    {
+                        "id": "triageQuestion",
+                        "type": "h2",
+                        "content": "What's actually due? What can wait?"
+                    },
+                    {
+                        "id": "essentialTasks",
+                        "type": "TaskList",
+                        "filter": "urgent"
+                    },
+                    {
+                        "id": "pomodoro",
+                        "type": "PomodoroTimer",
+                        "enforceBreaks": true
+                    },
+                    {
+                        "id": "postCrisis",
+                        "type": "Reflection",
+                        "question": "What could prevent this next time?"
+                    }
+                ]
+            },
+            "acceptanceTests": [
+                {
+                    "id": "SC-007-T1",
+                    "test": "GIVEN emergency clicked, WHEN activated, THEN rapid triage interface appears"
+                },
+                {
+                    "id": "SC-007-T2",
+                    "test": "GIVEN pomodoro running, WHEN break due, THEN break enforced"
+                },
+                {
+                    "id": "SC-007-T3",
+                    "test": "GIVEN crisis ended, WHEN deactivated, THEN reflection prompt shown"
+                }
+            ],
+            "requirements": [
+                "US-009"
+            ]
+        },
+        "SubscriptionModal": {
+            "id": "SC-008",
+            "description": "Gentle upgrade prompt when hitting free tier limits",
+            "triggers": [
+                "limitExceeded",
+                "upgradeClick"
+            ],
+            "content": {
+                "title": "Unlock more possibilities",
+                "message": "You've reached the free limit for this month. Upgrade to Premium for unlimited AI insights and document support.",
+                "actions": [
+                    {
+                        "label": "Show me the plans",
+                        "action": "viewPricing",
+                        "variant": "primary"
+                    },
+                    {
+                        "label": "Maybe later",
+                        "action": "close",
+                        "variant": "ghost"
+                    }
+                ]
+            },
+            "styling": {
+                "className": "c-modal c-subscription-prompt",
+                "background": "var(--color-neutral-elevated)"
+            },
+            "acceptanceTests": [
+                {
+                    "id": "SC-008-T1",
+                    "test": "GIVEN limit reached, WHEN action performed, THEN subscription modal appears with no-pressure tone"
+                },
+                {
+                    "id": "SC-008-T2",
+                    "test": "GIVEN modal closed, WHEN dismissed, THEN user can continue with existing data (graceful downgrade behavior)"
+                }
+            ],
+            "requirements": [
+                "Req-14.4",
+                "Req-14.7"
+            ]
+        }
+    },
+    "mobileSpecific": {
+        "description": "Mobile-specific adaptations using Expo/React Native",
+        "gestures": {
+            "focusDeck": {
+                "swipeVelocity": 0.3,
+                "hapticFeedback": true,
+                "gestureHandler": "react-native-gesture-handler"
+            }
+        },
+        "navigation": {
+            "type": "bottom-tab",
+            "tabs": [
+                "Dashboard",
+                "Deck",
+                "Timeline",
+                "Garden"
+            ],
+            "transitionStyle": "psychological-safety"
+        },
+        "biometric": {
+            "faceId": true,
+            "touchId": true,
+            "fallback": "pin"
+        },
+        "acceptanceTests": [
+            {
+                "id": "MOB-T1",
+                "test": "GIVEN swipe gesture, WHEN performed, THEN haptic feedback triggered"
+            },
+            {
+                "id": "MOB-T2",
+                "test": "GIVEN biometric auth, WHEN available, THEN offered as login option"
+            },
+            {
+                "id": "MOB-T3",
+                "test": "GIVEN offline mode, WHEN no network, THEN cached data shown with sync indicator"
+            },
+            {
+                "id": "MOB-T4",
+                "test": "GIVEN touch targets, WHEN measured, THEN minimum 44x44pt on all interactive elements"
+            }
+        ],
+        "requirements": [
+            "Req-19.5",
+            "Req-19.6",
+            "Req-10.2",
+            "Req-13.1"
+        ]
+    },
+    "accessibilityCompliance": {
+        "wcagLevel": "AA",
+        "contrastRatio": "4.5:1 minimum",
+        "touchTargets": "44x44pt minimum",
+        "keyboardNavigation": "full support",
+        "screenReaderSupport": "ARIA labels on all interactive elements",
+        "colorIndependence": "status communicated via icons + text + color",
+        "acceptanceTests": [
+            {
+                "id": "A11Y-T1",
+                "test": "GIVEN any interactive element, WHEN focused, THEN visible focus indicator"
+            },
+            {
+                "id": "A11Y-T2",
+                "test": "GIVEN color-coded status, WHEN displayed, THEN accompanied by icon and/or text"
+            },
+            {
+                "id": "A11Y-T3",
+                "test": "GIVEN screen reader, WHEN navigating entire app, THEN all content accessible"
+            },
+            {
+                "id": "A11Y-T4",
+                "test": "GIVEN high contrast mode, WHEN enabled, THEN all text meets 7:1 contrast"
+            },
+            {
+                "id": "A11Y-T5",
+                "test": "GIVEN keyboard user, WHEN tabbing, THEN logical focus order maintained"
+            }
+        ],
+        "requirements": [
+            "Req-13.1",
+            "Req-13.2",
+            "Req-13.3",
+            "Req-13.4",
+            "Req-13.5"
+        ]
+    },
+    "themeSystem": {
+        "modes": [
+            "light",
+            "dark"
+        ],
+        "lightMode": {
+            "surface": {
+                "primary": "cream100",
+                "secondary": "cream200",
+                "elevated": "cream50"
+            },
+            "text": {
+                "primary": "sage700",
+                "secondary": "sage500",
+                "accent": "lavender600"
+            }
+        },
+        "darkMode": {
+            "surface": {
+                "primary": "#1a1a2e",
+                "secondary": "#16213e",
+                "elevated": "#0f0f23"
+            },
+            "text": {
+                "primary": "#f5f4f1",
+                "secondary": "#a7c4a0",
+                "accent": "#8b7cf6"
+            }
+        },
+        "forbidden": {
+            "anyMode": [
+                "#FF0000",
+                "#DC2626",
+                "red-*"
+            ],
+            "lightBackground": "#FFFFFF",
+            "harshContrast": "#000000 on #FFFFFF"
+        },
+        "acceptanceTests": [
+            {
+                "id": "THEME-T1",
+                "test": "GIVEN theme toggle, WHEN switching, THEN all colors update correctly"
+            },
+            {
+                "id": "THEME-T2",
+                "test": "GIVEN any theme, WHEN inspected, THEN no red colors present"
+            },
+            {
+                "id": "THEME-T3",
+                "test": "GIVEN light mode, WHEN background checked, THEN never stark white"
+            },
+            {
+                "id": "THEME-T4",
+                "test": "GIVEN theme preference, WHEN app reloads, THEN persisted selection applies"
+            }
+        ],
+        "requirements": [
+            "Req-2.1",
+            "Req-2.2",
+            "Req-22.2"
+        ]
+    },
+    "errorStates": {
+        "description": "All error states use encouraging, non-judgmental language",
+        "networkError": {
+            "title": "Taking a moment to reconnect",
+            "message": "We're having trouble reaching our servers. Your work is safe!",
+            "icon": "cloud-offline",
+            "color": "var(--color-warning)"
+        },
+        "authError": {
+            "title": "Let's try that again",
+            "message": "Something didn't match. No worries, it happens!",
+            "icon": "key",
+            "color": "var(--color-secondary)"
+        },
+        "processingError": {
+            "title": "Hmm, that didn't work",
+            "message": "We couldn't process that file. Maybe try a different format?",
+            "icon": "file-question",
+            "color": "var(--color-warning)"
+        },
+        "forbiddenLanguage": [
+            "Failed",
+            "Error",
+            "Invalid",
+            "Wrong",
+            "Incorrect"
+        ],
+        "acceptanceTests": [
+            {
+                "id": "ERR-T1",
+                "test": "GIVEN any error, WHEN message displayed, THEN uses friendly language"
+            },
+            {
+                "id": "ERR-T2",
+                "test": "GIVEN any error, WHEN inspected, THEN no red colors used"
+            },
+            {
+                "id": "ERR-T3",
+                "test": "GIVEN error message, WHEN checked, THEN forbidden words not present"
+            }
+        ],
+        "requirements": [
+            "Req-12.1",
+            "Req-2.5",
+            "Req-2.6"
+        ]
+    },
+    "internationalization": {
+        "supportedLocales": [
+            "en-US",
+            "es",
+            "fr",
+            "de",
+            "ja",
+            "ar"
+        ],
+        "rtlSupport": true,
+        "dateTimeFormat": "locale-aware",
+        "fuzzyDeadlineLabels": {
+            "en": {
+                "soon": "Soon",
+                "thisWeek": "This Week",
+                "eventually": "Eventually"
+            },
+            "es": {
+                "soon": "Pronto",
+                "thisWeek": "Esta Semana",
+                "eventually": "Eventualmente"
+            }
+        },
+        "acceptanceTests": [
+            {
+                "id": "I18N-T1",
+                "test": "GIVEN locale change, WHEN app reloads, THEN all text translated"
+            },
+            {
+                "id": "I18N-T2",
+                "test": "GIVEN RTL language, WHEN active, THEN layout mirrors correctly"
+            },
+            {
+                "id": "I18N-T3",
+                "test": "GIVEN date display, WHEN rendered, THEN follows locale format"
+            }
+        ],
+        "requirements": [
+            "Req-20.1",
+            "Req-20.2",
+            "Req-20.3",
+            "Req-20.4"
+        ]
+    },
+    "animations": {
+        "library": {
+            "web": "framer-motion",
+            "mobile": "react-native-reanimated"
+        },
+        "catalog": {
+            "cardSwipe": {
+                "duration": "300ms",
+                "easing": "spring",
+                "haptic": true
+            },
+            "taskComplete": {
+                "animation": "sparkle-burst",
+                "duration": "500ms",
+                "sound": "optional"
+            },
+            "gardenGrow": {
+                "animation": "bloom",
+                "duration": "800ms"
+            },
+            "screenTransition": {
+                "animation": "fade-slide",
+                "duration": "400ms"
+            },
+            "loadingPulse": {
+                "animation": "gentle-pulse",
+                "duration": "1500ms",
+                "loop": true
+            }
+        },
+        "performanceTarget": "60fps",
+        "reduceMotion": "respect prefers-reduced-motion",
+        "acceptanceTests": [
+            {
+                "id": "ANIM-T1",
+                "test": "GIVEN any animation, WHEN measured, THEN maintains 60fps"
+            },
+            {
+                "id": "ANIM-T2",
+                "test": "GIVEN prefers-reduced-motion, WHEN set, THEN animations disabled"
+            },
+            {
+                "id": "ANIM-T3",
+                "test": "GIVEN completion animation, WHEN triggered, THEN satisfying and celebratory"
+            }
+        ],
+        "requirements": [
+            "Req-5.5",
+            "Req-13.4"
+        ]
+    },
+    "testingCoverage": {
+        "unitTests": "all components",
+        "integrationTests": "all user flows",
+        "e2eTests": "critical journeys",
+        "propertyTests": {
+            "colorCompliance": "Property 2: No red or stark white in any rendered element",
+            "languageCompliance": "Property 4: No forbidden words in any UI text",
+            "accessibilityCompliance": "All interactive elements have ARIA support"
+        },
+        "visualTests": "screenshot comparison for design regression"
+    },
+    "requirementsCoverage": {
+        "Req-1": [
+            "PG-008"
+        ],
+        "Req-2": [
+            "All pages - color/language compliance"
+        ],
+        "Req-3": [
+            "PG-006"
+        ],
+        "Req-4": [
+            "PG-005",
+            "SC-002",
+            "SC-003"
+        ],
+        "Req-5": [
+            "PG-004"
+        ],
+        "Req-6": [
+            "PG-007",
+            "GC-002"
+        ],
+        "Req-7": [
+            "SC-001"
+        ],
+        "Req-9": [
+            "PG-001",
+            "PG-002"
+        ],
+        "Req-13": [
+            "accessibilityCompliance"
+        ],
+        "Req-20": [
+            "internationalization"
+        ],
+        "Req-22": [
+            "PG-009"
+        ],
+        "Req-14": [
+            "PG-010",
+            "SC-008"
+        ]
+    },
+    "userStoryCoverage": {
+        "US-001": [
+            "SC-003",
+            "PG-005"
+        ],
+        "US-002": [
+            "PG-003",
+            "SC-004"
+        ],
+        "US-003": [
+            "SC-005",
+            "SC-006",
+            "PG-007"
+        ],
+        "US-004": [
+            "PG-009 preferences section",
+            "PG-010"
+        ],
+        "US-005": [
+            "Future: Analytics page"
+        ],
+        "US-006": [
+            "PG-003 context restoration"
+        ],
+        "US-007": [
+            "PG-003 mood selector"
+        ],
+        "US-008": [
+            "PG-009 notifications section"
+        ],
+        "US-009": [
+            "SC-007"
+        ],
+        "US-010": [
+            "Future: Accountability page"
+        ]
+    }
+}
