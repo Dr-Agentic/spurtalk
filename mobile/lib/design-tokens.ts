@@ -5,11 +5,11 @@
 
 // Colors that should NEVER be used in the app
 export const FORBIDDEN_COLORS = [
-    '#FF0000', // Pure red
-    '#DC2626', // Red-600
-    '#EF4444', // Red-500
-    '#F87171', // Red-400
-    '#FFFFFF', // Stark white (use neutral #faf9f7 instead)
+    '#FF0000', // Pure red // design-ignore
+    '#DC2626', // Red-600 // design-ignore
+    '#EF4444', // Red-500 // design-ignore
+    '#F87171', // Red-400 // design-ignore
+    '#FFFFFF', // Stark white (use neutral #faf9f7 instead) // design-ignore
 ] as const;
 
 // Words that should NEVER appear in user-facing text
@@ -19,10 +19,10 @@ export const FORBIDDEN_WORDS = [
     'Invalid',
     'Wrong',
     'Incorrect',
-    'Overdue',
-    'Late',
-    'Urgent',
-    'Deadline',
+    'Overdue', // design-ignore
+    'Late', // design-ignore
+    'Urgent', // design-ignore
+    'Deadline', // design-ignore
     'Warning',
     'Critical',
     'Expired',

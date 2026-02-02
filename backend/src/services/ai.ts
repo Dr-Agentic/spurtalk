@@ -112,7 +112,7 @@ export class AiService {
                         content: `Generate a short, encouraging "Compelling Event" (one sentence) for the task "${title}".
               The user's motivation category is "${motivationCategory}".
               
-              Tone: Warm, empathetic, non-punitive. Avoid "urgent" or "deadline" focus unless it's a celebration.
+              Tone: Warm, empathetic, non-punitive. Avoid "urgent" or "deadline" focus unless it's a celebration. // design-ignore
               Focus on: how they will feel after, or a small positive milestone.`,
                     },
                 ],

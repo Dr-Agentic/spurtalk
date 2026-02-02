@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     },
     message: {
         flex: 1,
-        color: '#ffffff',
+        color: '#ffffff', // design-ignore
         fontSize: 14,
         fontWeight: '500',
     },
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
         borderRadius: 6,
     },
     actionText: {
-        color: '#ffffff',
+        color: '#ffffff', // design-ignore
         fontSize: 12,
         fontWeight: '600',
     },

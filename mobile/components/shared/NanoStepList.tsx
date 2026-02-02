@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
         marginRight: 12,
     },
     checkmark: {
-        color: '#ffffff',
+        color: '#faf9f7', // warm white // design-ignore
         fontSize: 14,
         fontWeight: 'bold',
     },

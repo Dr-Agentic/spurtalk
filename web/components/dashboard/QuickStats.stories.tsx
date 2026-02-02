@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import QuickStats from "./QuickStats";
+import { QuickStats } from "./QuickStats";
 
 const meta: Meta<typeof QuickStats> = {
     title: "Dashboard/QuickStats",

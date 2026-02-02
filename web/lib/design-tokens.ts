@@ -14,11 +14,11 @@
  * These are considered psychologically unsafe
  */
 export const FORBIDDEN_COLORS = [
-  "#FF0000", // Pure red
-  "#DC2626", // Tailwind red-600
-  "#EF4444", // Tailwind red-500
-  "#B91C1C", // Tailwind red-700
-  "#FFFFFF", // Pure white (as full backgrounds)
+  "#FF0000", // Pure red // design-ignore
+  "#DC2626", // Tailwind red-600 // design-ignore
+  "#EF4444", // Tailwind red-500 // design-ignore
+  "#B91C1C", // Tailwind red-700 // design-ignore
+  "#FFFFFF", // Pure white (as full backgrounds) // design-ignore
 ] as const;
 
 /**
@@ -26,9 +26,9 @@ export const FORBIDDEN_COLORS = [
  * These create shame and anxiety
  */
 export const FORBIDDEN_WORDS = [
-  "Overdue",
-  "Late",
-  "Urgent",
+  "Overdue", // design-ignore
+  "Late", // design-ignore
+  "Urgent", // design-ignore
   "Failed",
   "Error",
   "Deadline missed",
@@ -157,7 +157,7 @@ export type ToastVariant = typeof TOAST_VARIANTS[number];
 
 export function getGreeting(hour: number, userName?: string): string {
   const name = userName ? `, ${userName}` : "";
-  
+
   if (hour >= 5 && hour < 12) {
     return `Good morning${name}! Ready for a small step?`;
   } else if (hour >= 12 && hour < 17) {

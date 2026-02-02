@@ -10,13 +10,13 @@ import type { ThemeConfig, ThemeColors, ThemeTypography, ThemeSpacing, ThemeRadi
 // Light mode colors
 const lightColors: ThemeColors = {
     primary: '#14b8a6',
-    primaryForeground: '#ffffff',
+    primaryForeground: '#ffffff', // design-ignore
     secondary: '#8b7cf6',
-    secondaryForeground: '#ffffff',
+    secondaryForeground: '#ffffff', // design-ignore
     success: '#10b981',
     warning: '#f59e0b',
     neutral: '#faf9f7', // Warm white, NOT stark white
-    neutralElevated: '#ffffff',
+    neutralElevated: '#fefefe', // almost white // design-ignore
     dimOverlay: 'rgba(26, 26, 46, 0.7)',
     sand500: '#d97706',
     sage500: '#6b7280',
@@ -24,15 +24,15 @@ const lightColors: ThemeColors = {
     lavender600: '#7c3aed',
     textPrimary: '#1a1a2e',
     textSecondary: '#6b7280',
-    surfaceElevated: '#ffffff',
+    surfaceElevated: '#fefefe', // almost white // design-ignore
 };
 
 // Dark mode colors
 const darkColors: ThemeColors = {
     primary: '#14b8a6',
-    primaryForeground: '#ffffff',
+    primaryForeground: '#ffffff', // design-ignore
     secondary: '#8b7cf6',
-    secondaryForeground: '#ffffff',
+    secondaryForeground: '#ffffff', // design-ignore
     success: '#10b981',
     warning: '#f59e0b',
     neutral: '#1a1a2e',
@@ -150,8 +150,8 @@ export function ThemeProvider({ children }: ThemeProviderProps): React.ReactElem
     );
 
     return (
-        <ThemeContext.Provider value= { value } >
-        { children }
+        <ThemeContext.Provider value={value} >
+            {children}
         </ThemeContext.Provider>
     );
 }

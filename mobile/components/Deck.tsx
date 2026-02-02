@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   card: {
     width: SCREEN_WIDTH * 0.9,
     height: 500,
-    backgroundColor: "white",
+    backgroundColor: "#faf9f7",
     borderRadius: 20,
     padding: 20,
     shadowColor: "#000",

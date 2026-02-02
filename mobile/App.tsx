@@ -48,7 +48,7 @@ export default function App() {
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Focus Deck</Text>
             <TouchableOpacity onPress={() => logout()}>
-              <Text style={{ color: "red" }}>Logout</Text>
+              <Text style={styles.logoutText}>Logout</Text>
             </TouchableOpacity>
           </View>
 
@@ -120,7 +120,7 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#faf9f7", // Warm white
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
@@ -171,13 +171,16 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   buttonText: {
-    color: "#fff",
+    color: "#faf9f7",
     fontSize: 16,
     fontWeight: "600",
   },
   error: {
-    color: "red",
+    color: "#d97706", // Use amber/warning color instead of red
     marginBottom: 10,
+  },
+  logoutText: {
+    color: "#666",
   },
   switchButton: {
     marginTop: 20,

@@ -96,9 +96,9 @@
     
     /* ========================================
        FORBIDDEN: These colors should NEVER appear
-       - #FF0000 (pure red)
-       - #DC2626 (tailwind red-600)
-       - #FFFFFF as full background (use #faf9f7)
+       - #FF0000 (pure red) // design-ignore
+       - #DC2626 (tailwind red-600) // design-ignore
+       - #FFFFFF as full background (use #faf9f7) // design-ignore
        ======================================== */
     
     /* Destructive repurposed as gentle warning */

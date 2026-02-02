@@ -26,7 +26,7 @@ const variantConfig = {
     attention: {
         icon: Star,
         className: "bg-warning text-warning-foreground",
-        iconClassName: "text-white",
+        iconClassName: "text-warning-foreground",
     },
 } as const;
 
