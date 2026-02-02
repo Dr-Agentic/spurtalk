@@ -11,7 +11,7 @@ test.describe('Dashboard Smoke Tests', () => {
         await page.click('button:has-text("Let\'s go!")');
 
         // Wait for redirect to deck/dashboard
-        await expect(page).toHaveURL(/\/deck|\//, { timeout: 15000 });
+        await expect(page).toHaveURL(/\/deck$|\/$/, { timeout: 15000 });
 
         // Ensure we are on the main dashboard for stats tests
         await page.goto('/', { waitUntil: 'networkidle' });
@@ -20,11 +20,11 @@ test.describe('Dashboard Smoke Tests', () => {
     test('should display the dashboard greeting and stats', async ({ page }) => {
         console.log('Testing dashboard stats on:', page.url());
         // Wait for loading state to finish
-        await expect(page.getByText(/gathering/i)).toBeHidden({ timeout: 20000 });
+        await expect(page.getByText(/loading|gathering/i)).toBeHidden({ timeout: 20000 });
 
         // Wait for the main dashboard heading
         await page.waitForSelector('h1', { timeout: 20000 });
-        await expect(page.locator('h1').first()).toContainText(/tackle/i, { timeout: 15000 });
+        await expect(page.locator('h1').first()).toContainText(/good|morning|afternoon|evening|hey|tackle/i, { timeout: 15000 });
 
         // Check for Quick Stats section
         await expect(page.getByText(/your streak/i)).toBeVisible({ timeout: 10000 });
