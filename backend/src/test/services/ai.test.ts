@@ -67,7 +67,11 @@ describe("AiService Unit Tests", () => {
         mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse);
 
         const steps = await aiService.decomposeTask("Test Task");
-        expect(steps).toEqual([]);
+        expect(steps).toEqual([
+            { "text": "Take a breath", "estimatedSeconds": 10, "emotionalEffort": "zero" },
+            { "text": "Open the task", "estimatedSeconds": 30, "emotionalEffort": "zero" },
+            { "text": "Do the first tiny part", "estimatedSeconds": 120, "emotionalEffort": "minimal" }
+        ]);
     });
 
     it("should analyze a document", async () => {

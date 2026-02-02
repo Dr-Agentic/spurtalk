@@ -154,6 +154,43 @@ export default function DeckPage() {
         </AnimatePresence>
       </main>
 
+      {/* Swipe Alternatives (ButtonBar) - Requirement PG-004-swipeAlternatives */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        className="mt-12 flex items-center justify-center gap-4"
+      >
+        {tasks.length > 0 && (
+          <div className="flex gap-4 w-full">
+            <button
+              onClick={() => handleSwipe(tasks[0].id, "left")}
+              className="flex-1 flex flex-col items-center gap-1 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors border border-border/50"
+              title="Not right now"
+            >
+              <div className="text-body-small font-medium text-muted-foreground">Not right now</div>
+              <div className="text-[10px] text-muted-foreground/60">Swipe Left</div>
+            </button>
+            <button
+              onClick={() => handleSwipe(tasks[0].id, "down")}
+              className="flex-1 flex flex-col items-center gap-1 p-3 rounded-xl bg-primary/10 hover:bg-primary/20 transition-colors border border-primary/20"
+              title="Break this down"
+            >
+              <div className="text-body-small font-medium text-primary">Break this down</div>
+              <div className="text-[10px] text-primary/60">Swipe Down</div>
+            </button>
+            <button
+              onClick={() => handleSwipe(tasks[0].id, "right")}
+              className="flex-1 flex flex-col items-center gap-1 p-3 rounded-xl bg-primary hover:bg-primary/90 transition-colors shadow-gentle"
+              title="Do this now"
+            >
+              <div className="text-body-small font-medium text-primary-foreground">Do this now</div>
+              <div className="text-[10px] text-primary-foreground/60">Swipe Right</div>
+            </button>
+          </div>
+        )}
+      </motion.div>
+
       {/* Footer Info */}
       <motion.footer
         initial={{ opacity: 0 }}

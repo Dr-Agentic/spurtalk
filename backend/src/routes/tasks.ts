@@ -18,6 +18,7 @@ router.post("/", async (req: AuthRequest, res) => {
       return res.status(400).json({ error: error.errors });
     }
     const message = error instanceof Error ? error.message : "Failed to create task";
+    console.error("Failed to create task:", error);
     res.status(500).json({ error: message });
   }
 });
@@ -26,7 +27,8 @@ router.get("/deck", async (req: AuthRequest, res) => {
   try {
     const deck = await taskService.getDeck(req.userId!);
     res.json(deck);
-  } catch {
+  } catch (error) {
+    console.error("Failed to fetch focus deck:", error);
     res.status(500).json({ error: "Failed to fetch focus deck" });
   }
 });
@@ -61,7 +63,8 @@ router.get("/", async (req: AuthRequest, res) => {
       state: req.query.state as string,
     });
     res.json(tasks);
-  } catch {
+  } catch (error) {
+    console.error("Failed to fetch tasks:", error);
     res.status(500).json({ error: "Failed to fetch tasks" });
   }
 });

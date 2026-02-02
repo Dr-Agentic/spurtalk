@@ -3,14 +3,14 @@
 import * as React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Flame, Flower, TreeDeciduous, ChevronUp } from "lucide-react";
+import { Flame, Flower, TreeDeciduous, ChevronUp, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 interface GardenElement {
   id: string;
-  type: "flower" | "tree";
+  type: "flower" | "tree" | "sun";
   color: string;
 }
 
@@ -28,8 +28,8 @@ export function FooterGarden({
   const [isExpanded, setIsExpanded] = React.useState(false);
 
   // Generate placeholder elements if none provided
-  const elements = gardenElements.length > 0 
-    ? gardenElements 
+  const elements = gardenElements.length > 0
+    ? gardenElements
     : generatePlaceholderGarden();
 
   return (
@@ -53,8 +53,8 @@ export function FooterGarden({
               key={element.id}
               initial={{ scale: 0, y: 20 }}
               animate={{ scale: 1, y: 0 }}
-              transition={{ 
-                delay: index * 0.05, 
+              transition={{
+                delay: index * 0.05,
                 type: "spring",
                 stiffness: 300,
                 damping: 20
@@ -62,24 +62,28 @@ export function FooterGarden({
               className="flex flex-col items-center"
             >
               {element.type === "flower" ? (
-                <Flower 
-                  className="h-5 w-5 transition-transform hover:scale-110" 
+                <Flower
+                  className="h-5 w-5 transition-transform hover:scale-110"
+                  style={{ color: element.color }}
+                />
+              ) : element.type === "tree" ? (
+                <TreeDeciduous
+                  className="h-7 w-7 transition-transform hover:scale-110"
                   style={{ color: element.color }}
                 />
               ) : (
-                <TreeDeciduous 
-                  className="h-7 w-7 transition-transform hover:scale-110" 
-                  style={{ color: element.color }}
+                <Sparkles
+                  className="h-6 w-6 text-warning"
                 />
               )}
               {/* Stem */}
-              <div 
+              <div
                 className="w-0.5 rounded-full bg-success/60"
                 style={{ height: element.type === "flower" ? "12px" : "16px" }}
               />
             </motion.div>
           ))}
-          
+
           {/* Placeholder for more */}
           {elements.length > (isExpanded ? 12 : 6) && (
             <div className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground">
@@ -97,11 +101,11 @@ export function FooterGarden({
             className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
             aria-label={isExpanded ? "Collapse garden preview" : "Expand garden preview"}
           >
-            <ChevronUp 
+            <ChevronUp
               className={cn(
                 "h-4 w-4 transition-transform",
                 isExpanded && "rotate-180"
-              )} 
+              )}
             />
           </Button>
           <Button asChild variant="outline" size="sm" className="gap-2">
@@ -114,8 +118,8 @@ export function FooterGarden({
 
         {/* Streak Indicator */}
         <div className="flex items-center gap-2">
-          <Badge 
-            variant="secondary" 
+          <Badge
+            variant="secondary"
             className={cn(
               "gap-1.5 px-3 py-1",
               streakCount > 0 && "bg-warning/20 text-warning hover:bg-warning/30"

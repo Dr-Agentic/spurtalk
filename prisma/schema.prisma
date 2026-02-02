@@ -8,47 +8,45 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  passwordHash  String    @map("password_hash")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-  preferences   Json      @default("{}")
-  subscription  Json      @default("{}")
-  gardenState   Json      @default("{}") @map("garden_state")
-
-  tasks         Task[]
-  documents     Document[]
-  timelines     Timeline[]
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String     @map("password_hash")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  preferences  Json       @default("{}")
+  subscription Json       @default("{}")
+  gardenState  Json       @default("{}") @map("garden_state")
+  documents    Document[]
+  tasks        Task[]
+  timelines    Timeline[]
 
   @@map("users")
 }
 
 model Task {
-  id                String      @id @default(uuid())
-  userId            String      @map("user_id")
-  title             String
-  description       String?
-  effortLevel       String      @map("effort_level")
-  emotionalTag      String?     @map("emotional_tag")
-  fuzzyDeadline     String      @map("fuzzy_deadline")
-  hardDeadline      DateTime    @map("hard_deadline")
-  compellingEvent   String?     @map("compelling_event")
-  motivationCategory String?     @map("motivation_category")
-  state             String      @default("Deck")
-  nanoSteps         Json        @default("[]") @map("nano_steps")
-  createdAt         DateTime    @default(now()) @map("created_at")
-  updatedAt         DateTime    @updatedAt @map("updated_at")
-  completedAt       DateTime?   @map("completed_at")
-  stallDetectedAt   DateTime?   @map("stall_detected_at")
-  parentTaskId      String?     @map("parent_task_id")
-  dependencies      Json       @default("[]") @map("dependencies")
-  tags              Json       @default("[]") @map("tags")
-  deckOrder         Int?        @default(0) @map("deck_order")
-
-  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parentTask        Task?       @relation("TaskHierarchy", fields: [parentTaskId], references: [id])
-  subtasks          Task[]      @relation("TaskHierarchy")
+  id                 String    @id @default(uuid())
+  userId             String    @map("user_id")
+  title              String
+  description        String?
+  effortLevel        String    @map("effort_level")
+  emotionalTag       String?   @map("emotional_tag")
+  fuzzyDeadline      String    @map("fuzzy_deadline")
+  hardDeadline       DateTime  @map("hard_deadline")
+  compellingEvent    String?   @map("compelling_event")
+  motivationCategory String?   @map("motivation_category")
+  state              String    @default("Deck")
+  nanoSteps          Json      @default("[]") @map("nano_steps")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  completedAt        DateTime? @map("completed_at")
+  stallDetectedAt    DateTime? @map("stall_detected_at")
+  parentTaskId       String?   @map("parent_task_id")
+  dependencies       Json      @default("[]") @map("dependencies")
+  tags               Json      @default("[]") @map("tags")
+  deckOrder          Int?      @default(0) @map("deck_order")
+  parentTask         Task?     @relation("TaskHierarchy", fields: [parentTaskId], references: [id])
+  subtasks           Task[]    @relation("TaskHierarchy")
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([state])
@@ -57,18 +55,17 @@ model Task {
 }
 
 model Document {
-  id                String      @id @default(uuid())
-  userId            String      @map("user_id")
-  filename          String
-  fileType          String      @map("file_type")
-  fileSize          Int         @map("file_size")
-  uploadedAt        DateTime    @default(now()) @map("uploaded_at")
-  processingStatus  String      @default("pending") @map("processing_status")
-  extractedText     String?     @db.Text @map("extracted_text")
-  parsedTasks       Json        @default("[]") @map("parsed_tasks")
-  confidence        Decimal?     @db.Decimal(3, 2)
-
-  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  filename         String
+  fileType         String   @map("file_type")
+  fileSize         Int      @map("file_size")
+  uploadedAt       DateTime @default(now()) @map("uploaded_at")
+  processingStatus String   @default("pending") @map("processing_status")
+  extractedText    String?  @map("extracted_text")
+  parsedTasks      Json     @default("[]") @map("parsed_tasks")
+  confidence       Decimal? @db.Decimal(3, 2)
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([processingStatus])
@@ -76,15 +73,14 @@ model Document {
 }
 
 model Timeline {
-  id            String    @id @default(uuid())
-  userId        String    @map("user_id")
-  tasks         Json      @default("[]")
-  bufferDays    Json      @default("[]") @map("buffer_days")
-  stressClusters Json      @default("[]") @map("stress_clusters")
-  generatedAt   DateTime   @default(now()) @map("generated_at")
-  lastModified  DateTime   @updatedAt @map("last_modified")
-
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  tasks          Json     @default("[]")
+  bufferDays     Json     @default("[]") @map("buffer_days")
+  stressClusters Json     @default("[]") @map("stress_clusters")
+  generatedAt    DateTime @default(now()) @map("generated_at")
+  lastModified   DateTime @updatedAt @map("last_modified")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("timelines")

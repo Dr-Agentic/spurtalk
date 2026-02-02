@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export default function TimelinePage() {
+  console.log("!!! TIMELINE RENDERED !!!");
   const user = useAuthStore((state) => state.user);
   const [timeline, setTimeline] = useState<Timeline | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +48,7 @@ export default function TimelinePage() {
       <div className="container mx-auto max-w-2xl px-4 py-8">
         <div className="text-center">
           <Calendar className="mx-auto h-16 w-16 text-muted-foreground/50 mb-4" />
-          <h2 className="text-h2 text-foreground mb-2">Your River Timeline</h2>
+          <h2 className="text-h2 text-foreground mb-2">Your River</h2>
           <p className="text-body-small text-muted-foreground">
             Start adding tasks to see them flow through time.
           </p>
@@ -66,7 +67,7 @@ export default function TimelinePage() {
       <header className="mb-8 text-center">
         <h1 className="text-h2 text-foreground flex items-center justify-center gap-2">
           <Droplets className="h-7 w-7 text-primary" />
-          River Timeline
+          Your River
         </h1>
         <p className="mt-2 text-body-small text-muted-foreground">
           Watch your tasks flow through time, naturally.
@@ -117,7 +118,9 @@ function TimelineTaskItem({
       >
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-2 mb-2">
-            <h3 className="font-semibold text-foreground">Task</h3>
+            <h3 className="font-semibold text-foreground truncate max-w-[150px]">
+              {task.title || "Untitled Task"}
+            </h3>
             <Badge variant="secondary" className="text-xs">
               {format(new Date(task.scheduledDate), "MMM d")}
             </Badge>

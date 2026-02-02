@@ -35,6 +35,7 @@ export class TimelineService {
 
       return {
         taskId: task.id,
+        title: task.title,
         position: index,
         renderStyle,
         scheduledDate: new Date(task.hardDeadline),

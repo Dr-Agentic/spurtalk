@@ -55,7 +55,7 @@ export function AppLayout({ children, hideFooter = false, className }: AppLayout
       <NavigationHeader />
 
       {/* Main Content */}
-      <main 
+      <main
         className={cn(
           "flex-1",
           // Add bottom padding to account for footer
@@ -68,9 +68,9 @@ export function AppLayout({ children, hideFooter = false, className }: AppLayout
 
       {/* Footer Garden */}
       {!hideFooter && (
-        <FooterGarden 
-          streakCount={3} // TODO: Get from user data
-          gardenElements={[]} // TODO: Get from garden store
+        <FooterGarden
+          streakCount={user.gardenState?.currentStreak || 0}
+          gardenElements={user.gardenState?.elements || []}
         />
       )}
     </div>

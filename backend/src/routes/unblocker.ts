@@ -19,11 +19,11 @@ router.post("/check-stalls", async (req: AuthRequest, res) => {
 // Manual "I'm Stuck" trigger (Requirement 4.1)
 router.post("/:taskId/decompose", async (req: AuthRequest, res) => {
   try {
-    const steps = await unblockerService.decomposeTask(
+    const task = await unblockerService.decomposeTask(
       req.userId!,
       req.params.taskId
     );
-    res.json(steps);
+    res.json(task.nanoSteps);
   } catch (error: unknown) {
     if (error instanceof Error && error.message === "Task not found") {
       return res.status(404).json({ error: error.message });

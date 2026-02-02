@@ -75,9 +75,9 @@ export default function GardenPage() {
       {/* Sun */}
       <motion.div
         className="absolute top-8 right-8 md:top-16 md:right-16"
-        animate={{ 
-          scale: [1, 1.1, 1], 
-          opacity: [0.8, 1, 0.8] 
+        animate={{
+          scale: [1, 1.1, 1],
+          opacity: [0.8, 1, 0.8]
         }}
         transition={{ duration: 5, repeat: Infinity }}
         style={{ opacity: garden.sunBrightness }}
@@ -97,7 +97,7 @@ export default function GardenPage() {
               Every task completed grows something beautiful
             </p>
           </div>
-          
+
           <div className="flex gap-2">
             <Badge variant="secondary" className="gap-1">
               <Flower className="h-3 w-3" />
@@ -139,28 +139,34 @@ function GardenItem({ element, index }: { element: GardenElement; index: number 
     <motion.div
       initial={{ scale: 0, y: 50 }}
       animate={{ scale: 1, y: 0 }}
-      transition={{ 
-        delay: index * 0.05, 
+      transition={{
+        delay: index * 0.05,
         type: "spring",
         stiffness: 300,
         damping: 20
       }}
       whileHover={{ scale: 1.1 }}
-      className="flex flex-col items-center cursor-pointer"
+      className="flex flex-col items-center cursor-pointer group relative"
     >
+      {/* Tooltip */}
+      <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-[10px] py-1 px-2 rounded border border-border opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-sm">
+        {element.taskId?.startsWith("task-") ? "A beautiful growth" : "Task completed!"}
+        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-popover border-b border-r border-border rotate-45" />
+      </div>
+
       {element.type === "flower" ? (
-        <Flower 
-          className="h-8 w-8 md:h-10 md:w-10 transition-transform" 
+        <Flower
+          className="h-8 w-8 md:h-10 md:w-10 transition-transform"
           style={{ color: element.color }}
         />
       ) : (
-        <TreeDeciduous 
-          className="h-12 w-12 md:h-16 md:w-16 transition-transform" 
+        <TreeDeciduous
+          className="h-12 w-12 md:h-16 md:w-16 transition-transform"
           style={{ color: element.color }}
         />
       )}
       {/* Stem */}
-      <div 
+      <div
         className="w-0.5 rounded-full bg-success/60"
         style={{ height: element.type === "flower" ? "16px" : "24px" }}
       />
@@ -172,7 +178,7 @@ function generateMockGarden(): GardenElement[] {
   const colors = [
     "#14b8a6", "#8b7cf6", "#10b981", "#f59e0b", "#ec4899", "#6366f1",
   ];
-  
+
   return Array.from({ length: 12 }, (_, i) => ({
     id: `element-${i}`,
     type: Math.random() > 0.7 ? "tree" : "flower",

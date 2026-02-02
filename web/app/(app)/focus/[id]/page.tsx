@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Play,
@@ -33,7 +33,6 @@ const MOCK_TASK = {
 };
 
 export default function FocusModePage() {
-  const _params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const timerMinutes = searchParams.get("timer");

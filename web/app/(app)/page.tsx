@@ -4,34 +4,90 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useAuthStore } from "@/lib/store/auth";
+import { api } from "@/lib/api";
 import { type MoodOption } from "@/lib/design-tokens";
 import { HeroSection } from "@/components/dashboard/HeroSection";
 import { QuickStats } from "@/components/dashboard/QuickStats";
 import { MoodSelector } from "@/components/dashboard/MoodSelector";
 
-// Mock task data - in production this would come from API/store
-const MOCK_TASK = {
-  id: "task-1",
-  title: "Review the quarterly report",
-  description: "Take a quick look at the Q4 numbers and highlight any questions for tomorrow's meeting.",
-  effort: "Small" as const,
-  emotionalTag: "Boring" as const,
-};
+import { type Task } from "@spurtalk/shared";
 
-const MOCK_STATS = {
-  streak: 3,
-  todayWins: 2,
-  gardenGrowth: 12,
-};
+// Dashboard task with adjusted effort type for HeroSection
+type EffortLevel = "Tiny" | "Small" | "Medium" | "Big";
+
+interface DashboardTask extends Omit<Task, 'effortLevel'> {
+  effort: EffortLevel;
+}
 
 export default function DashboardPage() {
+  console.log("!!! DASHBOARD RENDERED !!!");
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const [currentMood, setCurrentMood] = React.useState<MoodOption>();
+  const [nextTask, setNextTask] = React.useState<DashboardTask | null>(null);
+  const [stats, setStats] = React.useState({
+    streak: 0,
+    todayWins: 0,
+    gardenGrowth: 0,
+  });
+  const [loading, setLoading] = React.useState(true);
+
+  console.log("[Dashboard] Rendered. User ID:", user?.id, "Loading:", loading);
+
+  React.useEffect(() => {
+    if (!user) return;
+
+    console.log("[Dashboard] Effect running for user:", user.id);
+
+    // Fetch deck
+    api.get("/tasks/deck")
+      .then((res) => {
+        const data = res.data as Task[];
+        if (data && data.length > 0) {
+          console.log("[Dashboard] Found deck task:", data[0].title);
+          const rawTask = data[0];
+          setNextTask({
+            ...rawTask,
+            effort: (rawTask.effortLevel as EffortLevel) || "Small"
+          });
+        } else {
+          // Fetch active
+          return api.get("/tasks?state=Active");
+        }
+      })
+      .then((res) => {
+        if (res && res.data) {
+          const data = res.data as Task[];
+          if (data.length > 0 && !nextTask) {
+            console.log("[Dashboard] Found active task:", data[0].title);
+            const rawTask = data[0];
+            setNextTask({
+              ...rawTask,
+              effort: (rawTask.effortLevel as EffortLevel) || "Small"
+            });
+          }
+        }
+      })
+      .catch((err: Error) => console.error("[Dashboard] Task fetch error:", err))
+      .finally(() => setLoading(false));
+
+    // Fetch garden
+    api.get("/garden")
+      .then((res) => {
+        const data = res.data;
+        if (data) {
+          setStats({
+            streak: data.currentStreak,
+            todayWins: (data.totalFlowers || 0) + (data.totalTrees || 0),
+            gardenGrowth: (data.totalFlowers || 0) + (data.totalTrees || 0),
+          });
+        }
+      })
+      .catch((err: Error) => console.error("[Dashboard] Garden fetch error:", err));
+  }, [user, nextTask]);
 
   const handleStartTimer = () => {
-    // In production, this would open a timer modal or navigate to focus mode
-    router.push(`/focus/${MOCK_TASK.id}?timer=2`);
+    if (nextTask) router.push(`/focus/${nextTask.id}?timer=2`);
   };
 
   const handleStartTask = (taskId: string) => {
@@ -40,8 +96,11 @@ export default function DashboardPage() {
 
   const handleMoodChange = (mood: MoodOption | undefined) => {
     setCurrentMood(mood);
-    // In production, this would filter/reorder tasks based on mood
   };
+
+  if (loading) {
+    return <div className="flex h-[60vh] items-center justify-center">Loading your dashboard...</div>;
+  }
 
   return (
     <motion.div
@@ -52,7 +111,7 @@ export default function DashboardPage() {
     >
       {/* Hero Section - Single Primary Task */}
       <HeroSection
-        task={MOCK_TASK}
+        task={nextTask}
         userName={(user as { name?: string })?.name}
         onStartTimer={handleStartTimer}
         onStartTask={handleStartTask}
@@ -60,9 +119,9 @@ export default function DashboardPage() {
 
       {/* Quick Stats */}
       <QuickStats
-        streak={MOCK_STATS.streak}
-        todayWins={MOCK_STATS.todayWins}
-        gardenGrowth={MOCK_STATS.gardenGrowth}
+        streak={stats.streak}
+        todayWins={stats.todayWins}
+        gardenGrowth={stats.gardenGrowth}
       />
 
       {/* Mood Selector */}

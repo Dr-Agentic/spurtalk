@@ -82,6 +82,7 @@ export interface Timeline {
 
 export interface TimelineTask {
   taskId: string;
+  title: string;
   position: number;
   renderStyle: "clear" | "blurred" | "misty";
   scheduledDate: Date;
