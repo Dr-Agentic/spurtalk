@@ -1,20 +1,36 @@
 import { z } from "zod";
 
-export const UserPreferencesSchema = z.object({
-  stallDetectionTimeout: z.number().min(1).max(168).default(24),
-  colorPalette: z.enum(["default", "high_contrast"]).default("default"),
-  fuzzyDeadlineLabels: z.object({
-    soon: z.number().default(2),
-    thisWeek: z.number().default(7),
-    eventually: z.number().default(30),
-  }).default({}),
-  notificationSettings: z.object({
-    taskReminders: z.boolean().default(true),
-    stallDetection: z.boolean().default(true),
-    milestoneCelebrations: z.boolean().default(true),
-  }).default({}),
-  timezone: z.string().default("UTC"),
-}).default({});
+// Export types from types.d.ts
+export type {
+  Card,
+  CardInput,
+  ChecklistItem,
+  ParentTask,
+  EmotionTag,
+  CardLifecycleState,
+} from "./types";
+
+export const UserPreferencesSchema = z
+  .object({
+    stallDetectionTimeout: z.number().min(1).max(168).default(24),
+    colorPalette: z.enum(["default", "high_contrast"]).default("default"),
+    fuzzyDeadlineLabels: z
+      .object({
+        soon: z.number().default(2),
+        thisWeek: z.number().default(7),
+        eventually: z.number().default(30),
+      })
+      .default({}),
+    notificationSettings: z
+      .object({
+        taskReminders: z.boolean().default(true),
+        stallDetection: z.boolean().default(true),
+        milestoneCelebrations: z.boolean().default(true),
+      })
+      .default({}),
+    timezone: z.string().default("UTC"),
+  })
+  .default({});
 
 export const TaskSchema = z.object({
   title: z.string().min(1, "Title is required").max(500),
@@ -33,6 +49,7 @@ export const TaskSchema = z.object({
   dependencies: z.array(z.string()).default([]),
   tags: z.array(z.string()).default([]),
   deckOrder: z.number().optional(),
+  parentTaskId: z.string().optional(),
 });
 
 export const NanoStepSchema = z.object({
@@ -48,7 +65,15 @@ export const NanoStepSchema = z.object({
 export const TaskResponseSchema = TaskSchema.extend({
   id: z.string(),
   userId: z.string(),
-  state: z.enum(["Deck", "River", "Garden", "Stalled", "Active", "Completed"]),
+  state: z.enum([
+    "Deck",
+    "River",
+    "Garden",
+    "Stalled",
+    "Active",
+    "Completed",
+    "Tracking",
+  ]),
   nanoSteps: z.array(NanoStepSchema).default([]),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -59,7 +84,15 @@ export const CreateTaskSchema = TaskSchema;
 
 export const UpdateTaskSchema = TaskSchema.partial().extend({
   state: z
-    .enum(["Deck", "River", "Garden", "Stalled", "Active", "Completed"])
+    .enum([
+      "Deck",
+      "River",
+      "Garden",
+      "Stalled",
+      "Active",
+      "Completed",
+      "Tracking",
+    ])
     .optional(),
   nanoSteps: z.array(NanoStepSchema).optional(),
 });

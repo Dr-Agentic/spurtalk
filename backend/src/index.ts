@@ -8,6 +8,7 @@ import timelineRoutes from "./routes/timeline";
 import gardenRoutes from "./routes/garden";
 import unblockerRoutes from "./routes/unblocker";
 import documentRoutes from "./routes/documents";
+import cardRoutes from "./routes/cardRoutes";
 import { apiLimiter, authLimiter } from "./middleware/rateLimit";
 
 dotenv.config();
@@ -45,6 +46,7 @@ app.use("/api/timeline", timelineRoutes);
 app.use("/api/garden", gardenRoutes);
 app.use("/api/unblocker", unblockerRoutes);
 app.use("/api/documents", documentRoutes);
+app.use("/api/cards", cardRoutes);
 
 // Export app for testing
 if (process.env.NODE_ENV === "test") {
