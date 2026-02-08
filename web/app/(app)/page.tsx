@@ -15,12 +15,11 @@ import { type Task } from "@spurtalk/shared";
 // Dashboard task with adjusted effort type for HeroSection
 type EffortLevel = "Tiny" | "Small" | "Medium" | "Big";
 
-interface DashboardTask extends Omit<Task, 'effortLevel'> {
+interface DashboardTask extends Omit<Task, "effortLevel"> {
   effort: EffortLevel;
 }
 
 export default function DashboardPage() {
-  console.log("!!! DASHBOARD RENDERED !!!");
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const [currentMood, setCurrentMood] = React.useState<MoodOption>();
@@ -32,23 +31,19 @@ export default function DashboardPage() {
   });
   const [loading, setLoading] = React.useState(true);
 
-  console.log("[Dashboard] Rendered. User ID:", user?.id, "Loading:", loading);
-
   React.useEffect(() => {
     if (!user) return;
 
-    console.log("[Dashboard] Effect running for user:", user.id);
-
     // Fetch deck
-    api.get("/tasks/deck")
+    api
+      .get("/tasks/deck")
       .then((res) => {
         const data = res.data as Task[];
         if (data && data.length > 0) {
-          console.log("[Dashboard] Found deck task:", data[0].title);
           const rawTask = data[0];
           setNextTask({
             ...rawTask,
-            effort: (rawTask.effortLevel as EffortLevel) || "Small"
+            effort: (rawTask.effortLevel as EffortLevel) || "Small",
           });
         } else {
           // Fetch active
@@ -59,20 +54,22 @@ export default function DashboardPage() {
         if (res && res.data) {
           const data = res.data as Task[];
           if (data.length > 0 && !nextTask) {
-            console.log("[Dashboard] Found active task:", data[0].title);
             const rawTask = data[0];
             setNextTask({
               ...rawTask,
-              effort: (rawTask.effortLevel as EffortLevel) || "Small"
+              effort: (rawTask.effortLevel as EffortLevel) || "Small",
             });
           }
         }
       })
-      .catch((err: Error) => console.error("[Dashboard] Task fetch error:", err))
+      .catch((err: Error) =>
+        console.error("[Dashboard] Task fetch error:", err)
+      )
       .finally(() => setLoading(false));
 
     // Fetch garden
-    api.get("/garden")
+    api
+      .get("/garden")
       .then((res) => {
         const data = res.data;
         if (data) {
@@ -83,7 +80,9 @@ export default function DashboardPage() {
           });
         }
       })
-      .catch((err: Error) => console.error("[Dashboard] Garden fetch error:", err));
+      .catch((err: Error) =>
+        console.error("[Dashboard] Garden fetch error:", err)
+      );
   }, [user, nextTask]);
 
   const handleStartTimer = () => {
@@ -99,7 +98,11 @@ export default function DashboardPage() {
   };
 
   if (loading) {
-    return <div className="flex h-[60vh] items-center justify-center">Loading your dashboard...</div>;
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        Loading your dashboard...
+      </div>
+    );
   }
 
   return (
@@ -125,10 +128,7 @@ export default function DashboardPage() {
       />
 
       {/* Mood Selector */}
-      <MoodSelector
-        value={currentMood}
-        onChange={handleMoodChange}
-      />
+      <MoodSelector value={currentMood} onChange={handleMoodChange} />
     </motion.div>
   );
 }

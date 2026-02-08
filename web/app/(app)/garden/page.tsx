@@ -21,17 +21,6 @@ export default function GardenPage() {
         setGarden(data);
       } catch (error) {
         console.error("Couldn't load your garden", error);
-        // Use mock data for demo
-        setGarden({
-          userId: user?.id || "",
-          elements: generateMockGarden(),
-          currentStreak: 3,
-          totalFlowers: 8,
-          totalTrees: 4,
-          sunBrightness: 0.8,
-          longestStreak: 7,
-          lastUpdated: new Date(),
-        } as GardenState);
       } finally {
         setLoading(false);
       }
@@ -45,7 +34,9 @@ export default function GardenPage() {
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <Flower className="h-8 w-8 text-success animate-bloom" />
-          <p className="text-body-small text-muted-foreground">Growing your garden...</p>
+          <p className="text-body-small text-muted-foreground">
+            Growing your garden...
+          </p>
         </div>
       </div>
     );
@@ -77,7 +68,7 @@ export default function GardenPage() {
         className="absolute top-8 right-8 md:top-16 md:right-16"
         animate={{
           scale: [1, 1.1, 1],
-          opacity: [0.8, 1, 0.8]
+          opacity: [0.8, 1, 0.8],
         }}
         transition={{ duration: 5, repeat: Infinity }}
         style={{ opacity: garden.sunBrightness }}
@@ -114,7 +105,11 @@ export default function GardenPage() {
         <Card className="max-w-sm mx-auto mb-8 border-warning/30 bg-warning/5">
           <CardContent className="flex items-center justify-center gap-3 py-4">
             <Sparkles className="h-6 w-6 text-warning animate-gentle-pulse" />
-            <span className="text-h3 text-foreground">{garden.currentStreak} Day Streak!</span>
+            <span className="text-h3 text-foreground">
+              {garden.currentStreak === 0
+                ? "Start your streak!"
+                : `${garden.currentStreak} Day Streak!`}
+            </span>
           </CardContent>
         </Card>
       </div>
@@ -122,9 +117,20 @@ export default function GardenPage() {
       {/* Garden Floor */}
       <div className="relative z-10 container mx-auto px-4 pb-32">
         <div className="flex flex-wrap justify-center items-end gap-4 min-h-[300px]">
-          {garden.elements.map((element, index) => (
-            <GardenItem key={element.id} element={element} index={index} />
-          ))}
+          {!garden.elements.length ? (
+            <div className="flex flex-col items-center gap-2">
+              <Flower className="h-8 w-8 text-success animate-bloom" />
+              <p className="text-body-small text-muted-foreground">
+                Your garden is waiting for its first bloom
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-wrap justify-center items-end gap-4 min-h-[300px]">
+              {garden.elements.map((element, index) => (
+                <GardenItem key={element.id} element={element} index={index} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -134,7 +140,13 @@ export default function GardenPage() {
   );
 }
 
-function GardenItem({ element, index }: { element: GardenElement; index: number }) {
+function GardenItem({
+  element,
+  index,
+}: {
+  element: GardenElement;
+  index: number;
+}) {
   return (
     <motion.div
       initial={{ scale: 0, y: 50 }}
@@ -143,14 +155,16 @@ function GardenItem({ element, index }: { element: GardenElement; index: number 
         delay: index * 0.05,
         type: "spring",
         stiffness: 300,
-        damping: 20
+        damping: 20,
       }}
       whileHover={{ scale: 1.1 }}
       className="flex flex-col items-center cursor-pointer group relative"
     >
       {/* Tooltip */}
       <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-[10px] py-1 px-2 rounded border border-border opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-sm">
-        {element.taskId?.startsWith("task-") ? "A beautiful growth" : "Task completed!"}
+        {element.id === "onboarding-flower"
+          ? "Your first bloom!"
+          : "A beautiful growth"}
         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-popover border-b border-r border-border rotate-45" />
       </div>
 
@@ -172,20 +186,4 @@ function GardenItem({ element, index }: { element: GardenElement; index: number 
       />
     </motion.div>
   );
-}
-
-function generateMockGarden(): GardenElement[] {
-  const colors = [
-    "#14b8a6", "#8b7cf6", "#10b981", "#f59e0b", "#ec4899", "#6366f1",
-  ];
-
-  return Array.from({ length: 12 }, (_, i) => ({
-    id: `element-${i}`,
-    type: Math.random() > 0.7 ? "tree" : "flower",
-    color: colors[Math.floor(Math.random() * colors.length)],
-    position: { x: 0, y: 0 },
-    size: 1,
-    taskId: `task-${i}`,
-    createdAt: new Date(),
-  } as GardenElement));
 }

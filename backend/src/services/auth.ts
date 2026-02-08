@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import jwt, { SignOptions } from "jsonwebtoken";
 import { PrismaClient, User, Document } from "@prisma/client";
 
@@ -98,6 +99,12 @@ export class AuthService {
       },
     });
 
+    try {
+      await this.createOnboardingAchievement(user.id);
+    } catch (error) {
+      console.error("Failed to create onboarding achievement:", error);
+    }
+
     const tokens = this.generateTokenPair(user.id);
 
     return {
@@ -181,6 +188,104 @@ export class AuthService {
       totalTrees: 0,
       lastUpdated: new Date(),
     };
+  }
+
+  private async createOnboardingAchievement(userId: string): Promise<void> {
+    // Idempotency guard — check if onboarding achievement already exists
+    const existing = await prisma.task.findFirst({
+      where: {
+        userId,
+        tags: {
+          array_contains: ["onboarding", "achievement"],
+        },
+      },
+    });
+
+    if (existing) {
+      return;
+    }
+
+    // Pre-generate a task ID
+    const taskId = crypto.randomUUID();
+
+    // Create the achievement task
+    await prisma.task.create({
+      data: {
+        id: taskId,
+        userId,
+        title: "I am not a procrastinator any more!",
+        description:
+          "You installed SpurTalk, created your account, and logged in. That's three steps already!",
+        effortLevel: "Small",
+        emotionalTag: "Fun",
+        fuzzyDeadline: "Soon",
+        hardDeadline: new Date(),
+        motivationCategory: "Achievement",
+        state: "Completed",
+        completedAt: new Date(),
+        tags: ["onboarding", "achievement"],
+        nanoSteps: [],
+      },
+    });
+
+    // Update the task with nano-steps
+    await prisma.task.update({
+      where: { id: taskId },
+      data: {
+        nanoSteps: [
+          {
+            id: "onboard-1",
+            text: "Install SpurTalk",
+            isCompleted: true,
+            estimatedSeconds: 60,
+            emotionalEffort: "zero",
+            parentTaskId: taskId,
+          },
+          {
+            id: "onboard-2",
+            text: "Create your account",
+            isCompleted: true,
+            estimatedSeconds: 120,
+            emotionalEffort: "zero",
+            parentTaskId: taskId,
+          },
+          {
+            id: "onboard-3",
+            text: "Log in for the first time",
+            isCompleted: true,
+            estimatedSeconds: 30,
+            emotionalEffort: "zero",
+            parentTaskId: taskId,
+          },
+        ],
+      },
+    });
+
+    // Seed garden state with the onboarding golden flower
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        gardenState: {
+          elements: [
+            {
+              id: "onboarding-flower",
+              type: "flower",
+              color: "#f59e0b",
+              position: { x: 0.5, y: 0.5 },
+              size: 1.2,
+              taskId: taskId,
+              createdAt: new Date(),
+            },
+          ],
+          totalFlowers: 1,
+          totalTrees: 0,
+          currentStreak: 1,
+          longestStreak: 1,
+          sunBrightness: 0.6,
+          lastUpdated: new Date(),
+        },
+      },
+    });
   }
 
   async exportUserData(userId: string) {

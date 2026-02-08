@@ -22,7 +22,10 @@ export class TaskService {
 
     let compellingEvent = data.compellingEvent;
     if (!compellingEvent && data.motivationCategory) {
-      compellingEvent = await aiService.generateCompellingEvent(data.title, data.motivationCategory);
+      compellingEvent = await aiService.generateCompellingEvent(
+        data.title,
+        data.motivationCategory
+      );
     }
 
     const task = await prisma.task.create({
@@ -38,9 +41,14 @@ export class TaskService {
         motivationCategory: data.motivationCategory,
         dependencies: data.dependencies || [],
         tags: data.tags || [],
+        parentTaskId: data.parentTaskId,
         state: "Deck",
       },
     });
+
+    if (data.parentTaskId) {
+      await this.updateTask(userId, data.parentTaskId, { state: "Tracking" });
+    }
 
     return task;
   }
@@ -69,7 +77,13 @@ export class TaskService {
 
   async updateTask(userId: string, taskId: string, data: UpdateTask) {
     // Ensure task exists and user owns it
-    await this.getTask(userId, taskId);
+    const task = await this.getTask(userId, taskId);
+
+    // Validate State Transition
+    // Prevent Garden -> Deck
+    if (task.state === "Garden" && data.state === "Deck") {
+      throw new Error("Cannot move task back to Deck from Garden");
+    }
 
     // Prevent circular dependencies if updating dependencies
     if (data.dependencies) {
@@ -99,6 +113,21 @@ export class TaskService {
       },
     });
 
+    // Parent-Child Aggregation: If task completed, check if parent is done
+    if (data.state === "Garden" && task.parentTaskId) {
+      const siblingsCount = await prisma.task.count({
+        where: {
+          parentTaskId: task.parentTaskId,
+          state: { not: "Garden" },
+        },
+      });
+
+      if (siblingsCount === 0) {
+        // All siblings are done, move parent to Garden
+        await this.updateTask(userId, task.parentTaskId, { state: "Garden" });
+      }
+    }
+
     return updatedTask;
   }
 
@@ -107,6 +136,40 @@ export class TaskService {
     return prisma.task.delete({
       where: { id: taskId },
     });
+  }
+
+  async detectStalledTasks(userId: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const prefs = (user?.preferences as UserPreferences) || {
+      stallDetectionTimeout: 24,
+    };
+    const timeoutHours = prefs.stallDetectionTimeout || 24;
+
+    const threshold = new Date();
+    threshold.setHours(threshold.getHours() - timeoutHours);
+
+    // Find Active tasks updated before threshold
+    const stalledTasks = await prisma.task.findMany({
+      where: {
+        userId,
+        state: "Active",
+        updatedAt: { lt: threshold },
+      },
+    });
+
+    if (stalledTasks.length > 0) {
+      await prisma.task.updateMany({
+        where: {
+          id: { in: stalledTasks.map((t) => t.id) },
+        },
+        data: {
+          state: "Stalled",
+          stallDetectedAt: new Date(),
+        },
+      });
+    }
+
+    return stalledTasks.length;
   }
 
   // Focus Deck Implementation

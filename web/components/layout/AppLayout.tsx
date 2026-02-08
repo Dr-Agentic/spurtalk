@@ -3,9 +3,23 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/store/auth";
+import { api } from "@/lib/api";
 import { NavigationHeader } from "./NavigationHeader";
 import { FooterGarden } from "./FooterGarden";
 import { cn } from "@/lib/utils";
+
+interface GardenData {
+  elements: Array<{
+    id: string;
+    type: "flower" | "tree" | "sun";
+    color: string;
+  }>;
+  currentStreak: number;
+  totalFlowers: number;
+  totalTrees: number;
+  sunBrightness: number;
+  longestStreak: number;
+}
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -15,10 +29,15 @@ interface AppLayoutProps {
   className?: string;
 }
 
-export function AppLayout({ children, hideFooter = false, className }: AppLayoutProps) {
+export function AppLayout({
+  children,
+  hideFooter = false,
+  className,
+}: AppLayoutProps) {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const [isHydrated, setIsHydrated] = React.useState(false);
+  const [gardenData, setGardenData] = React.useState<GardenData | null>(null);
 
   // Handle hydration
   React.useEffect(() => {
@@ -31,6 +50,20 @@ export function AppLayout({ children, hideFooter = false, className }: AppLayout
       router.push("/login");
     }
   }, [isHydrated, user, router]);
+
+  // Fetch real garden data from API
+  React.useEffect(() => {
+    if (!user || hideFooter) return;
+
+    api
+      .get<GardenData>("/garden")
+      .then(({ data }) => {
+        if (data) setGardenData(data);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch garden for footer:", err);
+      });
+  }, [user, hideFooter]);
 
   // Show loading state during hydration
   if (!isHydrated) {
@@ -69,8 +102,8 @@ export function AppLayout({ children, hideFooter = false, className }: AppLayout
       {/* Footer Garden */}
       {!hideFooter && (
         <FooterGarden
-          streakCount={user.gardenState?.currentStreak || 0}
-          gardenElements={user.gardenState?.elements || []}
+          streakCount={gardenData?.currentStreak || 0}
+          gardenElements={gardenData?.elements || []}
         />
       )}
     </div>

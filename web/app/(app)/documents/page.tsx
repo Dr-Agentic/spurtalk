@@ -1,22 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { FileText, Upload, Sparkles, File, Image, FileSpreadsheet } from "lucide-react";
+import {
+  FileText,
+  Upload,
+  Sparkles,
+  File,
+  Image,
+  FileSpreadsheet,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAuthStore } from "@/lib/store/auth";
+import { api } from "@/lib/api";
 
-// Mock documents
-const MOCK_DOCUMENTS = [
-  { id: "1", name: "Project Roadmap.pdf", type: "pdf", tasksExtracted: 5, uploadedAt: new Date() },
-  { id: "2", name: "Meeting Notes.docx", type: "doc", tasksExtracted: 3, uploadedAt: new Date() },
-  { id: "3", name: "Sprint Planning.xlsx", type: "spreadsheet", tasksExtracted: 8, uploadedAt: new Date() },
-];
+interface DocumentItem {
+  id: string;
+  name: string;
+  type: string;
+  tasksExtracted: number;
+  uploadedAt: string;
+}
 
 export default function DocumentsPage() {
-  const [documents] = useState(MOCK_DOCUMENTS);
+  const user = useAuthStore((state) => state.user);
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        const { data } = await api.get<DocumentItem[]>("/documents");
+        setDocuments(data || []);
+      } catch (error) {
+        console.error("Couldn't load documents", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) fetchDocuments();
+  }, [user]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -40,13 +73,31 @@ export default function DocumentsPage() {
       case "pdf":
         return <FileText className="h-5 w-5 text-destructive" />;
       case "image":
-        return <Image className="h-5 w-5 text-secondary" aria-label="Image document" />;
+        return (
+          <Image
+            className="h-5 w-5 text-secondary"
+            aria-label="Image document"
+          />
+        );
       case "spreadsheet":
         return <FileSpreadsheet className="h-5 w-5 text-success" />;
       default:
         return <File className="h-5 w-5 text-muted-foreground" />;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <FileText className="h-8 w-8 text-primary animate-gentle-pulse" />
+          <p className="text-body-small text-muted-foreground">
+            Loading documents...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -67,8 +118,11 @@ export default function DocumentsPage() {
 
       {/* Upload Zone */}
       <Card
-        className={`mb-8 border-2 border-dashed transition-colors ${isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/30"
-          }`}
+        className={`mb-8 border-2 border-dashed transition-colors ${
+          isDragging
+            ? "border-primary bg-primary/5"
+            : "border-muted-foreground/30"
+        }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -126,7 +180,9 @@ export default function DocumentsPage() {
                     <div className="flex-1">
                       <CardTitle className="text-base">{doc.name}</CardTitle>
                       <CardDescription className="text-caption">
-                        Uploaded today
+                        {doc.uploadedAt
+                          ? new Date(doc.uploadedAt).toLocaleDateString()
+                          : "Recently uploaded"}
                       </CardDescription>
                     </div>
                     <Badge variant="secondary" className="gap-1">

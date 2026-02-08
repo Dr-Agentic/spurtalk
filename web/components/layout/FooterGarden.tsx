@@ -3,7 +3,13 @@
 import * as React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Flame, Flower, TreeDeciduous, ChevronUp, Sparkles } from "lucide-react";
+import {
+  Flame,
+  Flower,
+  TreeDeciduous,
+  ChevronUp,
+  Sparkles,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,10 +33,7 @@ export function FooterGarden({
 }: FooterGardenProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
 
-  // Generate placeholder elements if none provided
-  const elements = gardenElements.length > 0
-    ? gardenElements
-    : generatePlaceholderGarden();
+  const elements = gardenElements;
 
   return (
     <motion.footer
@@ -48,43 +51,49 @@ export function FooterGarden({
       <div className="container mx-auto flex h-full items-end justify-between px-4 pb-3">
         {/* Garden Preview */}
         <div className="flex items-end gap-1">
-          {elements.slice(0, isExpanded ? 12 : 6).map((element, index) => (
-            <motion.div
-              key={element.id}
-              initial={{ scale: 0, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              transition={{
-                delay: index * 0.05,
-                type: "spring",
-                stiffness: 300,
-                damping: 20
-              }}
-              className="flex flex-col items-center"
-            >
-              {element.type === "flower" ? (
-                <Flower
-                  className="h-5 w-5 transition-transform hover:scale-110"
-                  style={{ color: element.color }}
+          {elements.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic">
+              Complete tasks to grow your garden
+            </p>
+          ) : (
+            elements.slice(0, isExpanded ? 12 : 6).map((element, index) => (
+              <motion.div
+                key={element.id}
+                initial={{ scale: 0, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                transition={{
+                  delay: index * 0.05,
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 20,
+                }}
+                className="flex flex-col items-center"
+              >
+                {element.type === "flower" ? (
+                  <Flower
+                    className="h-5 w-5 transition-transform hover:scale-110"
+                    style={{ color: element.color }}
+                  />
+                ) : element.type === "tree" ? (
+                  <TreeDeciduous
+                    className="h-7 w-7 transition-transform hover:scale-110"
+                    style={{ color: element.color }}
+                  />
+                ) : (
+                  <Sparkles className="h-6 w-6 text-warning" />
+                )}
+                {/* Stem */}
+                <div
+                  className="w-0.5 rounded-full bg-success/60"
+                  style={{
+                    height: element.type === "flower" ? "12px" : "16px",
+                  }}
                 />
-              ) : element.type === "tree" ? (
-                <TreeDeciduous
-                  className="h-7 w-7 transition-transform hover:scale-110"
-                  style={{ color: element.color }}
-                />
-              ) : (
-                <Sparkles
-                  className="h-6 w-6 text-warning"
-                />
-              )}
-              {/* Stem */}
-              <div
-                className="w-0.5 rounded-full bg-success/60"
-                style={{ height: element.type === "flower" ? "12px" : "16px" }}
-              />
-            </motion.div>
-          ))}
+              </motion.div>
+            ))
+          )}
 
-          {/* Placeholder for more */}
+          {/* Indicator for more */}
           {elements.length > (isExpanded ? 12 : 6) && (
             <div className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground">
               +{elements.length - (isExpanded ? 12 : 6)}
@@ -99,7 +108,9 @@ export function FooterGarden({
             size="sm"
             onClick={() => setIsExpanded(!isExpanded)}
             className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-            aria-label={isExpanded ? "Collapse garden preview" : "Expand garden preview"}
+            aria-label={
+              isExpanded ? "Collapse garden preview" : "Expand garden preview"
+            }
           >
             <ChevronUp
               className={cn(
@@ -122,15 +133,20 @@ export function FooterGarden({
             variant="secondary"
             className={cn(
               "gap-1.5 px-3 py-1",
-              streakCount > 0 && "bg-warning/20 text-warning hover:bg-warning/30"
+              streakCount > 0 &&
+                "bg-warning/20 text-warning hover:bg-warning/30"
             )}
           >
-            <Flame className={cn(
-              "h-4 w-4",
-              streakCount > 0 && "animate-gentle-pulse"
-            )} />
+            <Flame
+              className={cn(
+                "h-4 w-4",
+                streakCount > 0 && "animate-gentle-pulse"
+              )}
+            />
             <span className="font-semibold">
-              {streakCount > 0 ? `${streakCount} day streak` : "Start a streak!"}
+              {streakCount > 0
+                ? `${streakCount} day streak`
+                : "Start a streak!"}
             </span>
           </Badge>
         </div>
@@ -140,22 +156,4 @@ export function FooterGarden({
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-success/20 via-success/40 to-success/20" />
     </motion.footer>
   );
-}
-
-// Generate placeholder garden for demo
-function generatePlaceholderGarden(): GardenElement[] {
-  const colors = [
-    "#14b8a6", // teal (primary)
-    "#8b7cf6", // lavender (secondary)
-    "#10b981", // emerald (success)
-    "#f59e0b", // amber (warning)
-    "#ec4899", // pink
-    "#6366f1", // indigo
-  ];
-
-  return Array.from({ length: 8 }, (_, i) => ({
-    id: `placeholder-${i}`,
-    type: Math.random() > 0.7 ? "tree" : "flower",
-    color: colors[Math.floor(Math.random() * colors.length)],
-  }));
 }

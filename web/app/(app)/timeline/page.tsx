@@ -12,7 +12,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export default function TimelinePage() {
-  console.log("!!! TIMELINE RENDERED !!!");
   const user = useAuthStore((state) => state.user);
   const [timeline, setTimeline] = useState<Timeline | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,7 +36,9 @@ export default function TimelinePage() {
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-gentle-pulse rounded-full bg-primary" />
-          <p className="text-body-small text-muted-foreground">Loading your river...</p>
+          <p className="text-body-small text-muted-foreground">
+            Loading your river...
+          </p>
         </div>
       </div>
     );
@@ -112,8 +113,10 @@ function TimelineTaskItem({
       <Card
         className={cn(
           "w-5/12 transition-all duration-500 hover:shadow-card",
-          task.renderStyle === "blurred" && "blur-[2px] hover:blur-none opacity-80",
-          task.renderStyle === "misty" && "blur-[4px] hover:blur-[1px] opacity-60"
+          task.renderStyle === "blurred" &&
+            "blur-[2px] hover:blur-none opacity-80",
+          task.renderStyle === "misty" &&
+            "blur-[4px] hover:blur-[1px] opacity-60"
         )}
       >
         <CardContent className="p-4">
@@ -126,17 +129,23 @@ function TimelineTaskItem({
             </Badge>
           </div>
           {(task as { isBufferDay?: boolean }).isBufferDay && (
-            <p className="text-caption text-success">🌿 Buffer day - time to rest</p>
+            <p className="text-caption text-success">
+              🌿 Buffer day - time to rest
+            </p>
           )}
         </CardContent>
       </Card>
 
       {/* River Node */}
       <div className="relative z-10">
-        <div className={cn(
-          "h-4 w-4 rounded-full border-4 border-background",
-          (task as { isBufferDay?: boolean }).isBufferDay ? "bg-success" : "bg-primary"
-        )} />
+        <div
+          className={cn(
+            "h-4 w-4 rounded-full border-4 border-background",
+            (task as { isBufferDay?: boolean }).isBufferDay
+              ? "bg-success"
+              : "bg-primary"
+          )}
+        />
       </div>
 
       <div className="w-5/12" />

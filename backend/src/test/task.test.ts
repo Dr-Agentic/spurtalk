@@ -58,6 +58,36 @@ describe("TaskService", () => {
       expect(task.userId).toBe(testUserId);
     });
 
+    it("should move parent to Tracking when child is created", async () => {
+      // 1. Create Parent Task
+      const parent = await taskService.createTask(testUserId, {
+        title: "Parent Project",
+        effortLevel: "Big",
+        fuzzyDeadline: "Eventually",
+        hardDeadline: new Date(),
+        dependencies: [],
+        tags: [],
+      });
+      createdTaskIds.push(parent.id);
+      expect(parent.state).toBe("Deck");
+
+      // 2. Create Child Task linked to Parent
+      const child = await taskService.createTask(testUserId, {
+        title: "Child Task",
+        effortLevel: "Small",
+        fuzzyDeadline: "Soon",
+        hardDeadline: new Date(),
+        dependencies: [],
+        tags: [],
+        parentTaskId: parent.id,
+      });
+      createdTaskIds.push(child.id);
+
+      // 3. Check Parent State
+      const updatedParent = await taskService.getTask(testUserId, parent.id);
+      expect(updatedParent.state).toBe("Tracking");
+    });
+
     it("should fail with invalid dependencies", async () => {
       const taskData: CreateTask = {
         title: "Task with invalid deps",
@@ -152,6 +182,124 @@ describe("TaskService", () => {
       });
       expect(activeTasks.find((t) => t.id === task2.id)).toBeDefined();
       expect(activeTasks.find((t) => t.id === task1.id)).toBeUndefined();
+    });
+  });
+
+  describe("Task State Logic", () => {
+    it("should allow Deck -> Active transition (TEST-001)", async () => {
+      const task = await taskService.createTask(testUserId, {
+        title: "Deck Task",
+        effortLevel: "Tiny",
+        fuzzyDeadline: "Soon",
+        hardDeadline: new Date(),
+        dependencies: [],
+        tags: [],
+      });
+
+      const updated = await taskService.updateTask(testUserId, task.id, {
+        state: "Active",
+      });
+      expect(updated.state).toBe("Active");
+    });
+
+    it("should fail Garden -> Deck transition (TEST-002)", async () => {
+      const task = await taskService.createTask(testUserId, {
+        title: "Garden Task",
+        effortLevel: "Tiny",
+        fuzzyDeadline: "Soon",
+        hardDeadline: new Date(),
+        dependencies: [],
+        tags: [],
+      });
+
+      // Move to Garden first
+      await taskService.updateTask(testUserId, task.id, { state: "Garden" });
+
+      await expect(
+        taskService.updateTask(testUserId, task.id, { state: "Deck" })
+      ).rejects.toThrow("Cannot move task back to Deck from Garden");
+    });
+
+    it("should auto-complete Parent when last child finishes (TEST-003)", async () => {
+      // 1. Create Parent Task
+      const parent = await taskService.createTask(testUserId, {
+        title: "Parent Project",
+        effortLevel: "Big",
+        fuzzyDeadline: "Eventually",
+        hardDeadline: new Date(),
+        dependencies: [],
+        tags: [],
+      });
+      // Set parent to Tracking state (assuming it's a project)
+      await taskService.updateTask(testUserId, parent.id, {
+        state: "Tracking",
+      });
+
+      // 2. Create Child Tasks linked to Parent
+      // Note: We need to use Prisma directly to set parentTaskId if create schema doesn't support it yet
+      const child1 = await prisma.task.create({
+        data: {
+          userId: testUserId,
+          title: "Child 1",
+          effortLevel: "Small",
+          fuzzyDeadline: "Soon",
+          hardDeadline: new Date(),
+          state: "Deck",
+          parentTaskId: parent.id,
+        },
+      });
+
+      const child2 = await prisma.task.create({
+        data: {
+          userId: testUserId,
+          title: "Child 2",
+          effortLevel: "Small",
+          fuzzyDeadline: "Soon",
+          hardDeadline: new Date(),
+          state: "Deck",
+          parentTaskId: parent.id,
+        },
+      });
+
+      // 3. Complete Child 1 -> Parent should remain Tracking
+      await taskService.updateTask(testUserId, child1.id, { state: "Garden" });
+      const parentAfter1 = await taskService.getTask(testUserId, parent.id);
+      expect(parentAfter1.state).toBe("Tracking");
+
+      // 4. Complete Child 2 -> Parent should move to Garden
+      await taskService.updateTask(testUserId, child2.id, { state: "Garden" });
+      const parentAfter2 = await taskService.getTask(testUserId, parent.id);
+      expect(parentAfter2.state).toBe("Garden");
+    });
+
+    it("should identify stalled tasks (TEST-004)", async () => {
+      const task = await taskService.createTask(testUserId, {
+        title: "Stalled Task",
+        effortLevel: "Tiny",
+        fuzzyDeadline: "Soon",
+        hardDeadline: new Date(),
+        dependencies: [],
+        tags: [],
+      });
+
+      // Set to Active
+      await taskService.updateTask(testUserId, task.id, { state: "Active" });
+
+      // Manually update updatedAt to be in the past (e.g., 48 hours ago)
+      const twoDaysAgo = new Date();
+      twoDaysAgo.setHours(twoDaysAgo.getHours() - 48);
+
+      await prisma.task.update({
+        where: { id: task.id },
+        data: { updatedAt: twoDaysAgo },
+      });
+
+      // Run stall detection
+      const stalledCount = await taskService.detectStalledTasks(testUserId);
+      expect(stalledCount).toBe(1);
+
+      const stalledTask = await taskService.getTask(testUserId, task.id);
+      expect(stalledTask.state).toBe("Stalled");
     });
   });
 

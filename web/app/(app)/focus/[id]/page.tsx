@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Play,
@@ -10,7 +10,8 @@ import {
   ArrowLeft,
   Timer,
   Sparkles,
-  ChevronDown
+  ChevronDown,
+  Flower,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,26 +19,18 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { getRandomCelebration } from "@/lib/design-tokens";
-
-// Mock task data
-const MOCK_TASK = {
-  id: "task-1",
-  title: "Review the quarterly report",
-  description: "Take a quick look at the Q4 numbers and highlight any questions for tomorrow's meeting.",
-  effort: "Small" as const,
-  nanoSteps: [
-    { id: "step-1", text: "Open the report document", completed: false },
-    { id: "step-2", text: "Scan the executive summary", completed: false },
-    { id: "step-3", text: "Note any questions", completed: false },
-  ],
-};
+import { api } from "@/lib/api";
+import { NanoStep } from "@spurtalk/shared";
 
 export default function FocusModePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useParams();
   const timerMinutes = searchParams.get("timer");
 
-  const [task] = useState(MOCK_TASK);
+  const [task, setTask] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [isTimerActive, setIsTimerActive] = useState(!!timerMinutes);
   const [timeRemaining, setTimeRemaining] = useState(
     timerMinutes ? parseInt(timerMinutes) * 60 : 2 * 60
@@ -45,6 +38,29 @@ export default function FocusModePage() {
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebration, setCelebration] = useState("");
+
+  // Fetch task data
+  useEffect(() => {
+    const fetchTask = async () => {
+      try {
+        const { data } = await api.get(`/tasks/${params.id}`);
+        setTask(data);
+        // Initialize completedSteps from pre-completed nano-steps
+        const preCompletedSteps = data.nanoSteps
+          .filter((step: NanoStep) => step.isCompleted)
+          .map((step: NanoStep) => step.id);
+        setCompletedSteps(preCompletedSteps);
+      } catch (err) {
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (params.id) {
+      fetchTask();
+    }
+  }, [params.id]);
 
   // Timer logic
   useEffect(() => {
@@ -87,9 +103,10 @@ export default function FocusModePage() {
     }, 2000);
   };
 
-  const progress = task.nanoSteps.length > 0
-    ? (completedSteps.length / task.nanoSteps.length) * 100
-    : 0;
+  const progress =
+    task && task.nanoSteps && task.nanoSteps.length > 0
+      ? (completedSteps.length / task.nanoSteps.length) * 100
+      : 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -111,7 +128,7 @@ export default function FocusModePage() {
               <motion.div
                 animate={{
                   rotate: [0, 10, -10, 0],
-                  scale: [1, 1.2, 1]
+                  scale: [1, 1.2, 1],
                 }}
                 transition={{ duration: 0.5 }}
               >
@@ -168,103 +185,146 @@ export default function FocusModePage() {
 
       {/* Content */}
       <main className="container mx-auto max-w-2xl px-4 py-8">
-        {/* Task Info */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <Badge variant="outline" className="mb-3">
-            {task.effort}
-          </Badge>
-          <h1 className="text-h2 text-foreground mb-2">{task.title}</h1>
-          {task.description && (
-            <p className="text-body text-muted-foreground">{task.description}</p>
-          )}
-        </motion.div>
-
-        {/* Progress */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-8"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-body-small text-muted-foreground">Progress</span>
-            <span className="text-body-small font-medium text-foreground">
-              {completedSteps.length} / {task.nanoSteps.length}
-            </span>
-          </div>
-          <Progress value={progress} className="h-2" />
-        </motion.div>
-
-        {/* Nano Steps */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-3 mb-8"
-        >
-          <h3 className="text-subheader text-foreground flex items-center gap-2">
-            <ChevronDown className="h-5 w-5" />
-            Tiny Steps
-          </h3>
-
-          {task.nanoSteps.map((step, index) => {
-            const isCompleted = completedSteps.includes(step.id);
-            return (
-              <motion.div
-                key={step.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 + index * 0.1 }}
-              >
-                <Card
-                  className={cn(
-                    "cursor-pointer transition-all hover:border-primary/30",
-                    isCompleted && "bg-success/10 border-success/30"
-                  )}
-                  onClick={() => toggleStep(step.id)}
-                >
-                  <CardContent className="flex items-center gap-3 py-3 px-4">
-                    <div className={cn(
-                      "flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors",
-                      isCompleted
-                        ? "bg-success border-success text-success-foreground"
-                        : "border-muted-foreground/30"
-                    )}>
-                      {isCompleted && <CheckCircle2 className="h-4 w-4" />}
-                    </div>
-                    <span className={cn(
-                      "text-body transition-colors",
-                      isCompleted && "text-muted-foreground line-through"
-                    )}>
-                      {step.text}
-                    </span>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </motion.div>
-
-        {/* Complete Button */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <Button
-            size="lg"
-            className="w-full h-12 text-base font-medium gap-2"
-            onClick={handleComplete}
-            disabled={completedSteps.length === 0}
+        {/* Loading State */}
+        {loading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center justify-center py-16"
           >
-            <CheckCircle2 className="h-5 w-5" />
-            Mark Complete
-          </Button>
-        </motion.div>
+            <Flower className="h-8 w-8 text-success animate-bloom mb-4" />
+            <p className="text-body text-muted-foreground">
+              Loading your task...
+            </p>
+          </motion.div>
+        )}
+
+        {/* Error State */}
+        {!loading && error && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center py-16 text-center"
+          >
+            <p className="text-h3 text-foreground mb-2">
+              This task couldn&apos;t be found
+            </p>
+            <p className="text-body text-muted-foreground mb-6">
+              It may have been moved or deleted.
+            </p>
+            <Button onClick={() => router.push("/deck")}>Back to Deck</Button>
+          </motion.div>
+        )}
+
+        {/* Task Info */}
+        {!loading && !error && task && (
+          <>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8"
+            >
+              <Badge variant="outline" className="mb-3">
+                {task.effortLevel}
+              </Badge>
+              <h1 className="text-h2 text-foreground mb-2">{task.title}</h1>
+              {task.description && (
+                <p className="text-body text-muted-foreground">
+                  {task.description}
+                </p>
+              )}
+            </motion.div>
+
+            {/* Progress */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mb-8"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-body-small text-muted-foreground">
+                  Progress
+                </span>
+                <span className="text-body-small font-medium text-foreground">
+                  {completedSteps.length} / {task.nanoSteps.length}
+                </span>
+              </div>
+              <Progress value={progress} className="h-2" />
+            </motion.div>
+
+            {/* Nano Steps */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="space-y-3 mb-8"
+            >
+              <h3 className="text-subheader text-foreground flex items-center gap-2">
+                <ChevronDown className="h-5 w-5" />
+                Tiny Steps
+              </h3>
+
+              {task.nanoSteps.map((step: NanoStep, index: number) => {
+                const isCompleted = completedSteps.includes(step.id);
+                return (
+                  <motion.div
+                    key={step.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 + index * 0.1 }}
+                  >
+                    <Card
+                      className={cn(
+                        "cursor-pointer transition-all hover:border-primary/30",
+                        isCompleted && "bg-success/10 border-success/30"
+                      )}
+                      onClick={() => toggleStep(step.id)}
+                    >
+                      <CardContent className="flex items-center gap-3 py-3 px-4">
+                        <div
+                          className={cn(
+                            "flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors",
+                            isCompleted
+                              ? "bg-success border-success text-success-foreground"
+                              : "border-muted-foreground/30"
+                          )}
+                        >
+                          {isCompleted && <CheckCircle2 className="h-4 w-4" />}
+                        </div>
+                        <span
+                          className={cn(
+                            "text-body transition-colors",
+                            isCompleted && "text-muted-foreground line-through"
+                          )}
+                        >
+                          {step.text}
+                        </span>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+
+            {/* Complete Button */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Button
+                size="lg"
+                className="w-full h-12 text-base font-medium gap-2"
+                onClick={handleComplete}
+                disabled={completedSteps.length === 0}
+              >
+                <CheckCircle2 className="h-5 w-5" />
+                Mark Complete
+              </Button>
+            </motion.div>
+          </>
+        )}
       </main>
     </div>
   );
