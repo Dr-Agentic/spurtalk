@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@prisma/client": "^7.3.0",
+    "@prisma/client": "6.2.1",
     "@spurtalk/shared": "*",
     "@spurtalk/types": "*",
     "@types/multer": "^2.0.0",
