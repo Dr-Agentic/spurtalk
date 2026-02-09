@@ -35,8 +35,8 @@ export class TaskService {
         description: data.description,
         effortLevel: data.effortLevel,
         emotionalTag: data.emotionalTag,
-        fuzzyDeadline: data.fuzzyDeadline,
-        hardDeadline: data.hardDeadline,
+        fuzzyDeadline: data.fuzzyDeadline ?? "",
+        hardDeadline: data.hardDeadline ?? "",
         compellingEvent: compellingEvent,
         motivationCategory: data.motivationCategory,
         dependencies: data.dependencies || [],
@@ -160,7 +160,7 @@ export class TaskService {
     if (stalledTasks.length > 0) {
       await prisma.task.updateMany({
         where: {
-          id: { in: stalledTasks.map((t) => t.id) },
+          id: { in: stalledTasks.map((t: Task) => t.id) },
         },
         data: {
           state: "Stalled",

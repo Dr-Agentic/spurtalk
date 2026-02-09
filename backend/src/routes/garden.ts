@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, Response } from "express";
 import { gardenService } from "../services/garden";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
 
@@ -6,7 +6,7 @@ const router = Router();
 
 router.use(authenticateToken);
 
-router.get("/", async (req: AuthRequest, res) => {
+router.get("/", async (req: AuthRequest, res: Response) => {
   try {
     const garden = await gardenService.getGardenState(req.userId!);
     res.json(garden);
@@ -15,11 +15,11 @@ router.get("/", async (req: AuthRequest, res) => {
   }
 });
 
-router.post("/complete/:taskId", async (req: AuthRequest, res) => {
+router.post("/complete/:taskId", async (req: AuthRequest, res: Response) => {
   try {
     const garden = await gardenService.processTaskCompletion(
       req.userId!,
-      req.params.taskId
+      req.params.taskId as string
     );
     res.json(garden);
   } catch (error: unknown) {

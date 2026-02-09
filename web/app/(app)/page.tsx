@@ -9,6 +9,8 @@ import { type MoodOption } from "@/lib/design-tokens";
 import { HeroSection } from "@/components/dashboard/HeroSection";
 import { QuickStats } from "@/components/dashboard/QuickStats";
 import { MoodSelector } from "@/components/dashboard/MoodSelector";
+import { CardCreationModal } from "@/components/deck/CardCreationModal";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { type Task } from "@spurtalk/shared";
 
@@ -30,6 +32,9 @@ export default function DashboardPage() {
     gardenGrowth: 0,
   });
   const [loading, setLoading] = React.useState(true);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
+  const queryClient = useQueryClient();
 
   React.useEffect(() => {
     if (!user) return;
@@ -63,27 +68,68 @@ export default function DashboardPage() {
         }
       })
       .catch((err: Error) =>
-        console.error("[Dashboard] Task fetch error:", err)
-      )
-      .finally(() => setLoading(false));
-
-    // Fetch garden
-    api
-      .get("/garden")
-      .then((res) => {
-        const data = res.data;
-        if (data) {
-          setStats({
-            streak: data.currentStreak,
-            todayWins: (data.totalFlowers || 0) + (data.totalTrees || 0),
-            gardenGrowth: (data.totalFlowers || 0) + (data.totalTrees || 0),
-          });
-        }
-      })
-      .catch((err: Error) =>
         console.error("[Dashboard] Garden fetch error:", err)
       );
-  }, [user, nextTask]);
+  }, [user]);
+
+  const handleModalSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ["tasks", "deck"] });
+    queryClient.invalidateQueries({ queryKey: ["garden"] });
+    // Trigger a re-fetch of the dashboard data
+    setLoading(true);
+
+    // Return focus to the trigger button after modal closes
+    setTimeout(() => triggerRef.current?.focus(), 100);
+
+    fetchDashboardData();
+  };
+
+  const fetchDashboardData = async () => {
+    if (!user) return;
+    try {
+      const deckRes = await api.get("/tasks/deck");
+      const deckData = deckRes.data as Task[];
+      if (deckData && deckData.length > 0) {
+        const rawTask = deckData[0];
+        setNextTask({
+          ...rawTask,
+          effort: (rawTask.effortLevel as EffortLevel) || "Small",
+        });
+      } else {
+        const activeRes = await api.get("/tasks?state=Active");
+        const activeData = activeRes.data as Task[];
+        if (activeData.length > 0) {
+          const rawTask = activeData[0];
+          setNextTask({
+            ...rawTask,
+            effort: (rawTask.effortLevel as EffortLevel) || "Small",
+          });
+        } else {
+          setNextTask(null);
+        }
+      }
+
+      const gardenRes = await api.get("/garden");
+      const gardenData = gardenRes.data;
+      if (gardenData) {
+        setStats({
+          streak: gardenData.currentStreak,
+          todayWins: (gardenData.totalFlowers || 0) + (gardenData.totalTrees || 0),
+          gardenGrowth: (gardenData.totalFlowers || 0) + (gardenData.totalTrees || 0),
+        });
+      }
+    } catch (err) {
+      console.error("[Dashboard] Refresh error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (user) {
+      fetchDashboardData();
+    }
+  }, [user]);
 
   const handleStartTimer = () => {
     if (nextTask) router.push(`/focus/${nextTask.id}?timer=2`);
@@ -114,10 +160,12 @@ export default function DashboardPage() {
     >
       {/* Hero Section - Single Primary Task */}
       <HeroSection
+        ref={triggerRef}
         task={nextTask}
         userName={(user as { name?: string })?.name}
         onStartTimer={handleStartTimer}
         onStartTask={handleStartTask}
+        onAddCard={() => setIsModalOpen(true)}
       />
 
       {/* Quick Stats */}
@@ -129,6 +177,13 @@ export default function DashboardPage() {
 
       {/* Mood Selector */}
       <MoodSelector value={currentMood} onChange={handleMoodChange} />
+
+      {/* Card Creation Modal */}
+      <CardCreationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={handleModalSuccess}
+      />
     </motion.div>
   );
 }

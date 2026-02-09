@@ -11,12 +11,13 @@ export function authenticateToken(
   next: NextFunction
 ) {
   const authHeader = req.headers.authorization;
+  const headerValue = Array.isArray(authHeader) ? authHeader[0] : authHeader;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!headerValue || !headerValue.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const token = authHeader.substring(7);
+  const token = headerValue.substring(7);
   const decoded = authService.verifyAccessToken(token);
 
   if (!decoded) {

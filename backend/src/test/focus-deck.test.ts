@@ -60,7 +60,7 @@ describe("Focus Deck", () => {
 
       const deck = await taskService.getDeck(testUserId);
       expect(deck).toHaveLength(2);
-      expect(deck.every((t) => t.state === "Deck")).toBe(true);
+      expect(deck.every((t: any) => t.state === "Deck")).toBe(true);
     });
   });
 

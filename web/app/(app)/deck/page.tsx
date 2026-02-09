@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/lib/store/auth";
@@ -9,14 +9,22 @@ import axios from "axios";
 import { CardStack } from "@/components/deck/CardStack";
 import { Task, NanoStep } from "@spurtalk/shared";
 import { UnblockerModal } from "@/components/deck/UnblockerModal";
+import { AddCardButton } from "@/components/deck/AddCardButton";
+import { CardCreationModal } from "@/components/deck/CardCreationModal";
+import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Layers } from "lucide-react";
 
 export default function DeckPage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const queryClient = useQueryClient();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Card Creation Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const fabRef = useRef<HTMLButtonElement>(null);
 
   // Unblocker State
   const [isUnblockerOpen, setIsUnblockerOpen] = useState(false);
@@ -30,7 +38,7 @@ export default function DeckPage() {
       return;
     }
 
-    const fetchDeck = async () => {
+    const loadDeck = async () => {
       try {
         const { data } = await api.get<Task[]>("/tasks/deck");
         setTasks(data);
@@ -45,8 +53,25 @@ export default function DeckPage() {
       }
     };
 
-    fetchDeck();
+    loadDeck();
   }, [user, router, logout]);
+
+  // Handle modal success (invalidate cache and refresh deck, return focus to FAB)
+  const handleModalSuccess = async () => {
+    queryClient.invalidateQueries({ queryKey: ["tasks", "deck"] });
+    // Return focus to the FAB after modal closes
+    setTimeout(() => fabRef.current?.focus(), 100);
+    try {
+      const { data } = await api.get<Task[]>("/tasks/deck");
+      setTasks(data);
+    } catch (error: unknown) {
+      console.error("Couldn't refresh your deck", error);
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        logout();
+        router.push("/login");
+      }
+    }
+  };
 
   const handleSwipe = async (
     taskId: string,
@@ -96,17 +121,29 @@ export default function DeckPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-        >
-          <Loader2 className="h-8 w-8 text-primary" />
-        </motion.div>
-        <p className="text-body-small text-muted-foreground animate-gentle-pulse">
-          Loading your deck...
-        </p>
-      </div>
+      <>
+        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          >
+            <Loader2 className="h-8 w-8 text-primary" />
+          </motion.div>
+          <p className="text-body-small text-muted-foreground animate-gentle-pulse">
+            Loading your deck...
+          </p>
+        </div>
+
+        {/* FAB visible during loading state */}
+        <AddCardButton ref={fabRef} onClick={() => setIsModalOpen(true)} />
+
+        {/* Card Creation Modal available during loading state */}
+        <CardCreationModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={handleModalSuccess}
+        />
+      </>
     );
   }
 
@@ -146,13 +183,16 @@ export default function DeckPage() {
               <Layers className="h-16 w-16 text-muted-foreground/50 mb-4" />
               <h2 className="text-h3 text-foreground mb-2">Deck is clear!</h2>
               <p className="text-body-small text-muted-foreground max-w-xs">
-                All your tasks are organized. Add a new one when you&apos;re ready,
-                or enjoy your accomplishments in the garden.
+                All your tasks are organized. Add a new one when you&apos;re
+                ready, or enjoy your accomplishments in the garden.
               </p>
             </motion.div>
           )}
         </AnimatePresence>
       </main>
+
+      {/* Add Card FAB */}
+      <AddCardButton ref={fabRef} onClick={() => setIsModalOpen(true)} />
 
       {/* Swipe Alternatives (ButtonBar) - Requirement PG-004-swipeAlternatives */}
       <motion.div
@@ -168,15 +208,21 @@ export default function DeckPage() {
               className="flex-1 flex flex-col items-center gap-1 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors border border-border/50"
               title="Not right now"
             >
-              <div className="text-body-small font-medium text-muted-foreground">Not right now</div>
-              <div className="text-[10px] text-muted-foreground/60">Swipe Left</div>
+              <div className="text-body-small font-medium text-muted-foreground">
+                Not right now
+              </div>
+              <div className="text-[10px] text-muted-foreground/60">
+                Swipe Left
+              </div>
             </button>
             <button
               onClick={() => handleSwipe(tasks[0].id, "down")}
               className="flex-1 flex flex-col items-center gap-1 p-3 rounded-xl bg-primary/10 hover:bg-primary/20 transition-colors border border-primary/20"
               title="Break this down"
             >
-              <div className="text-body-small font-medium text-primary">Break this down</div>
+              <div className="text-body-small font-medium text-primary">
+                Break this down
+              </div>
               <div className="text-[10px] text-primary/60">Swipe Down</div>
             </button>
             <button
@@ -184,8 +230,12 @@ export default function DeckPage() {
               className="flex-1 flex flex-col items-center gap-1 p-3 rounded-xl bg-primary hover:bg-primary/90 transition-colors shadow-gentle"
               title="Do this now"
             >
-              <div className="text-body-small font-medium text-primary-foreground">Do this now</div>
-              <div className="text-[10px] text-primary-foreground/60">Swipe Right</div>
+              <div className="text-body-small font-medium text-primary-foreground">
+                Do this now
+              </div>
+              <div className="text-[10px] text-primary-foreground/60">
+                Swipe Right
+              </div>
             </button>
           </div>
         )}
@@ -199,7 +249,10 @@ export default function DeckPage() {
         className="mt-8 text-center text-caption text-muted-foreground"
       >
         {tasks.length > 0 && (
-          <p>You have {tasks.length} card{tasks.length !== 1 ? 's' : ''} in your deck</p>
+          <p>
+            You have {tasks.length} card{tasks.length !== 1 ? "s" : ""} in your
+            deck
+          </p>
         )}
       </motion.footer>
 
@@ -210,6 +263,13 @@ export default function DeckPage() {
         isLoading={isDecomposing}
         steps={suggestedSteps}
         onAccept={handleAcceptUnblock}
+      />
+
+      {/* Card Creation Modal */}
+      <CardCreationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={handleModalSuccess}
       />
     </motion.div>
   );

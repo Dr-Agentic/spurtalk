@@ -14,7 +14,7 @@ export class TimelineService {
     });
 
     const now = new Date();
-    const timelineTasks: TimelineTask[] = tasks.map((task, index) => {
+    const timelineTasks: TimelineTask[] = tasks.map((task: any, index: number) => {
       const diffTime = new Date(task.hardDeadline).getTime() - now.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 

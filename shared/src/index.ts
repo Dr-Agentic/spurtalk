@@ -20,20 +20,38 @@ export const UserPreferencesSchema = z
         thisWeek: z.number().default(7),
         eventually: z.number().default(30),
       })
-      .default({}),
+      .default({
+        soon: 2,
+        thisWeek: 7,
+        eventually: 30,
+      }),
     notificationSettings: z
       .object({
         taskReminders: z.boolean().default(true),
         stallDetection: z.boolean().default(true),
         milestoneCelebrations: z.boolean().default(true),
       })
-      .default({}),
+      .default({
+        taskReminders: true,
+        stallDetection: true,
+        milestoneCelebrations: true,
+      }),
     timezone: z.string().default("UTC"),
   })
-  .default({});
+  .default({
+    stallDetectionTimeout: 24,
+    colorPalette: "default",
+    fuzzyDeadlineLabels: { soon: 2, thisWeek: 7, eventually: 30 },
+    notificationSettings: {
+      taskReminders: true,
+      stallDetection: true,
+      milestoneCelebrations: true,
+    },
+    timezone: "UTC",
+  });
 
 export const TaskSchema = z.object({
-  title: z.string().min(1, "Title is required").max(500),
+  title: z.string().min(1).max(500),
   description: z.string().optional(),
   effortLevel: z.enum(["Tiny", "Small", "Medium", "Big"]),
   emotionalTag: z.enum(["Boring", "Scary", "Fun"]).optional(),
@@ -80,7 +98,56 @@ export const TaskResponseSchema = TaskSchema.extend({
   deckOrder: z.number().optional(),
 });
 
-export const CreateTaskSchema = TaskSchema;
+export const CreateTaskSchema = z
+  .object({
+    title: z
+      .string()
+      .min(1, "Give your card a title")
+      .max(
+        500,
+        "Keep the title under 500 characters - you can add more details in the description"
+      ),
+    description: z
+      .string()
+      .max(
+        2000,
+        "Description is a bit long - try keeping it under 2000 characters"
+      )
+      .optional(),
+    effortLevel: z.enum(["Tiny", "Small", "Medium", "Big"], {
+      message: "Let us know how big this feels",
+    }),
+    emotionalTag: z.enum(["Boring", "Scary", "Fun", "Hard"]).optional(),
+    fuzzyDeadline: z.enum(["Soon", "This Week", "Eventually"]).optional(),
+    hardDeadline: z
+      .string()
+      .or(z.date())
+      .transform((val) => new Date(val))
+      .optional(),
+    tags: z
+      .union([
+        z.array(z.string()),
+        z.string().transform((val) => val.split(",").map((t) => t.trim())),
+      ])
+      .default([]),
+  })
+  .extend({
+    dependencies: z.array(z.string()).optional(),
+    compellingEvent: z.string().optional(),
+    motivationCategory: z
+      .enum(["Relief", "Energy", "Achievement", "Identity"])
+      .optional(),
+    parentTaskId: z.string().optional(),
+  })
+  .refine((data) => !(data.fuzzyDeadline && data.hardDeadline), {
+    message: "Choose either a flexible timeframe or a specific date - not both",
+    path: ["fuzzyDeadline"],
+  })
+  .refine((data) => !data.hardDeadline || data.hardDeadline > new Date(), {
+    message:
+      "Pick a date in the future so you have time to work on it",
+    path: ["hardDeadline"],
+  });
 
 export const UpdateTaskSchema = TaskSchema.partial().extend({
   state: z

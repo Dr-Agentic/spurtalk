@@ -27,23 +27,24 @@
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
-    "@types/react-test-renderer": "^19.0.0",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
-    "concurrently": "^8.2.2",
-    "eslint": "^8.56.0",
+    "@prisma/client": "^6.2.1",
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/react-test-renderer": "^19.1.0",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.10.0",
     "eslint-config-prettier": "^10.1.8",
-    "prettier": "^3.1.1",
-    "prisma": "^5.8.0",
-    "react-test-renderer": "^19.2.3",
-    "typescript": "^5.3.3"
+    "prettier": "^3.8.1",
+    "prisma": "^6.2.1",
+    "react-test-renderer": "^19.2.4",
+    "typescript": "^5.9.3"
   },
   "prisma": {
     "schema": "./prisma/schema.prisma"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.985.0",
-    "@aws-sdk/lib-dynamodb": "^3.985.0",
-    "@prisma/client": "^5.22.0"
+    "@aws-sdk/lib-dynamodb": "^3.985.0"
   }
 }

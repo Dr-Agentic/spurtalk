@@ -1,5 +1,7 @@
 import { pool, redisClient } from "../config/database";
 
+jest.setTimeout(15000);
+
 beforeAll(async () => {
   // Ensure we start with a clean state if possible, or just connect
   try {

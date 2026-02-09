@@ -78,8 +78,8 @@ export function NavigationHeader({ className }: NavigationHeaderProps) {
     >
       <div className="container mx-auto flex h-full items-center justify-between px-4">
         {/* Logo */}
-        <Link 
-          href="/" 
+        <Link
+          href="/"
           className="flex items-center gap-2 transition-transform hover:scale-105"
           aria-label="SpurTalk Home"
         >
@@ -95,14 +95,15 @@ export function NavigationHeader({ className }: NavigationHeaderProps) {
         <NavigationMenu className="hidden md:flex">
           <NavigationMenuList className="gap-1">
             {NAV_ITEMS.map((item) => {
-              const isActive = pathname === item.href || 
+              const isActive = pathname === item.href ||
                 (item.href !== "/" && pathname.startsWith(item.href));
               const Icon = item.icon;
 
               return (
                 <NavigationMenuItem key={item.href}>
-                  <Link href={item.href} legacyBehavior passHref>
-                    <NavigationMenuLink
+                  <NavigationMenuLink asChild>
+                    <Link
+                      href={item.href}
                       className={cn(
                         navigationMenuTriggerStyle(),
                         "gap-2 transition-colors",
@@ -111,8 +112,8 @@ export function NavigationHeader({ className }: NavigationHeaderProps) {
                     >
                       <Icon className="h-4 w-4" />
                       <span>{item.label}</span>
-                    </NavigationMenuLink>
-                  </Link>
+                    </Link>
+                  </NavigationMenuLink>
                 </NavigationMenuItem>
               );
             })}
@@ -128,9 +129,9 @@ export function NavigationHeader({ className }: NavigationHeaderProps) {
               aria-label="User menu"
             >
               <Avatar className="h-9 w-9">
-                <AvatarImage 
-                  src={(user as { avatar?: string })?.avatar || undefined} 
-                  alt={user?.email || "User"} 
+                <AvatarImage
+                  src={(user as { avatar?: string })?.avatar || undefined}
+                  alt={user?.email || "User"}
                 />
                 <AvatarFallback className="bg-primary text-primary-foreground">
                   {getInitials(user?.email, (user as { name?: string })?.name)}
@@ -138,8 +139,8 @@ export function NavigationHeader({ className }: NavigationHeaderProps) {
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent 
-            align="end" 
+          <DropdownMenuContent
+            align="end"
             className="w-56"
             sideOffset={8}
           >
@@ -173,7 +174,7 @@ export function NavigationHeader({ className }: NavigationHeaderProps) {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={handleLogout}
               className="flex items-center gap-2 cursor-pointer text-warning focus:text-warning"
             >
@@ -197,8 +198,8 @@ export function NavigationHeader({ className }: NavigationHeaderProps) {
                 const isActive = pathname === item.href;
                 return (
                   <DropdownMenuItem key={item.href} asChild>
-                    <Link 
-                      href={item.href} 
+                    <Link
+                      href={item.href}
                       className={cn(
                         "flex items-center gap-2 cursor-pointer",
                         isActive && "bg-accent"

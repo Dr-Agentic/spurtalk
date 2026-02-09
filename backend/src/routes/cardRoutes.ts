@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, Response } from "express";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
 import { CardLifecycleState } from "@spurtalk/shared";
 
@@ -23,9 +23,6 @@ const allowedTransitions: Record<CardLifecycleState, CardLifecycleState[]> = {
   discarded: [],
 };
 
-// In-memory store keyed by userId + cardId.
-// This intentionally avoids persistence concerns for now; it enables a clean
-// REST surface for lifecycle transitions and integration coverage.
 const cardStore = new Map<string, CardRecord>();
 
 const cardKey = (userId: string, cardId: string) => `${userId}:${cardId}`;
@@ -53,12 +50,10 @@ const applyTransition = (
   };
 };
 
-// POST /:id/open
-// Creates a record if missing (implicit INITIAL -> LOADING), otherwise transitions to LOADING.
-router.post("/:id/open", async (req: AuthRequest, res) => {
+router.post("/:id/open", async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId!;
-    const cardId = req.params.id;
+    const cardId = req.params.id as string;
     const key = cardKey(userId, cardId);
 
     const existing = cardStore.get(key);
@@ -86,11 +81,10 @@ router.post("/:id/open", async (req: AuthRequest, res) => {
   }
 });
 
-// POST /:id/ready
-router.post("/:id/ready", async (req: AuthRequest, res) => {
+router.post("/:id/ready", async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId!;
-    const cardId = req.params.id;
+    const cardId = req.params.id as string;
     const key = cardKey(userId, cardId);
 
     const existing = cardStore.get(key);
@@ -109,11 +103,10 @@ router.post("/:id/ready", async (req: AuthRequest, res) => {
   }
 });
 
-// POST /:id/finish
-router.post("/:id/finish", async (req: AuthRequest, res) => {
+router.post("/:id/finish", async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId!;
-    const cardId = req.params.id;
+    const cardId = req.params.id as string;
     const key = cardKey(userId, cardId);
 
     const existing = cardStore.get(key);
@@ -132,11 +125,10 @@ router.post("/:id/finish", async (req: AuthRequest, res) => {
   }
 });
 
-// POST /:id/close
-router.post("/:id/close", async (req: AuthRequest, res) => {
+router.post("/:id/close", async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId!;
-    const cardId = req.params.id;
+    const cardId = req.params.id as string;
     const key = cardKey(userId, cardId);
 
     const existing = cardStore.get(key);
