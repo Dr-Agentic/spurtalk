@@ -20,7 +20,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { getRandomCelebration } from "@/lib/design-tokens";
 import { api } from "@/lib/api";
-import { NanoStep } from "@spurtalk/shared";
+import { Task, NanoStep } from "@spurtalk/shared";
 
 export default function FocusModePage() {
   const router = useRouter();

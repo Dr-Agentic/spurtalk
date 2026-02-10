@@ -12,7 +12,7 @@ const client = new DynamoDBClient({
 });
 
 export class CardService {
-  async createCard(input: Record<string, any>) {
+  async createCard(input: Record<string, unknown>) {
     const params = {
       TableName: process.env.CARDS_TABLE,
       Item: {
@@ -35,7 +35,7 @@ export class CardService {
     return result.Item;
   }
 
-  async updateCard(cardId: string, updates: Record<string, any>) {
+  async updateCard(cardId: string, updates: Record<string, unknown>) {
     const result = await client.send(
       new UpdateCommand({
         TableName: process.env.CARDS_TABLE,
@@ -62,6 +62,6 @@ export class CardService {
     const result = await client.send(
       new ScanCommand({ TableName: process.env.CARDS_TABLE })
     );
-    return (result.Items as any[]) || [];
+    return (result.Items as Record<string, unknown>[]) || [];
   }
 }
