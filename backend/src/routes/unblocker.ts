@@ -6,7 +6,7 @@ const router = Router();
 
 router.use(authenticateToken);
 
-router.post("/decompose/:taskId", async (req: AuthRequest, res: Response) => {
+router.post("/:taskId/decompose", async (req: AuthRequest, res: Response) => {
   try {
     const task = await unblockerService.decomposeTask(
       req.userId!,

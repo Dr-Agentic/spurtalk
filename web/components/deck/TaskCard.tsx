@@ -69,9 +69,15 @@ export function TaskCard({ task, className }: TaskCardProps) {
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between text-sm text-gray-400">
-        <div>Swipe Right to Do</div>
-        <div>Swipe Left for Later</div>
+      <CardFooter className="flex justify-between items-center text-xs text-muted-foreground/60 px-6 pb-6">
+        <div className="flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-border" />
+          Swipe Right to Do
+        </div>
+        <div className="flex items-center gap-1.5">
+          Swipe Left for Later
+          <span className="w-1.5 h-1.5 rounded-full bg-border" />
+        </div>
       </CardFooter>
     </Card>
   );

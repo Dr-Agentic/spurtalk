@@ -2,14 +2,14 @@ import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
 
 // Load environment variables before initializing Prisma
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const prismaGlobal = global as typeof global & {
     prisma?: PrismaClient;
 };
 
 export const prisma = prismaGlobal.prisma || new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
 });
 
 if (process.env.NODE_ENV !== "production") {

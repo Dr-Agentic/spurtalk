@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ quiet: true });
 
 import express from "express";
 import cors from "cors";
@@ -15,26 +15,33 @@ import { apiLimiter, authLimiter } from "./middleware/rateLimit";
 
 const app = express();
 
-// Request logging
+// Trust proxy if behind a load balancer (like in production or some dev setups)
+app.set("trust proxy", 1);
+
+// Request logging - simplified for development
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+  if (process.env.NODE_ENV === "development") {
+    // Only log mutations or errors in dev, or keep it quiet
+    // For now, let's just keep it quiet as requested
+  }
   next();
 });
 
 const PORT = process.env.PORT || 7101;
 
 // Security headers
-app.use(helmet());
+app.use(helmet({ contentSecurityPolicy: false }));
 
 // CORS configuration
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 
 // Body parsing
 app.use(express.json({ limit: "10mb" })); // Limit body size
 
 // Rate limiting
-app.use("/api", apiLimiter);
+// Order matters: specific ones first
 app.use("/api/auth", authLimiter);
+app.use("/api", apiLimiter);
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });

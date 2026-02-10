@@ -36,42 +36,6 @@ export default function DashboardPage() {
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const queryClient = useQueryClient();
 
-  React.useEffect(() => {
-    if (!user) return;
-
-    // Fetch deck
-    api
-      .get("/tasks/deck")
-      .then((res) => {
-        const data = res.data as Task[];
-        if (data && data.length > 0) {
-          const rawTask = data[0];
-          setNextTask({
-            ...rawTask,
-            effort: (rawTask.effortLevel as EffortLevel) || "Small",
-          });
-        } else {
-          // Fetch active
-          return api.get("/tasks?state=Active");
-        }
-      })
-      .then((res) => {
-        if (res && res.data) {
-          const data = res.data as Task[];
-          if (data.length > 0 && !nextTask) {
-            const rawTask = data[0];
-            setNextTask({
-              ...rawTask,
-              effort: (rawTask.effortLevel as EffortLevel) || "Small",
-            });
-          }
-        }
-      })
-      .catch((err: Error) =>
-        console.error("[Dashboard] Garden fetch error:", err)
-      );
-  }, [user]);
-
   const handleModalSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["tasks", "deck"] });
     queryClient.invalidateQueries({ queryKey: ["garden"] });

@@ -43,7 +43,7 @@ export function UnblockerModal({
             <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : (
+          ) : Array.isArray(steps) && steps.length > 0 ? (
             steps.map((step, index) => (
               <div
                 key={index}
@@ -61,6 +61,11 @@ export function UnblockerModal({
                 </div>
               </div>
             ))
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>We couldn&apos;t break this one down right now.</p>
+              <p className="text-xs mt-2">Try again in a moment.</p>
+            </div>
           )}
         </div>
 

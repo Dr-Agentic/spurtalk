@@ -170,7 +170,7 @@ export default function DeckPage() {
       </motion.header>
 
       {/* Card Stack */}
-      <main className="h-[500px]">
+      <main className="h-[600px] mb-8">
         <AnimatePresence mode="wait">
           {tasks.length > 0 ? (
             <CardStack tasks={tasks} onSwipe={handleSwipe} />
@@ -199,7 +199,7 @@ export default function DeckPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="mt-12 flex items-center justify-center gap-4"
+        className="mt-8 flex items-center justify-center gap-4"
       >
         {tasks.length > 0 && (
           <div className="flex gap-4 w-full">

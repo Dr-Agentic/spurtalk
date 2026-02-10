@@ -2,6 +2,9 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Dashboard Smoke Tests', () => {
     test.beforeEach(async ({ page }) => {
+        // Log browser console
+        page.on('console', msg => console.log(`BROWSER [${msg.type()}]: ${msg.text()}`));
+
         // Navigate to login page
         await page.goto('/login');
 

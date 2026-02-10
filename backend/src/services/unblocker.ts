@@ -42,7 +42,7 @@ export class UnblockerService {
     return stalledIds;
   }
 
-  async decomposeTask(userId: string, taskId: string): Promise<Prisma.TaskGetPayload<NonNullable<unknown>>> {
+  async decomposeTask(userId: string, taskId: string): Promise<NanoStep[]> {
     const task = await prisma.task.findFirst({
       where: { id: taskId, userId },
     });
@@ -62,7 +62,7 @@ export class UnblockerService {
       generatedByAI: true,
     }));
 
-    const updatedTask = await prisma.task.update({
+    await prisma.task.update({
       where: { id: taskId },
       data: {
         nanoSteps: steps as unknown as Prisma.InputJsonValue,
@@ -70,7 +70,7 @@ export class UnblockerService {
       },
     });
 
-    return updatedTask;
+    return steps;
   }
 }
 
