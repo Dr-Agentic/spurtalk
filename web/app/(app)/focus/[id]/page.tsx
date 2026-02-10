@@ -28,7 +28,7 @@ export default function FocusModePage() {
   const params = useParams();
   const timerMinutes = searchParams.get("timer");
 
-  const [task, setTask] = useState<any>(null);
+  const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [isTimerActive, setIsTimerActive] = useState(!!timerMinutes);
