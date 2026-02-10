@@ -187,6 +187,9 @@ export interface TimelineTask {
   renderStyle: "clear" | "blurred" | "misty";
   scheduledDate: Date;
   dependencies: string[];
+  effortLevel: "Tiny" | "Small" | "Medium" | "Big";
+  emotionalTag?: "Boring" | "Scary" | "Fun" | "Hard";
+  nanoSteps: NanoStep[];
 }
 
 export interface BufferDay {

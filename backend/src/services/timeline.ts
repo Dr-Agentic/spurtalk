@@ -7,7 +7,7 @@ export class TimelineService {
     const tasks = await prisma.task.findMany({
       where: {
         userId,
-        state: "Active",
+        state: { in: ["Active", "Deck", "River"] },
       },
       orderBy: { hardDeadline: "asc" },
     });
@@ -17,20 +17,14 @@ export class TimelineService {
       const diffTime = new Date(task.hardDeadline).getTime() - now.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-      // Determine visual style (Requirement 3.2, 3.3)
+      // Determine visual style
       let renderStyle: "clear" | "blurred" | "misty" = "clear";
-
-      // Missed deadline handling (Requirement 3.4)
-      // If deadline is passed (diffDays < 0), we still treat it as "clear" (immediate/urgent)
-      // but without red coloring. The requirement says "flow around it".
-      // Visually, it should remain prominent.
 
       if (diffDays > 7) {
         renderStyle = "misty";
       } else if (diffDays > 2) {
         renderStyle = "blurred";
       }
-      // Implicit else: diffDays <= 2 (including negative/overdue) -> clear
 
       return {
         taskId: task.id,
@@ -39,6 +33,9 @@ export class TimelineService {
         renderStyle,
         scheduledDate: new Date(task.hardDeadline),
         dependencies: task.dependencies as string[],
+        effortLevel: task.effortLevel,
+        emotionalTag: task.emotionalTag,
+        nanoSteps: task.nanoSteps,
       };
     });
 
