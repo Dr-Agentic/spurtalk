@@ -1,3 +1,7 @@
+import dotenv from "dotenv";
+import path from "path";
+dotenv.config({ path: path.join(__dirname, "../../.env") });
+
 import { pool, redisClient } from "../config/database";
 
 jest.setTimeout(15000);

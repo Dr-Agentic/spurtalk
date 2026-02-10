@@ -4,7 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import { CreateTask, TimelineTask } from "@spurtalk/shared";
 import { taskService } from "../services/task";
 
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 describe("Property 5: River Timeline Visual Hierarchy", () => {
   let testUserId: string;

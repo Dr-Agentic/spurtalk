@@ -2,7 +2,7 @@ import { taskService } from "../services/task";
 import { CreateTask } from "@spurtalk/shared";
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 describe("Focus Deck", () => {
   let testUserId: string;

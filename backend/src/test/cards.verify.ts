@@ -4,7 +4,7 @@ import app from "../index";
 import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
 
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 const generateToken = (userId: string) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET || "secret", {

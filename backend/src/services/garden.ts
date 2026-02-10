@@ -1,8 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { GardenState, GardenElement } from "@spurtalk/shared";
+import { prisma } from "../lib/prisma";
 import type { Prisma } from "@prisma/client";
-
-const prisma = new PrismaClient();
 
 export class GardenService {
   async getGardenState(userId: string): Promise<GardenState> {

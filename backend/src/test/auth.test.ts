@@ -1,7 +1,5 @@
 import { authService } from "../services/auth";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 describe("AuthService", () => {
   // Global cleanup for this suite to prevent "User already exists" leaks

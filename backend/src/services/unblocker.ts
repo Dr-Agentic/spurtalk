@@ -1,8 +1,7 @@
 import { PrismaClient, type Prisma } from "@prisma/client";
 import { NanoStep } from "@spurtalk/shared";
 import { aiService } from "./ai";
-
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 export class UnblockerService {
   async detectStalls(userId: string): Promise<string[]> {

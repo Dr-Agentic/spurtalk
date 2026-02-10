@@ -30,8 +30,8 @@ model Task {
   description        String?
   effortLevel        String    @map("effort_level")
   emotionalTag       String?   @map("emotional_tag")
-  fuzzyDeadline      String    @map("fuzzy_deadline")
-  hardDeadline       DateTime  @map("hard_deadline")
+  fuzzyDeadline      String?   @map("fuzzy_deadline")
+  hardDeadline       DateTime? @map("hard_deadline")
   compellingEvent    String?   @map("compelling_event")
   motivationCategory String?   @map("motivation_category")
   state              String    @default("Deck")

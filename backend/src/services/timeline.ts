@@ -1,7 +1,6 @@
-import { PrismaClient, Task } from "@prisma/client";
+import { prisma } from "../lib/prisma";
+import { Task } from "@prisma/client";
 import { Timeline, TimelineTask, BufferDay, StressCluster } from "@spurtalk/shared";
-
-const prisma = new PrismaClient();
 
 export class TimelineService {
   async generateTimeline(userId: string): Promise<Timeline> {

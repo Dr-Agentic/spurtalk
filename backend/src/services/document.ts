@@ -1,10 +1,8 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../lib/prisma";
 import fs from "fs";
 import path from "path";
 import mammoth from "mammoth";
 import { aiService } from "./ai";
-
-const prisma = new PrismaClient();
 
 export class DocumentService {
   async processDocument(

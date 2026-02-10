@@ -14,19 +14,34 @@ describe("Property 14: Task Metadata Assignment", () => {
 
     fc.assert(
       fc.property(
-        fc.record({
-          title: fc.string({ minLength: 1, maxLength: 100 }),
-          effortLevel: fc.constantFrom("Tiny", "Small", "Medium", "Big"),
-          emotionalTag: fc.constantFrom("Boring", "Scary", "Fun"),
-          motivationCategory: fc.constantFrom(
-            "Relief",
-            "Energy",
-            "Achievement",
-            "Identity"
-          ),
-          fuzzyDeadline: fc.constantFrom("Soon", "This Week", "Eventually"),
-          hardDeadline: fc.date(),
-        }),
+        fc.oneof(
+          fc.record({
+            title: fc.string({ minLength: 1, maxLength: 100 }),
+            effortLevel: fc.constantFrom("Tiny", "Small", "Medium", "Big"),
+            emotionalTag: fc.constantFrom("Boring", "Scary", "Fun"),
+            motivationCategory: fc.constantFrom(
+              "Relief",
+              "Energy",
+              "Achievement",
+              "Identity"
+            ),
+            fuzzyDeadline: fc.constantFrom("Soon", "This Week", "Eventually"),
+            tags: fc.array(fc.string()),
+          }),
+          fc.record({
+            title: fc.string({ minLength: 1, maxLength: 100 }),
+            effortLevel: fc.constantFrom("Tiny", "Small", "Medium", "Big"),
+            emotionalTag: fc.constantFrom("Boring", "Scary", "Fun"),
+            motivationCategory: fc.constantFrom(
+              "Relief",
+              "Energy",
+              "Achievement",
+              "Identity"
+            ),
+            hardDeadline: fc.date({ min: new Date(Date.now() + 86400000) }), // Ensure definitely future date
+            tags: fc.array(fc.string()),
+          })
+        ),
         (taskData) => {
           // Since we don't want to mock the DB for every run of fast-check (too slow),
           // we'll rely on our service's/schema's static validation logic or a lightweight check.

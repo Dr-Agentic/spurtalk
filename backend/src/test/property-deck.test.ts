@@ -20,7 +20,7 @@ jest.mock("../services/ai", () => ({
   },
 }));
 
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 describe("Property 10: Focus Deck Card Interaction", () => {
   jest.setTimeout(30000); // Higher timeout for DB-heavy property tests

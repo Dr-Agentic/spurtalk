@@ -19,7 +19,7 @@ jest.mock("../services/ai", () => ({
   },
 }));
 
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 describe("Property 12: Garden Element Generation", () => {
   let testUserId: string;

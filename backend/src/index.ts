@@ -1,7 +1,9 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import dotenv from "dotenv";
 import authRoutes from "./routes/auth";
 import taskRoutes from "./routes/tasks";
 import timelineRoutes from "./routes/timeline";
@@ -10,8 +12,6 @@ import unblockerRoutes from "./routes/unblocker";
 import documentRoutes from "./routes/documents";
 import cardRoutes from "./routes/cardRoutes";
 import { apiLimiter, authLimiter } from "./middleware/rateLimit";
-
-dotenv.config();
 
 const app = express();
 

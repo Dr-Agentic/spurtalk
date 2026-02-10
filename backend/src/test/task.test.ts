@@ -1,8 +1,6 @@
 import { taskService } from "../services/task";
 import { CreateTask, UpdateTask } from "@spurtalk/shared";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 describe("TaskService", () => {
   let testUserId: string;
@@ -86,6 +84,22 @@ describe("TaskService", () => {
       // 3. Check Parent State
       const updatedParent = await taskService.getTask(testUserId, parent.id);
       expect(updatedParent.state).toBe("Tracking");
+    });
+
+    it("should create a task with ONLY fuzzyDeadline (no hardDeadline)", async () => {
+      const taskData: CreateTask = {
+        title: "Fuzzy Only Task",
+        effortLevel: "Medium",
+        fuzzyDeadline: "This Week",
+        tags: [],
+      };
+
+      const task = await taskService.createTask(testUserId, taskData);
+      createdTaskIds.push(task.id);
+
+      expect(task).toBeDefined();
+      expect(task.fuzzyDeadline).toBe("This Week");
+      expect(task.hardDeadline).toBeNull();
     });
 
     it("should fail with invalid dependencies", async () => {

@@ -1,9 +1,8 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import jwt, { SignOptions } from "jsonwebtoken";
-import { PrismaClient, User, Document } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
+import { User, Document } from "@prisma/client";
 
 interface TokenPair {
   accessToken: string;

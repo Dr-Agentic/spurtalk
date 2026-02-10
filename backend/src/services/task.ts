@@ -1,9 +1,8 @@
-import { PrismaClient, Task } from "@prisma/client";
+import { prisma } from "../lib/prisma";
+import { Task } from "@prisma/client";
 import { CreateTask, UpdateTask, UserPreferences } from "@spurtalk/shared";
 import { aiService } from "./ai";
 import { unblockerService } from "./unblocker";
-
-const prisma = new PrismaClient();
 
 export class TaskService {
   async createTask(userId: string, data: CreateTask) {
@@ -35,8 +34,8 @@ export class TaskService {
         description: data.description,
         effortLevel: data.effortLevel,
         emotionalTag: data.emotionalTag,
-        fuzzyDeadline: data.fuzzyDeadline ?? "",
-        hardDeadline: data.hardDeadline ?? "",
+        fuzzyDeadline: data.fuzzyDeadline,
+        hardDeadline: data.hardDeadline,
         compellingEvent: compellingEvent,
         motivationCategory: data.motivationCategory,
         dependencies: data.dependencies || [],

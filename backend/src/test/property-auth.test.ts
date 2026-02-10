@@ -2,7 +2,7 @@ import * as fc from "fast-check";
 import { authService } from "../services/auth";
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 describe("Property 1: Authentication Round Trip", () => {
   // Increase timeout to handle 1s delay per run * 20 runs

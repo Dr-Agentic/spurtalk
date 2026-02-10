@@ -70,7 +70,6 @@ describe("Route Integration Tests - Real User Flow", () => {
         title: "Test Task",
         description: "This is a test task",
         effortLevel: "Small",
-        fuzzyDeadline: "Soon",
         hardDeadline: new Date(Date.now() + 86400000).toISOString(),
       };
 
