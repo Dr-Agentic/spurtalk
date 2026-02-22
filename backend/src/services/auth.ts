@@ -113,23 +113,28 @@ export class AuthService {
   }
 
   async login(email: string, password: string) {
+    console.log(`Login attempt for: ${email}`);
     const user = await prisma.user.findUnique({
       where: { email },
     });
 
     if (!user) {
+      console.log(`User not found: ${email}`);
       throw new Error("Invalid credentials");
     }
 
+    console.log(`Verifying password for: ${email}`);
     const isValidPassword = await this.verifyPassword(
       password,
       user.passwordHash
     );
 
     if (!isValidPassword) {
+      console.log(`Invalid password for: ${email}`);
       throw new Error("Invalid credentials");
     }
 
+    console.log(`Login successful for: ${email}`);
     const tokens = this.generateTokenPair(user.id);
 
     return {

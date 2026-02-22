@@ -93,6 +93,7 @@ export default function DashboardPage() {
     if (user) {
       fetchDashboardData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const handleStartTimer = () => {
@@ -125,7 +126,8 @@ export default function DashboardPage() {
       {/* Hero Section - Single Primary Task */}
       <HeroSection
         ref={triggerRef}
-        task={nextTask}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        task={nextTask as any}
         userName={(user as { name?: string })?.name}
         onStartTimer={handleStartTimer}
         onStartTask={handleStartTask}

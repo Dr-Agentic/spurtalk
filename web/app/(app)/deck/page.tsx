@@ -7,12 +7,13 @@ import { useAuthStore } from "@/lib/store/auth";
 import { api } from "@/lib/api";
 import axios from "axios";
 import { CardStack } from "@/components/deck/CardStack";
-import { Task, NanoStep } from "@spurtalk/shared";
+import { Task, NanoStep, CreateTask } from "@spurtalk/shared";
 import { UnblockerModal } from "@/components/deck/UnblockerModal";
 import { AddCardButton } from "@/components/deck/AddCardButton";
 import { CardCreationModal } from "@/components/deck/CardCreationModal";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Layers } from "lucide-react";
+import { toast } from "sonner";
 
 export default function DeckPage() {
   const router = useRouter();
@@ -30,6 +31,7 @@ export default function DeckPage() {
   const [isUnblockerOpen, setIsUnblockerOpen] = useState(false);
   const [isDecomposing, setIsDecomposing] = useState(false);
   const [suggestedSteps, setSuggestedSteps] = useState<NanoStep[]>([]);
+  const [proposedCards, setProposedCards] = useState<Partial<CreateTask>[]>([]);
   const [stuckTaskId, setStuckTaskId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -77,17 +79,20 @@ export default function DeckPage() {
     taskId: string,
     direction: "right" | "left" | "down"
   ) => {
+    console.log(`[Deck] Swipe detected: ${direction} on task: ${taskId}`);
     if (direction === "down") {
-      // Trigger Unblocker
+      // Trigger Unblocker (Nano-steps by default)
       setStuckTaskId(taskId);
       setIsUnblockerOpen(true);
       setIsDecomposing(true);
+      console.log(`[Deck] Initiating decomposition for task: ${taskId}`); // Added console log
 
       try {
         const { data } = await api.post<NanoStep[]>(
           `/unblocker/${taskId}/decompose`
         );
         setSuggestedSteps(data);
+        setProposedCards([]); // Clear any previous planning data
       } catch (error) {
         console.error("Let's try breaking that down differently", error);
         setIsUnblockerOpen(false);
@@ -106,6 +111,41 @@ export default function DeckPage() {
       }
     } catch (error) {
       console.error("Something went wrong with the swipe", error);
+    }
+  };
+
+  const handleElevatePlan = async () => {
+    if (!stuckTaskId) return;
+    setIsDecomposing(true);
+    try {
+      const { data } = await api.get<Partial<CreateTask>[]>(`/tasks/${stuckTaskId}/plan`);
+      setProposedCards(data);
+    } catch (error) {
+      console.error("Couldn't plan this project", error);
+      toast.error("AI is a bit tired. Try manual sub-tasks for now!");
+    } finally {
+      setIsDecomposing(false);
+    }
+  };
+
+  const handleAcceptPlan = async (cards: Partial<CreateTask>[], strategy: "replace" | "supplement") => {
+    if (!stuckTaskId) return;
+    setIsDecomposing(true);
+    try {
+      await api.post(`/tasks/${stuckTaskId}/subtasks`, {
+        subtasks: cards,
+        strategy
+      });
+      toast.success("Strategic roadmap deployed! 🚀");
+      setIsUnblockerOpen(false);
+      // Refresh deck as parent might have moved to Tracking
+      const { data } = await api.get<Task[]>("/tasks/deck");
+      setTasks(data);
+    } catch (error) {
+      console.error("Failed to batch create subtasks", error);
+      toast.error("Couldn't create the sub-cards. Try editing one first?");
+    } finally {
+      setIsDecomposing(false);
     }
   };
 
@@ -262,7 +302,11 @@ export default function DeckPage() {
         onClose={() => setIsUnblockerOpen(false)}
         isLoading={isDecomposing}
         steps={suggestedSteps}
-        onAccept={handleAcceptUnblock}
+        proposedCards={proposedCards}
+        task={tasks.find(t => t.id === stuckTaskId) || null}
+        onAcceptSteps={handleAcceptUnblock}
+        onAcceptPlan={handleAcceptPlan}
+        onElevateRequest={handleElevatePlan}
       />
 
       {/* Card Creation Modal */}

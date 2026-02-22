@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import { Task } from "@spurtalk/shared";
 import { TaskCard } from "./TaskCard";
@@ -13,7 +13,16 @@ interface CardStackProps {
 export function CardStack({ tasks, onSwipe }: CardStackProps) {
   // We only render the top 2 cards for performance and visual stacking
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  // Reset index if the tasks array changes (e.g., new cards added)
+  useEffect(() => {
+    console.log(`[CardStack] Received ${tasks.length} tasks. Resetting index.`);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCurrentIndex(0);
+  }, [tasks]);
+
   const activeTask = tasks[currentIndex];
+  console.log(`[CardStack] Active task: ${activeTask?.title} (ID: ${activeTask?.id})`);
   const nextTask = tasks[currentIndex + 1];
 
   const x = useMotionValue(0);
@@ -31,6 +40,8 @@ export function CardStack({ tasks, onSwipe }: CardStackProps) {
   ) => {
     const threshold = 100;
     const verticalThreshold = 100;
+
+    console.log(`[CardStack] dragEnd offset: x=${info.offset.x}, y=${info.offset.y}`);
 
     if (info.offset.x > threshold) {
       // Swipe Right

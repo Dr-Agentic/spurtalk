@@ -50,7 +50,7 @@ export default function FocusModePage() {
           .filter((step: NanoStep) => step.isCompleted)
           .map((step: NanoStep) => step.id);
         setCompletedSteps(preCompletedSteps);
-      } catch (err) {
+      } catch {
         setError(true);
       } finally {
         setLoading(false);

@@ -54,7 +54,7 @@ export const TaskSchema = z.object({
   title: z.string().min(1).max(500),
   description: z.string().optional(),
   effortLevel: z.enum(["Tiny", "Small", "Medium", "Big"]),
-  emotionalTag: z.enum(["Boring", "Scary", "Fun"]).optional(),
+  emotionalTag: z.enum(["Boring", "Scary", "Fun", "Hard"]).optional(),
   fuzzyDeadline: z.enum(["Soon", "This Week", "Eventually"]),
   hardDeadline: z
     .string()
@@ -80,7 +80,26 @@ export const NanoStepSchema = z.object({
   generatedByAI: z.boolean().optional(),
 });
 
-export const TaskResponseSchema = TaskSchema.extend({
+export type Task = z.infer<typeof TaskSchema> & {
+  id: string;
+  userId: string;
+  state:
+  | "Deck"
+  | "River"
+  | "Garden"
+  | "Stalled"
+  | "Active"
+  | "Completed"
+  | "Tracking";
+  nanoSteps: NanoStep[];
+  subtasks?: Task[];
+  parentTask?: Task;
+  createdAt: Date;
+  updatedAt: Date;
+  deckOrder?: number;
+};
+
+export const TaskResponseSchema: z.ZodType<Task> = TaskSchema.extend({
   id: z.string(),
   userId: z.string(),
   state: z.enum([
@@ -93,10 +112,12 @@ export const TaskResponseSchema = TaskSchema.extend({
     "Tracking",
   ]),
   nanoSteps: z.array(NanoStepSchema).default([]),
+  subtasks: z.array(z.lazy(() => TaskResponseSchema)).optional(),
+  parentTask: z.lazy(() => TaskResponseSchema).optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
   deckOrder: z.number().optional(),
-});
+}) as z.ZodType<Task>;
 
 export const CreateTaskSchema = z
   .object({
@@ -165,7 +186,6 @@ export const UpdateTaskSchema = TaskSchema.partial().extend({
 });
 
 export type UserPreferences = z.infer<typeof UserPreferencesSchema>;
-export type Task = z.infer<typeof TaskResponseSchema>;
 export type CreateTask = z.infer<typeof CreateTaskSchema>;
 export type UpdateTask = z.infer<typeof UpdateTaskSchema>;
 export type NanoStep = z.infer<typeof NanoStepSchema>;

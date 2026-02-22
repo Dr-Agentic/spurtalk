@@ -144,8 +144,7 @@ describe("Property 8: First Step Barrier Minimization", () => {
         });
         createdTaskIds.push(task.id);
 
-        const updatedTask = await unblockerService.decomposeTask(testUserId, task.id);
-        const steps = updatedTask.nanoSteps as NanoStep[];
+        const steps = await unblockerService.decomposeTask(testUserId, task.id) as unknown as NanoStep[];
 
         if (steps.length === 0) return false;
 

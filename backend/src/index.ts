@@ -20,10 +20,7 @@ app.set("trust proxy", 1);
 
 // Request logging - simplified for development
 app.use((req, res, next) => {
-  if (process.env.NODE_ENV === "development") {
-    // Only log mutations or errors in dev, or keep it quiet
-    // For now, let's just keep it quiet as requested
-  }
+  console.log(`${req.method} ${req.path}`);
   next();
 });
 

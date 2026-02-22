@@ -114,4 +114,33 @@ router.delete("/:id", async (req: AuthRequest, res: Response) => {
   }
 });
 
+router.get("/:id/plan", async (req: AuthRequest, res: Response) => {
+  try {
+    const plan = await taskService.planSubtasks(
+      req.userId!,
+      req.params.id as string
+    );
+    res.json(plan);
+  } catch (error) {
+    console.error("Failed to plan subtasks:", error);
+    res.status(500).json({ error: "Failed to plan subtasks" });
+  }
+});
+
+router.post("/:id/subtasks", async (req: AuthRequest, res: Response) => {
+  try {
+    const { subtasks, strategy } = req.body;
+    const createdTasks = await taskService.createSubtasks(
+      req.userId!,
+      req.params.id as string,
+      subtasks,
+      strategy
+    );
+    res.status(201).json(createdTasks);
+  } catch (error) {
+    console.error("Failed to create subtasks:", error);
+    res.status(500).json({ error: "Failed to create subtasks" });
+  }
+});
+
 export default router;

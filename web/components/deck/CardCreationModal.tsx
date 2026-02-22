@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { useCreateTaskMutation } from "@/lib/hooks/useTasks";
+import { useCreateTaskMutation, useTasksQuery, useTaskQuery } from "@/lib/hooks/useTasks";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,7 @@ interface CardCreationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  initialParentTaskId?: string;
 }
 
 interface FormState {
@@ -35,6 +36,7 @@ interface FormState {
   fuzzyDeadline: string;
   hardDeadline: string;
   tags: string;
+  parentTaskId: string;
 }
 
 interface FormErrors {
@@ -55,12 +57,14 @@ const initialFormState: FormState = {
   fuzzyDeadline: "",
   hardDeadline: "",
   tags: "",
+  parentTaskId: "",
 };
 
 export function CardCreationModal({
   isOpen,
   onClose,
   onSuccess,
+  initialParentTaskId,
 }: CardCreationModalProps) {
   const [form, setForm] = useState<FormState>(initialFormState);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -74,13 +78,16 @@ export function CardCreationModal({
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
-      setForm(initialFormState);
+      setForm({
+        ...initialFormState,
+        parentTaskId: initialParentTaskId || "",
+      });
       setErrors({});
       setTouched({});
       setApiError(null);
       reset();
     }
-  }, [isOpen, reset]);
+  }, [isOpen, reset, initialParentTaskId]);
 
   // Validate a single field
   const validateField = useCallback(
@@ -253,6 +260,10 @@ export function CardCreationModal({
     return Object.keys(newErrors).length === 0;
   }, [form]);
 
+  // Fetch potential parents
+  const { data: potentialParents } = useTasksQuery({ state: "Deck" });
+  const { data: selectedParent } = useTaskQuery(form.parentTaskId);
+
   // Check if form is valid for button state
   const isFormValid =
     form.title.trim().length > 0 &&
@@ -304,6 +315,10 @@ export function CardCreationModal({
         payload.tags = [];
       }
 
+      if (form.parentTaskId) {
+        payload.parentTaskId = form.parentTaskId;
+      }
+
       // Validate with Zod schema as a safety check
       try {
         CreateTaskSchema.parse(payload);
@@ -325,7 +340,9 @@ export function CardCreationModal({
       reset(); // Clear any previous mutation error state before retrying
 
       try {
+        console.log("[Modal] Submitting task:", payload);
         await mutateAsync(payload as Parameters<typeof mutateAsync>[0]);
+        console.log("[Modal] Submission success");
         toast.success("Your card is ready in the Deck");
         onClose();
         onSuccess?.();
@@ -420,7 +437,6 @@ export function CardCreationModal({
                 "Something went wrong. Your card is safe here - try again."}
             </div>
           )}
-
           {/* Title */}
           <div className="space-y-2">
             <Label htmlFor="card-title">
@@ -457,6 +473,42 @@ export function CardCreationModal({
                 {form.title.length}/500
               </span>
             </div>
+          </div>
+
+          {/* Parent Task Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="parent-task">Parent Task (Optional)</Label>
+            <div className="relative">
+              <select
+                id="parent-task"
+                className="w-full h-10 px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 appearance-none"
+                value={form.parentTaskId}
+                onChange={(e) => updateField("parentTaskId", e.target.value)}
+              >
+                <option value="">None (Individual Task)</option>
+                {potentialParents?.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.title}
+                  </option>
+                ))}
+                {/* Ensure the initial parent is visible even if not in "Deck" */}
+                {initialParentTaskId && selectedParent && !potentialParents?.some(p => p.id === initialParentTaskId) && (
+                  <option value={initialParentTaskId}>
+                    {selectedParent.title}
+                  </option>
+                )}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+            {form.parentTaskId && (
+              <p className="text-xs text-muted-foreground italic">
+                This will implicitly promote the parent to tracking mode.
+              </p>
+            )}
           </div>
 
           {/* Effort Level */}
@@ -661,7 +713,7 @@ export function CardCreationModal({
             </Button>
           </DialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </DialogContent >
+    </Dialog >
   );
 }

@@ -7,7 +7,7 @@ import { createClient } from "redis";
 const { Pool } = pg;
 
 export const pool = new Pool({
-  host: process.env.DB_HOST || "localhost",
+  host: process.env.DB_HOST || "127.0.0.1",
   port: parseInt(process.env.DB_PORT || "5432"),
   database: process.env.DB_NAME || "spurtalk",
   user: process.env.DB_USER || "postgres",
@@ -18,7 +18,7 @@ export const pool = new Pool({
 });
 
 export const redisClient = createClient({
-  url: process.env.REDIS_URL || "redis://localhost:6379",
+  url: process.env.REDIS_URL || "redis://127.0.0.1:6379",
 });
 
 redisClient.on("error", (err) => console.error("Redis Client Error", err));

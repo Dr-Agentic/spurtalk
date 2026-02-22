@@ -17,10 +17,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
-import { Play, Trash2, Calendar, Target, Smile, Info } from "lucide-react";
+import { Play, Trash2, Calendar, Target, Smile, Info, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { CardCreationModal } from "@/components/deck/CardCreationModal";
 
 interface TaskDetailSheetProps {
     task: TimelineTask | null;
@@ -33,6 +34,7 @@ export function TaskDetailSheet({ task, isOpen, onClose, onUpdate }: TaskDetailS
     const router = useRouter();
     const [localNanoSteps, setLocalNanoSteps] = useState<NanoStep[]>([]);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [isSubtaskModalOpen, setIsSubtaskModalOpen] = useState(false);
 
     useEffect(() => {
         if (task) {
@@ -170,9 +172,13 @@ export function TaskDetailSheet({ task, isOpen, onClose, onUpdate }: TaskDetailS
                         </Button>
 
                         <div className="grid grid-cols-2 gap-3">
-                            <Button variant="outline" className="gap-2 text-muted-foreground hover:text-foreground">
-                                <Info className="h-4 w-4" />
-                                Edit Details
+                            <Button
+                                variant="outline"
+                                className="gap-2 text-muted-foreground hover:text-foreground"
+                                onClick={() => setIsSubtaskModalOpen(true)}
+                            >
+                                <Plus className="h-4 w-4" />
+                                Add Subtask
                             </Button>
                             <Button
                                 variant="ghost"
@@ -187,6 +193,16 @@ export function TaskDetailSheet({ task, isOpen, onClose, onUpdate }: TaskDetailS
                     </div>
                 </SheetFooter>
             </SheetContent>
+
+            <CardCreationModal
+                isOpen={isSubtaskModalOpen}
+                onClose={() => setIsSubtaskModalOpen(false)}
+                initialParentTaskId={task.taskId}
+                onSuccess={() => {
+                    onUpdate();
+                    toast.success("Sub-card added to the family! 🌸");
+                }}
+            />
         </Sheet>
     );
 }

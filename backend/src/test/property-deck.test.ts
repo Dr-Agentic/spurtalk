@@ -76,24 +76,26 @@ describe("Property 10: Focus Deck Card Interaction", () => {
           createdTaskIds.push(task.id);
 
           // Action: Swipe
+          if (direction === "down") {
+            const steps = await taskService.handleSwipe(
+              testUserId,
+              task.id,
+              "down"
+            ) as import("@spurtalk/shared").NanoStep[];
+            return Array.isArray(steps) && steps.length > 0;
+          }
+
           const updatedTask = await taskService.handleSwipe(
             testUserId,
             task.id,
-            direction as "right" | "left" | "down"
-          );
+            direction as "right" | "left"
+          ) as unknown as import("@spurtalk/shared").Task;
 
           // Verification
           if (direction === "right") {
             return updatedTask.state === "Active";
           } else if (direction === "left") {
             return updatedTask.state === "Deck";
-          } else if (direction === "down") {
-            const steps = updatedTask.nanoSteps as NanoStep[];
-            return (
-              updatedTask.state === "Deck" &&
-              Array.isArray(steps) &&
-              steps.length > 0
-            );
           }
           return false;
         }

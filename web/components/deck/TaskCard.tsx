@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { ListTree } from "lucide-react";
 
 interface TaskCardProps {
   task: Task;
@@ -51,7 +52,18 @@ export function TaskCard({ task, className }: TaskCardProps) {
             </Badge>
           )}
         </div>
-        <CardTitle className="text-3xl">{task.title}</CardTitle>
+        <div className="flex flex-col gap-1">
+          {task.parentTask && (
+            <div
+              data-testid="task-breadcrumb"
+              className="flex items-center gap-1.5 text-xs font-semibold text-primary/70 uppercase tracking-wider mb-1"
+            >
+              <ListTree className="h-3 w-3" />
+              Project: {task.parentTask.title}
+            </div>
+          )}
+          <CardTitle className="text-3xl">{task.title}</CardTitle>
+        </div>
         <CardDescription className={cn("mt-2 text-lg", deadlineColor)}>
           Due: {task.fuzzyDeadline}
         </CardDescription>

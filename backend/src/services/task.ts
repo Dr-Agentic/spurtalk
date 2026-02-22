@@ -34,14 +34,18 @@ export class TaskService {
         description: data.description,
         effortLevel: data.effortLevel,
         emotionalTag: data.emotionalTag,
-        fuzzyDeadline: data.fuzzyDeadline,
-        hardDeadline: data.hardDeadline,
-        compellingEvent: compellingEvent,
-        motivationCategory: data.motivationCategory,
+        fuzzyDeadline: data.fuzzyDeadline ?? null,
+        hardDeadline: data.hardDeadline ?? null,
+        compellingEvent: data.compellingEvent ?? null,
+        motivationCategory: data.motivationCategory ?? null,
         dependencies: data.dependencies || [],
         tags: data.tags || [],
-        parentTaskId: data.parentTaskId,
+        parentTaskId: data.parentTaskId ?? null,
         state: "Deck",
+      } as any,
+      include: {
+        subtasks: true,
+        parentTask: true,
       },
     });
 
@@ -52,11 +56,68 @@ export class TaskService {
     return task;
   }
 
+  async createSubtasks(
+    userId: string,
+    parentTaskId: string,
+    subtasks: CreateTask[],
+    strategy: "replace" | "supplement" = "supplement"
+  ) {
+    // Ensure parent exists and user owns it
+    await this.getTask(userId, parentTaskId);
+
+    if (strategy === "replace") {
+      // Wipe existing subtasks
+      await prisma.task.deleteMany({
+        where: { parentTaskId, userId },
+      });
+    }
+
+    const createdSubtasks = await Promise.all(
+      subtasks.map((data) =>
+        prisma.task.create({
+          data: {
+            userId,
+            title: data.title,
+            description: data.description,
+            effortLevel: data.effortLevel || "Medium", // Default if missing
+            emotionalTag: data.emotionalTag ?? null,
+            fuzzyDeadline: data.fuzzyDeadline ?? null,
+            hardDeadline: data.hardDeadline ?? null,
+            compellingEvent: data.compellingEvent ?? null,
+            motivationCategory: data.motivationCategory ?? null,
+            dependencies: data.dependencies || [],
+            tags: data.tags || [],
+            parentTaskId: parentTaskId,
+            state: "Deck",
+          } as any,
+          include: {
+            subtasks: true,
+            parentTask: true,
+          },
+        })
+      )
+    );
+
+    // Promote parent to Tracking
+    await this.updateTask(userId, parentTaskId, { state: "Tracking" });
+
+    return createdSubtasks;
+  }
+
+  async planSubtasks(userId: string, taskId: string) {
+    const task = await this.getTask(userId, taskId);
+    return aiService.planSubtasks(task.title, task.description);
+  }
+
   async getTasks(userId: string, filters?: { state?: string }) {
     return prisma.task.findMany({
       where: {
         userId,
         ...(filters?.state && { state: filters.state }),
+      },
+      include: {
+        subtasks: true,
+        parentTask: true,
       },
       orderBy: { createdAt: "desc" },
     });
@@ -65,6 +126,10 @@ export class TaskService {
   async getTask(userId: string, taskId: string) {
     const task = await prisma.task.findFirst({
       where: { id: taskId, userId },
+      include: {
+        subtasks: true,
+        parentTask: true,
+      },
     });
 
     if (!task) {
@@ -109,6 +174,10 @@ export class TaskService {
       data: {
         ...data,
         updatedAt: new Date(),
+      },
+      include: {
+        subtasks: true,
+        parentTask: true,
       },
     });
 
@@ -180,9 +249,14 @@ export class TaskService {
         userId,
         state: "Deck",
       },
+      include: {
+        subtasks: true,
+        parentTask: true,
+      },
       orderBy: [
         { hardDeadline: "asc" },
         { deckOrder: "desc" }, // Higher deckOrder means it was snoozed more recently
+        { createdAt: "desc" }, // Fallback to newest first
       ],
     });
   }

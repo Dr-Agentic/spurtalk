@@ -2,7 +2,7 @@ import axios from "axios";
 import { useAuthStore } from "@/lib/store/auth";
 
 export const api = axios.create({
-  baseURL: "http://127.0.0.1:7101/api",
+  baseURL: "/api",
   headers: {
     "Content-Type": "application/json",
   },
@@ -13,6 +13,12 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  // Add cache buster to GET requests
+  if (config.method?.toLowerCase() === "get") {
+    config.params = { ...config.params, _t: Date.now() };
+  }
+
   return config;
 });
 
@@ -29,7 +35,7 @@ api.interceptors.response.use(
         if (!refreshToken) throw new Error("No refresh token");
 
         const { data } = await axios.post(
-          "http://127.0.0.1:7101/api/auth/refresh",
+          "/api/auth/refresh",
           {
             refreshToken,
           }

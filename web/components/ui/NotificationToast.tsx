@@ -43,7 +43,7 @@ export function showNotification({
     const Icon = config.icon;
 
     toast.custom(
-        (_id) => (
+        () => (
             <div
                 className={cn(
                     "flex items-center gap-3 rounded-lg px-4 py-3 shadow-lg",

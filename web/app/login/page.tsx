@@ -33,11 +33,14 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      console.log("Submitting login request...");
       const { data } = await api.post("/auth/login", { email, password });
+      console.log("Login request successful");
       setTokens(data.tokens.accessToken, data.tokens.refreshToken);
       setUser(data.user);
       router.push("/deck");
     } catch (err: unknown) {
+      console.error("Login request failed:", err);
       // Use friendly error messages - never say "Failed"
       const axiosError = err as { response?: { status?: number; data?: { error?: string } } };
       if (axiosError.response?.status === 401) {

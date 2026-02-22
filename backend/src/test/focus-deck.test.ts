@@ -72,7 +72,7 @@ describe("Focus Deck", () => {
         testUserId,
         task.id,
         "right"
-      );
+      ) as unknown as import("@spurtalk/shared").Task;
       expect(updatedTask.state).toBe("Active");
     });
 
@@ -83,7 +83,7 @@ describe("Focus Deck", () => {
         testUserId,
         task.id,
         "left"
-      );
+      ) as unknown as import("@spurtalk/shared").Task;
       expect(updatedTask.state).toBe("Deck");
     });
 
@@ -91,14 +91,13 @@ describe("Focus Deck", () => {
       const task = await createTestTask("Swipe Down Task");
       expect(task.nanoSteps).toEqual([]); // Initially empty/default
 
-      const updatedTask = await taskService.handleSwipe(
+      const steps = await taskService.handleSwipe(
         testUserId,
         task.id,
         "down"
-      );
+      ) as unknown as import("@spurtalk/shared").NanoStep[];
 
       // We cast to NanoStep[] because we know it's an array in our simple implementation
-      const steps = updatedTask.nanoSteps as { text?: string; emotionalEffort?: string }[];
       expect(steps.length).toBeGreaterThan(0);
       expect(steps[0].emotionalEffort).toBe("zero");
     });
