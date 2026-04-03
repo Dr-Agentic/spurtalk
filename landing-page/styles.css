@@ -1,0 +1,309 @@
+:root {
+    /* ========================================
+       SpurTalk Theme - Exact Colors from globals.css
+       ======================================== */
+    
+    /* Primary: Calming Teal */
+    --primary: 174 62% 40%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary: Lavender */
+    --secondary: 255 89% 72%;
+    --secondary-foreground: 0 0% 100%;
+    
+    /* Success: Emerald */
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+    
+    /* Warning: Sand/Amber */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    
+    /* Background: Warm off-white (#faf9f7) */
+    --background: 40 33% 98%;
+    --foreground: 240 10% 4%;
+    
+    /* Card: Slightly elevated warm white */
+    --card: 40 20% 99%;
+    --card-foreground: 240 10% 4%;
+    
+    /* Muted: Soft sage tones */
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    
+    /* Accent: Light teal tint */
+    --accent: 174 30% 95%;
+    --accent-foreground: 174 62% 25%;
+    
+    /* Border */
+    --border: 220 13% 91%;
+    
+    /* Derived colors */
+    --primary-rgb: 26, 127, 121;
+    --radius: 8px;
+    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Font */
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Convert HSL to hex for CSS use */
+:root {
+    --primary-hex: #1a7f79;
+    --secondary-hex: #9b6dff;
+    --success-hex: #16a34a;
+    --warning-hex: #f59e0b;
+    --background-hex: #faf9f7;
+    --foreground-hex: #0a0a0a;
+    --card-hex: #fafafa;
+    --border-hex: #e5e7eb;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-family);
+    line-height: 1.6;
+    color: hsl(var(--foreground));
+    background: hsl(var(--background));
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* Header with gradient using primary teal */
+header {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(174 62% 32%) 100%);
+    color: hsl(var(--primary-foreground));
+    text-align: center;
+    padding: 4rem 0;
+}
+
+header h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+}
+
+header p {
+    font-size: 1.25rem;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+/* Hero Section */
+.hero {
+    text-align: center;
+    padding: 5rem 0;
+    background: hsl(var(--background));
+}
+
+.hero h2 {
+    font-size: 2.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: hsl(var(--primary));
+    letter-spacing: -0.02em;
+}
+
+.hero p {
+    font-size: 1.125rem;
+    margin-bottom: 2.5rem;
+    color: hsl(var(--muted-foreground));
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Email Form */
+#interest-form {
+    display: flex;
+    gap: 0.75rem;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+#interest-form input {
+    flex: 1;
+    padding: 1rem 1.25rem;
+    border: 2px solid hsl(var(--border));
+    border-radius: var(--radius);
+    font-size: 1rem;
+    background: hsl(var(--card));
+    color: hsl(var(--foreground));
+    transition: var(--transition);
+}
+
+#interest-form input:focus {
+    outline: none;
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.15);
+}
+
+#interest-form input::placeholder {
+    color: hsl(var(--muted-foreground));
+}
+
+#interest-form button {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+#interest-form button:hover {
+    background: hsl(174 62% 32%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px hsl(var(--primary) / 0.3);
+}
+
+#interest-form button:active {
+    transform: translateY(0);
+}
+
+#form-message {
+    margin-top: 1.5rem;
+    min-height: 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+/* Features Section */
+.features {
+    padding: 5rem 0;
+    background: hsl(var(--muted));
+}
+
+.features h3 {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 3rem;
+    color: hsl(var(--foreground));
+    font-weight: 600;
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+}
+
+.feature {
+    background: hsl(var(--card));
+    padding: 2rem;
+    border-radius: var(--radius-lg, 12px);
+    box-shadow: var(--shadow);
+    text-align: center;
+    transition: var(--transition);
+    border: 1px solid hsl(var(--border));
+}
+
+.feature:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+.feature-icon {
+    width: 56px;
+    height: 56px;
+    background: hsl(var(--accent));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
+    font-size: 1.5rem;
+}
+
+.feature h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: hsl(var(--primary));
+}
+
+.feature p {
+    color: hsl(var(--muted-foreground));
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 2rem 0;
+    color: hsl(var(--muted-foreground));
+    font-size: 0.875rem;
+    border-top: 1px solid hsl(var(--border));
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 2.25rem;
+    }
+    
+    header p {
+        font-size: 1.1rem;
+    }
+    
+    .hero h2 {
+        font-size: 1.75rem;
+    }
+    
+    .hero {
+        padding: 3rem 0;
+    }
+    
+    #interest-form {
+        flex-direction: column;
+    }
+    
+    #interest-form button {
+        width: 100%;
+    }
+    
+    .features {
+        padding: 3rem 0;
+    }
+    
+    .feature-grid {
+        gap: 1.5rem;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background: 240 21% 12%;
+        --foreground: 40 20% 96%;
+        --card: 222 47% 16%;
+        --card-foreground: 40 20% 96%;
+        --muted: 217 33% 20%;
+        --muted-foreground: 215 20% 65%;
+        --border: 217 33% 25%;
+        --accent: 217 33% 20%;
+    }
+    
+    body {
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+    }
+}
