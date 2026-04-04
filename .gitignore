@@ -11,3 +11,4 @@ coverage/
 # Keep project context in git
 !.context/
 !.context/**
+data/

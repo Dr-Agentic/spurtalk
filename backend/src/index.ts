@@ -11,6 +11,7 @@ import gardenRoutes from "./routes/garden";
 import unblockerRoutes from "./routes/unblocker";
 import documentRoutes from "./routes/documents";
 import cardRoutes from "./routes/cardRoutes";
+import waitlistRoutes from "./routes/waitlist";
 import { apiLimiter, authLimiter } from "./middleware/rateLimit";
 
 const app = express();
@@ -51,6 +52,7 @@ app.use("/api/garden", gardenRoutes);
 app.use("/api/unblocker", unblockerRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/cards", cardRoutes);
+app.use("/api/waitlist", waitlistRoutes);
 
 // Export app for testing
 if (process.env.NODE_ENV === "test") {
