@@ -7,8 +7,8 @@ test.describe('Task Hierarchy E2E (Manual & AI)', () => {
 
         // 1. Seed the test user
         await page.goto('/login');
-        await page.fill('id=email', 'test@example.com');
-        await page.fill('id=password', 'password123');
+        await page.fill('id=email', 'test@spurtalk.com');
+        await page.fill('id=password', 'Test1234!');
         await page.click('button:has-text("Let\'s go!")');
 
         await expect(page).toHaveURL(/\/deck$|\/$/, { timeout: 15000 });

@@ -1,0 +1,71 @@
+FROM node:22-alpine AS base
+
+FROM base AS builder
+WORKDIR /app
+COPY package*.json ./
+COPY backend ./backend
+COPY shared ./shared
+COPY types ./types
+COPY prisma ./prisma
+COPY . .
+
+# Install all dependencies including workspaces
+RUN npm ci
+
+# Build shared and types packages first
+WORKDIR /app/shared
+RUN npx tsc
+
+WORKDIR /app/types
+RUN npx tsc
+
+# Generate Prisma client
+WORKDIR /app/backend
+
+# Create a dummy .env for prisma generate (doesn't need real DB)
+RUN echo 'DATABASE_URL=postgresql://dummy:dummy@dummy:5432' > .env
+
+RUN npx prisma generate --schema=../prisma/schema.prisma
+
+# Build backend
+RUN npx tsc
+
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 backend
+
+# Copy built artifacts
+COPY --from=builder --chown=backend:nodejs /app/backend/dist ./dist
+COPY --from=builder --chown=backend:nodejs /app/shared/dist ./shared_dist
+COPY --from=builder --chown=backend:nodejs /app/shared/package.json ./shared_dist/package.json
+COPY --from=builder --chown=backend:nodejs /app/types/dist ./types_dist
+COPY --from=builder --chown=backend:nodejs /app/types/package.json ./types_dist/package.json
+COPY --from=builder --chown=backend:nodejs /app/prisma ./prisma
+
+# Copy package.json files for reference
+COPY --from=builder --chown=backend:nodejs /app/backend/package.json ./package.json
+
+# Copy root node_modules (npm workspaces hoists most things here)
+COPY --from=builder --chown=backend:nodejs /app/node_modules ./node_modules
+
+# Copy backend-specific node_modules (some workspace-specific deps may live here)
+COPY --from=builder --chown=backend:nodejs /app/backend/node_modules ./backend_node_modules
+
+# Create a symlink so require() can find backend modules
+RUN ln -s ./backend_node_modules ./node_modules/backend || true
+
+# Create proper @spurtalk packages in node_modules pointing to built dist folders
+RUN mkdir -p ./node_modules/@spurtalk && \
+    rm -rf ./node_modules/@spurtalk/shared ./node_modules/@spurtalk/types && \
+    ln -s /app/shared_dist ./node_modules/@spurtalk/shared && \
+    ln -s /app/types_dist ./node_modules/@spurtalk/types
+
+RUN mkdir -p ./uploads ./data && chown backend:1001 -R /app && ln -s /app/data /data
+
+USER backend
+EXPOSE 7101
+CMD ["node", "dist/index.js"]

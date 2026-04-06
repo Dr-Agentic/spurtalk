@@ -9,8 +9,8 @@ test.describe('Dashboard Smoke Tests', () => {
         await page.goto('/login');
 
         // Fill login form
-        await page.fill('id=email', 'test@example.com');
-        await page.fill('id=password', 'password123');
+        await page.fill('id=email', 'test@spurtalk.com');
+        await page.fill('id=password', 'Test1234!');
         await page.click('button:has-text("Let\'s go!")');
 
         // Wait for redirect to deck/dashboard
@@ -40,7 +40,7 @@ test.describe('Dashboard Smoke Tests', () => {
         await page.click('a[href="/timeline"]');
 
         // Check for timeline header "Your River"
-        await expect(page.locator('h1')).toContainText('Your River');
+        await expect(page.locator('h2')).toContainText('Your River');
     });
 
     test('should navigate to the garden', async ({ page }) => {

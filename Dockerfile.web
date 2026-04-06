@@ -1,0 +1,38 @@
+FROM node:22-alpine AS base
+
+FROM base AS builder
+WORKDIR /app
+COPY package*.json ./
+COPY backend ./backend
+COPY web ./web
+COPY shared ./shared
+COPY types ./types
+COPY prisma ./prisma
+COPY . .
+
+# Install all dependencies including workspaces
+RUN npm ci
+
+# Build web (Next.js standalone)
+WORKDIR /app/web
+RUN npm run build
+
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy the entire .next/build from web workspace to /app/.next
+# The standalone build ends up at /app/web/.next/standalone
+COPY --from=builder --chown=nextjs:nodejs /app/web/.next/standalone ./standalone
+COPY --from=builder --chown=nextjs:nodejs /app/web/public ./public
+
+# Copy root node_modules (npm workspaces hoists everything)
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+
+USER nextjs
+EXPOSE 7100
+CMD ["node", "standalone/web/server.js"]

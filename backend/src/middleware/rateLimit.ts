@@ -14,7 +14,7 @@ export const apiLimiter = rateLimit({
 // Stricter limiter for authentication routes
 export const authLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: process.env.NODE_ENV === "production" ? 10 : 100, // Relaxed limit for development
+  max: process.env.NODE_ENV === "production" ? 10 : 10000, // Relaxed limit for development
   standardHeaders: true,
   legacyHeaders: false,
   message: {

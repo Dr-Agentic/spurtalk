@@ -1,0 +1,83 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: spurtalk-postgres
+    environment:
+      POSTGRES_DB: spurtalk
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - spurtalk
+
+  redis:
+    image: redis:7-alpine
+    container_name: spurtalk-redis
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - spurtalk
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: spurtalk-backend
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/spurtalk
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      NODE_ENV: production
+      PORT: 7101
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-dummy-key-for-build}
+    ports:
+      - "7101:7101"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - backend-data:/app/data
+    networks:
+      - spurtalk
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: spurtalk-web
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://backend:7101
+      PORT: 7100
+    ports:
+      - "7100:7100"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - spurtalk
+
+volumes:
+  postgres-data:
+  redis-data:
+  backend-data:
+
+networks:
+  spurtalk:
+    driver: bridge
