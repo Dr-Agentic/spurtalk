@@ -50,4 +50,15 @@ test.describe('Dashboard Smoke Tests', () => {
         // Check for garden header
         await expect(page.locator('h1')).toContainText('Your Garden');
     });
+
+    test('forgot password page should load without 404', async ({ page }) => {
+        // Navigate directly to /forgot-password (not through login link)
+        const response = await page.goto('/forgot-password');
+        expect(response?.status()).toBe(200);
+
+        // Verify key elements are visible
+        await expect(page.getByText('Reset your password')).toBeVisible({ timeout: 5000 });
+        await expect(page.getByLabel(/email/i)).toBeVisible({ timeout: 5000 });
+        await expect(page.getByRole('button', { name: /send reset/i })).toBeVisible({ timeout: 5000 });
+    });
 });
