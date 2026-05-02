@@ -94,9 +94,19 @@ export default function FocusModePage() {
     });
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     setCelebration(getRandomCelebration());
     setShowCelebration(true);
+
+    try {
+      // Move task to Garden and grow the garden
+      if (task?.id) {
+        await api.post(`/garden/complete/${task.id}`);
+      }
+    } catch (error) {
+      console.error("Failed to update garden:", error);
+      // Continue anyway — task completion takes priority
+    }
 
     setTimeout(() => {
       router.push("/deck");

@@ -25,6 +25,12 @@ export class GardenService {
 
     if (!task || task.userId !== userId) throw new Error("Task not found");
 
+    // Move task to Garden state
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { state: "Garden", completedAt: new Date() },
+    });
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { gardenState: true },
