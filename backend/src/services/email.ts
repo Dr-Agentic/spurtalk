@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "SpurTalk <noreply@spurtalk.com>";
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "SpurTalk <spurtalk+noreply@specialized.live>";
 const APP_URL = process.env.APP_URL || "http://localhost:7100";
 
 export interface PasswordResetEmail {
