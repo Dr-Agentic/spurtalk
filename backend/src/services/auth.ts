@@ -319,6 +319,27 @@ export class AuthService {
     };
   }
 
+  generatePasswordResetToken(userId: string): string {
+    return jwt.sign(
+      { userId, type: "reset" },
+      process.env.JWT_SECRET || "dev-secret",
+      { expiresIn: "1h" } as SignOptions
+    );
+  }
+
+  verifyPasswordResetToken(token: string): string | null {
+    try {
+      const decoded = jwt.verify(
+        token,
+        process.env.JWT_SECRET || "dev-secret"
+      ) as { userId: string; type: string };
+      if (decoded.type !== "reset") return null;
+      return decoded.userId;
+    } catch {
+      return null;
+    }
+  }
+
   private sanitizeUser(user: User) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...sanitized } = user;

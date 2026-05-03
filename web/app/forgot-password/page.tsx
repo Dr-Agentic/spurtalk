@@ -8,6 +8,8 @@ import { AuthCard } from "@/components/auth/AuthCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { api } from "@/lib/api";
+import { FRIENDLY_ERRORS } from "@/lib/design-tokens";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -21,12 +23,10 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
-      // TODO: wire up to backend password reset endpoint
-      // POST /auth/forgot-password { email }
-      await new Promise((r) => setTimeout(r, 800)); // simulate API call
+      await api.post("/auth/forgot-password", { email });
       setSubmitted(true);
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(FRIENDLY_ERRORS.genericError);
     } finally {
       setIsLoading(false);
     }
