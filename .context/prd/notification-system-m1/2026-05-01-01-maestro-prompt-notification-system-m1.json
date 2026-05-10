@@ -1,0 +1,274 @@
+{
+  "metadata": {
+    "creator": "Maestro",
+    "created_at": "2026-05-01T04:05:00.000Z",
+    "original_prompt": "Implement Multi-Channel Communication System — M1 (In-App Notifications + Scheduler). Scheduler runs every 15 min evaluating trigger conditions, dispatches messages to Channel Router. Triggers: stall detection, deadline approaching, daily check-in, streak at risk. In-app notification store with API. User communication preferences. All messages use nurturing, non-judgmental language.",
+    "status": "ready-to-process"
+  },
+  "task": {
+    "title": "Multi-Channel Communication System — M1 (In-App Notifications + Scheduler)",
+    "revised_prompt": "## Background\n\nSpurTalk is a personal task management app for procrastinators built on the 'Anti-Guilt' standard. The backend is Express + TypeScript + Prisma + PostgreSQL. Services follow a class-based singleton pattern (see `backend/src/services/garden.ts`, `backend/src/services/unblocker.ts`). Routes use the `authenticateToken` middleware from `backend/src/middleware/auth.ts`. Shared Zod schemas live in `shared/src/index.ts`. The Prisma schema is at `prisma/schema.prisma`.\n\nThe app currently has NO proactive communication channel — users must open the app themselves. This M1 milestone builds the first channel: in-app notifications + a background scheduler, so SpurTalk can gently nudge users when they need it.\n\n**Core design principle:** Notifications must feel like a calm, encouraging presence — never anxiety-inducing. Think 'garden tending' not 'deadline pressure.'\n\n## Directives\n\n### 1. Prisma Schema — Add `InAppNotification` Model\n\nAdd to `prisma/schema.prisma`:\n\n```prisma\nmodel InAppNotification {\n  id          String    @id @default(uuid())\n  userId      String\n  triggerType String    // \"stall\" | \"deadline\" | \"daily_checkin\" | \"streak\" | \"milestone\"\n  message     String\n  taskId      String?\n  deliveredAt DateTime  @default(now()) @map(\"delivered_at\")\n  readAt      DateTime? @map(\"read_at\")\n  createdAt   DateTime  @default(now()) @map(\"created_at\")\n  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)\n\n  @@index([userId, readAt])\n  @@map(\"in_app_notifications\")\n}\n```\n\nAlso add the relation to the `User` model:\n```prisma\nmodel User {\n  // ... existing fields ...\n  notifications InAppNotification[]\n}\n```\n\nThen run `npx prisma migrate dev --name add-in-app-notifications`.\n\n### 2. Scheduler Service\n\nCreate `backend/src/services/scheduler.ts` following the existing service pattern.\n\n- Export a `SchedulerService` class with a singleton `schedulerService`.\n- Method `start()`: sets a `setInterval` (or Node.js timer) that runs every 15 minutes.\n- Method `stop()`: clears the interval.\n- Method `runEvaluationCycle()`: for each user, evaluates all trigger conditions and dispatches qualifying notifications via the `NotificationService`.\n- The scheduler should respect user quiet hours — do not dispatch during quiet hours; instead queue and deliver at the end of quiet hours.\n- Each trigger should only fire once per user per task per 24h window (dedup via checking recent `InAppNotification` records).\n- Log each cycle run with counts: users evaluated, notifications created, skipped (quiet hours), skipped (dedup).\n\n### 3. Trigger System\n\nImplement four triggers inside the scheduler evaluation cycle:\n\n**3a. Stall Detection Trigger**\n- Query tasks where `state` is `Active` or `Deck` AND `updatedAt` is older than 24 hours AND no stall notification exists for this task in the last 24h.\n- Reuse the stall-detection-timeout from `User.preferences.stallDetectionTimeout` (default 24h).\n- Message: 'Hey, no pressure — want to do one nano-step?'\n- triggerType: `'stall'`\n\n**3b. Deadline Approaching Trigger**\n- Query tasks with a `hardDeadline` within the next 24 hours AND no deadline notification for this task in the last 24h.\n- Only fire if `User.preferences.deadlineAlerts` is not `false`.\n- Message: 'Your deadline is tomorrow. Just one step?'\n- triggerType: `'deadline'`\n- Edge case: If deadline is past (overdue), do NOT generate a deadline notification (no anxiety).\n\n**3c. Daily Check-In Trigger**\n- Check if current time (in user's timezone from `User.preferences.timezone`) matches the user's configured `dailyCheckInTime` (default `'09:00'`).\n- Only fire once per calendar day per user.\n- Only fire if `User.preferences.dailyCheckIn` is not `false`.\n- Message: 'What one thing will you tackle today?'\n- triggerType: `'daily_checkin'`\n\n**3d. Streak at Risk Trigger**\n- Read `User.gardenState.currentStreak`. If streak > 0 AND the user has not completed any task today (check tasks with `completedAt` today), the streak is at risk.\n- Only fire once per calendar day per user.\n- Only fire if `User.preferences.streakAlerts` is not `false`.\n- Message: 'Your streak is about to break — 5 min?'\n- triggerType: `'streak'`\n- Edge case: If streak is already 0, no notification (no shame).\n\n**3e. Milestone Trigger (bonus)**\n- When a user completes a task, check if it's their Nth task (e.g., 1st, 5th, 10th, 25th, 50th, 100th). If so, create a milestone notification.\n- triggerType: `'milestone'`\n- Message: '🎉 You did it!'\n- This can be triggered from the existing task completion flow rather than the scheduler.\n\n### 4. Notification Service\n\nCreate `backend/src/services/notification.ts`:\n\n- `createNotification(userId, triggerType, message, taskId?)` — inserts an `InAppNotification` record.\n- `getNotifications(userId, options?)` — returns user's notifications, unread first, with pagination (default limit 50).\n- `markAsRead(userId, notificationId)` — sets `readAt` to now. Returns 404 if not found or not owned by user.\n- `markAllAsRead(userId)` — marks all unread notifications as read for a user.\n- `isInQuietHours(userId)` — reads user's `communicationPreferences.quietHours` and checks if current time (in user timezone) falls within quiet hours.\n- `shouldDedup(userId, triggerType, taskId?)` — checks if a notification of this type for this task already exists within the last 24h.\n\n### 5. Message Templates\n\nCreate `backend/src/services/messageTemplates.ts`:\n\nDefine all message templates in one place. Every message must use nurturing, non-judgmental language. No alarms, no urgent colors, no shame.\n\n```typescript\nconst MESSAGE_TEMPLATES = {\n  stall: 'Hey, no pressure — want to do one nano-step?',\n  deadline: 'Your deadline is tomorrow. Just one step?',\n  daily_checkin: 'What one thing will you tackle today?',\n  streak: 'Your streak is about to break — 5 min?',\n  milestone: '🎉 You did it!',\n} as const;\n```\n\nAlso define a `formatMessage(template, context?)` function that allows inserting task title or other context when appropriate.\n\n### 6. User Communication Preferences\n\nExtend `User.preferences` JSON field. The existing `UserPreferencesSchema` in `shared/src/index.ts` already has a `notificationSettings` object with `taskReminders`, `stallDetection`, and `milestoneCelebrations`. Extend it with communication-specific preferences:\n\n```typescript\ncommunicationPreferences: z.object({\n  channels: z.array(z.enum(['in_app'])).default(['in_app']),\n  quietHours: z.object({\n    start: z.string().regex(/^\\d{2}:\\d{2}$/).default('22:00'),\n    end: z.string().regex(/^\\d{2}:\\d{2}$/).default('08:00'),\n  }).default({ start: '22:00', end: '08:00' }),\n  dailyCheckInTime: z.string().regex(/^\\d{2}:\\d{2}$/).default('09:00'),\n  stallAlerts: z.boolean().default(true),\n  deadlineAlerts: z.boolean().default(true),\n  dailyCheckIn: z.boolean().default(true),\n  streakAlerts: z.boolean().default(true),\n}).default({\n  channels: ['in_app'],\n  quietHours: { start: '22:00', end: '08:00' },\n  dailyCheckInTime: '09:00',\n  stallAlerts: true,\n  deadlineAlerts: true,\n  dailyCheckIn: true,\n  streakAlerts: true,\n})\n```\n\nMigrate the existing `notificationSettings` into this new `communicationPreferences` structure, or keep both and have the scheduler read from `communicationPreferences` with fallback to `notificationSettings` for backward compatibility.\n\n### 7. API Endpoints\n\nCreate `backend/src/routes/notifications.ts`:\n\n**GET /api/notifications**\n- Requires `authenticateToken`\n- Query params: `?unread=true` (filter to unread only), `?limit=50`, `?offset=0`\n- Returns notifications sorted by `createdAt` DESC, unread first\n- Response: `{ notifications: InAppNotification[], total: number, unread: number }`\n\n**PATCH /api/notifications/:id/read**\n- Requires `authenticateToken`\n- Marks a single notification as read\n- Returns updated notification\n- 404 if not found or not owned by user\n- 400 if already read\n\n**PATCH /api/notifications/read-all**\n- Requires `authenticateToken`\n- Marks all unread notifications as read for the authenticated user\n- Returns `{ updated: number }`\n\n**GET /api/users/me/communication-preferences**\n- Requires `authenticateToken`\n- Returns the user's `communicationPreferences` from `User.preferences`\n\n**PATCH /api/users/me/communication-preferences**\n- Requires `authenticateToken`\n- Validates body against the communication preferences schema\n- Merges with existing preferences (partial update)\n- Returns updated preferences\n\n### 8. Wire Up in `backend/src/index.ts`\n\n- Import and mount notification routes: `app.use('/api/notifications', notificationRoutes)`\n- Start the scheduler on server boot (non-test environments): call `schedulerService.start()`\n- Graceful shutdown: call `schedulerService.stop()` on SIGTERM/SIGINT\n\n### 9. Tests\n\nCreate `backend/src/test/notifications.test.ts` and `backend/src/test/scheduler.test.ts`:\n\n- Unit tests for `NotificationService` (create, get, markAsRead, markAllAsRead, quiet hours, dedup)\n- Unit tests for each trigger condition (stall, deadline, daily check-in, streak, milestone)\n- Unit tests for quiet hours logic (cross-midnight quiet hours, e.g., 22:00-08:00)\n- Unit tests for dedup logic (no duplicate notifications within 24h)\n- Integration tests for API endpoints (GET /api/notifications, PATCH read, PATCH read-all, GET/PATCH preferences)\n- Test that messages use nurturing language (no 'overdue', 'urgent', 'fail' words)\n- Run with: `cd backend && npm test`\n\n## Technical Constraints\n\n- Follow existing service class + singleton export pattern (see `gardenService`, `unblockerService`)\n- Use `authenticateToken` middleware for all notification endpoints\n- Use Zod for request validation (see existing `CreateTaskSchema` pattern)\n- Use `@spurtalk/shared` for shared types and schemas\n- No external notification services for M1 — everything stays in-process\n- No Redis/BullMQ for M1 — use `setInterval` for the scheduler (can be upgraded later)\n- The scheduler must not block the Express event loop — use `setImmediate` or process users in batches\n- All database access through Prisma client (see `backend/src/lib/prisma.ts`)\n- Never use anxiety-inducing language in any message template\n- Never send notifications during user's configured quiet hours\n- Never send duplicate notifications (dedup within 24h per trigger+task per user)\n\n## Verification\n\n1. `cd /Users/morsy/dev/spurtalk && npx prisma migrate dev --name add-in-app-notifications` — migration applies cleanly\n2. `cd /Users/morsy/dev/spurtalk/backend && npm run typecheck` — no TypeScript errors\n3. `cd /Users/morsy/dev/spurtalk/backend && npm test` — all tests pass\n4. `cd /Users/morsy/dev/spurtalk/backend && npm run dev` — server starts, scheduler logs 'Scheduler started' message\n5. Manual: `GET /api/notifications` returns 200 with notification list\n6. Manual: `PATCH /api/notifications/:id/read` marks notification as read\n7. Manual: `GET /api/users/me/communication-preferences` returns preferences\n8. Manual: `PATCH /api/users/me/communication-preferences` updates preferences",
+    "user_stories": [
+      {
+        "title": "Scheduler runs periodic evaluation cycle",
+        "as_a": "SpurTalk system",
+        "i_want_to": "run a background job every 15 minutes that evaluates each user's tasks against trigger conditions",
+        "so_that": "users receive timely nudges without manual intervention",
+        "acceptance_criteria": [
+          "Scheduler starts automatically when the server boots (non-test environments)",
+          "Scheduler runs an evaluation cycle every 15 minutes",
+          "Each cycle iterates over all users and evaluates trigger conditions",
+          "Cycle logs count of users evaluated, notifications created, skipped (quiet hours), skipped (dedup)",
+          "Scheduler stops gracefully on SIGTERM/SIGINT",
+          "Scheduler does not block the Express event loop"
+        ]
+      },
+      {
+        "title": "Stall detection trigger fires nurturing nudge",
+        "as_a": "procrastinator who hasn't touched a task in 24 hours",
+        "i_want_to": "receive a gentle 'Hey, no pressure — want to do one nano-step?' notification",
+        "so_that": "I'm reminded without feeling judged",
+        "acceptance_criteria": [
+          "Trigger detects tasks in 'Active' or 'Deck' state with updatedAt older than the user's stallDetectionTimeout (default 24h)",
+          "Creates an InAppNotification with triggerType 'stall' and nurturing message",
+          "Only fires once per task per 24h window (dedup)",
+          "Respects user's stallAlerts preference (default true)",
+          "Respects user's quiet hours — does not deliver during quiet hours",
+          "Does not use anxiety-inducing language like 'overdue' or 'urgent'"
+        ]
+      },
+      {
+        "title": "Deadline approaching trigger fires soft reminder",
+        "as_a": "procrastinator with a hard deadline tomorrow",
+        "i_want_to": "receive a soft 'Your deadline is tomorrow. Just one step?' note",
+        "so_that": "I'm aware of the deadline without panicking",
+        "acceptance_criteria": [
+          "Trigger detects tasks with hardDeadline within the next 24 hours",
+          "Does NOT fire for tasks whose hardDeadline is already past (no overdue shaming)",
+          "Creates an InAppNotification with triggerType 'deadline' and nurturing message",
+          "Only fires once per task per 24h window (dedup)",
+          "Respects user's deadlineAlerts preference (default true)",
+          "Respects user's quiet hours"
+        ]
+      },
+      {
+        "title": "Daily check-in trigger fires morning prompt",
+        "as_a": "procrastinator starting my day",
+        "i_want_to": "receive a 'What one thing will you tackle today?' notification at my configured check-in time",
+        "so_that": "I can gently set an intention for the day",
+        "acceptance_criteria": [
+          "Trigger fires at the user's configured dailyCheckInTime (default 09:00) in the user's timezone",
+          "Creates an InAppNotification with triggerType 'daily_checkin'",
+          "Only fires once per calendar day per user",
+          "Respects user's dailyCheckIn preference (default true)",
+          "Respects user's quiet hours — if check-in time falls in quiet hours, delivers at end of quiet hours"
+        ]
+      },
+      {
+        "title": "Streak at risk trigger fires gentle nudge",
+        "as_a": "procrastinator with an active garden streak",
+        "i_want_to": "receive a 'Your streak is about to break — 5 min?' notification if I haven't completed a task today",
+        "so_that": "I'm gently reminded to keep my streak alive without shame",
+        "acceptance_criteria": [
+          "Trigger checks User.gardenState.currentStreak > 0 AND no task completed today",
+          "Creates an InAppNotification with triggerType 'streak'",
+          "Only fires once per calendar day per user",
+          "Does NOT fire if streak is already 0 (no shame for already-broken streaks)",
+          "Respects user's streakAlerts preference (default true)",
+          "Respects user's quiet hours"
+        ]
+      },
+      {
+        "title": "Milestone notification on task completion",
+        "as_a": "procrastinator who just completed a task",
+        "i_want_to": "receive a '🎉 You did it!' celebration notification for milestone completions (1st, 5th, 10th, 25th, 50th, 100th task)",
+        "so_that": "I feel celebrated and motivated to keep going",
+        "acceptance_criteria": [
+          "When a task is completed, check if the total completed count hits a milestone (1, 5, 10, 25, 50, 100)",
+          "Creates an InAppNotification with triggerType 'milestone'",
+          "Message uses celebratory, nurturing language",
+          "Milestone notifications are not subject to dedup (they only fire once per milestone naturally)",
+          "Does not require the scheduler — triggered from task completion flow"
+        ]
+      },
+      {
+        "title": "In-app notification store persists notifications",
+        "as_a": "SpurTalk system",
+        "i_want_to": "store all in-app notifications in a PostgreSQL table with userId, triggerType, message, taskId, deliveredAt, readAt, createdAt",
+        "so_that": "notifications are durable and queryable",
+        "acceptance_criteria": [
+          "InAppNotification model exists in Prisma schema with all specified fields",
+          "Migration applies cleanly with `npx prisma migrate dev`",
+          "InAppNotification has a foreign key relation to User with onDelete: Cascade",
+          "Index on (userId, readAt) for efficient unread queries",
+          "Table is mapped to 'in_app_notifications' in the database"
+        ]
+      },
+      {
+        "title": "List unread notifications",
+        "as_a": "user",
+        "i_want_to": "call GET /api/notifications and see my notifications sorted with unread first",
+        "so_that": "I can quickly see what needs my attention",
+        "acceptance_criteria": [
+          "GET /api/notifications returns notifications for the authenticated user only",
+          "Notifications are sorted by createdAt DESC, unread first",
+          "Supports ?unread=true query param to filter to unread only",
+          "Supports ?limit and ?offset pagination (default limit 50)",
+          "Response includes notifications array, total count, and unread count",
+          "Requires authentication — returns 401 without valid token"
+        ]
+      },
+      {
+        "title": "Mark notification as read",
+        "as_a": "user",
+        "i_want_to": "call PATCH /api/notifications/:id/read to mark a single notification as read",
+        "so_that": "I can manage my notification state",
+        "acceptance_criteria": [
+          "PATCH /api/notifications/:id/read sets readAt to current timestamp",
+          "Returns the updated notification",
+          "Returns 404 if notification not found or not owned by user",
+          "Returns 400 if notification is already read",
+          "Requires authentication"
+        ]
+      },
+      {
+        "title": "Mark all notifications as read",
+        "as_a": "user",
+        "i_want_to": "call PATCH /api/notifications/read-all to mark all my unread notifications as read at once",
+        "so_that": "I can quickly clear my notification backlog",
+        "acceptance_criteria": [
+          "PATCH /api/notifications/read-all sets readAt for all unread notifications owned by the user",
+          "Returns { updated: number } indicating how many were marked read",
+          "Works even if there are zero unread notifications (returns { updated: 0 })",
+          "Requires authentication"
+        ]
+      },
+      {
+        "title": "Get communication preferences",
+        "as_a": "user",
+        "i_want_to": "call GET /api/users/me/communication-preferences to see my notification and quiet-hours settings",
+        "so_that": "I know what communication settings are active",
+        "acceptance_criteria": [
+          "GET /api/users/me/communication-preferences returns the user's communication preferences",
+          "Returns defaults if user has not customized preferences",
+          "Includes channels, quietHours, dailyCheckInTime, stallAlerts, deadlineAlerts, dailyCheckIn, streakAlerts",
+          "Requires authentication"
+        ]
+      },
+      {
+        "title": "Update communication preferences",
+        "as_a": "user",
+        "i_want_to": "call PATCH /api/users/me/communication-preferences to update my quiet hours, check-in time, and alert toggles",
+        "so_that": "I have full control over when and how SpurTalk communicates with me",
+        "acceptance_criteria": [
+          "PATCH /api/users/me/communication-preferences accepts partial updates (merge with existing)",
+          "Validates quietHours.start and quietHours.end as HH:MM format",
+          "Validates dailyCheckInTime as HH:MM format",
+          "Validates boolean fields for stallAlerts, deadlineAlerts, dailyCheckIn, streakAlerts",
+          "Returns the full updated preferences object",
+          "Returns 400 for invalid input with Zod error details",
+          "Requires authentication"
+        ]
+      },
+      {
+        "title": "Quiet hours suppress delivery",
+        "as_a": "user with quiet hours set to 22:00-08:00",
+        "i_want_to": "not receive any notifications during my quiet hours",
+        "so_that": "I'm not disturbed when I'm winding down or sleeping",
+        "acceptance_criteria": [
+          "Scheduler checks isInQuietHours before creating each notification",
+          "Quiet hours spanning midnight (e.g., 22:00-08:00) are handled correctly",
+          "If a trigger fires during quiet hours, the notification is deferred until the end of quiet hours",
+          "User can set custom quiet hours via PATCH /api/users/me/communication-preferences",
+          "Default quiet hours are 22:00-08:00"
+        ]
+      },
+      {
+        "title": "Dedup prevents notification spam",
+        "as_a": "user",
+        "i_want_to": "never receive duplicate notifications for the same trigger+task within a 24-hour window",
+        "so_that": "I'm not annoyed by repeated messages",
+        "acceptance_criteria": [
+          "Before creating a notification, the system checks if a notification with the same triggerType and taskId already exists for this user within the last 24h",
+          "For daily_checkin and streak triggers (no taskId), dedup is per user per triggerType per calendar day",
+          "Deduped notifications are logged as 'skipped (dedup)' in the scheduler cycle log",
+          "Milestone notifications are exempt from dedup"
+        ]
+      },
+      {
+        "title": "Message templates use nurturing language",
+        "as_a": "procrastinator",
+        "i_want_to": "all notification messages to use warm, non-judgmental, encouraging language",
+        "so_that": "receiving notifications feels like gentle encouragement, never like pressure or shame",
+        "acceptance_criteria": [
+          "All message templates are defined in a single messageTemplates.ts file",
+          "No message contains words like 'overdue', 'urgent', 'fail', 'late', 'missed', 'broken' (except 'streak about to break' which is framed gently)",
+          "Messages are short and action-oriented (one sentence)",
+          "A formatMessage function exists for optional context insertion (e.g., task title)",
+          "Test asserts that no message template contains anxiety-inducing keywords"
+        ]
+      },
+      {
+        "title": "Default preferences work out of the box",
+        "as_a": "new user",
+        "i_want_to": "have sensible default communication preferences so I start receiving helpful nudges immediately",
+        "so_that": "I don't have to configure anything before the system starts helping me",
+        "acceptance_criteria": [
+          "Default channels: ['in_app']",
+          "Default quietHours: { start: '22:00', end: '08:00' }",
+          "Default dailyCheckInTime: '09:00'",
+          "Default stallAlerts: true, deadlineAlerts: true, dailyCheckIn: true, streakAlerts: true",
+          "User who has never set preferences gets these defaults from the Zod schema"
+        ]
+      },
+      {
+        "title": "Cross-midnight quiet hours work correctly",
+        "as_a": "user with quiet hours 22:00-08:00",
+        "i_want_to": "notifications suppressed from 10pm to 8am even though this range spans midnight",
+        "so_that": "my sleep schedule is fully respected",
+        "acceptance_criteria": [
+          "If quietHours.start > quietHours.end (e.g., 22:00 > 08:00), the system interprets this as spanning midnight",
+          "A notification at 23:00 is suppressed (within quiet hours)",
+          "A notification at 07:00 is suppressed (within quiet hours)",
+          "A notification at 08:01 is delivered (outside quiet hours)",
+          "A notification at 21:59 is delivered (outside quiet hours)",
+          "If quietHours.start < quietHours.end (e.g., 01:00-06:00), treated as same-day range"
+        ]
+      },
+      {
+        "title": "Timezone-aware daily check-in",
+        "as_a": "user in Pacific timezone",
+        "i_want_to": "receive my daily check-in at 09:00 Pacific, not 09:00 UTC",
+        "so_that": "notifications respect my local time",
+        "acceptance_criteria": [
+          "Daily check-in uses User.preferences.timezone (default 'UTC')",
+          "Scheduler converts user's local dailyCheckInTime to UTC for comparison",
+          "If user changes timezone, the next check-in respects the new timezone",
+          "Dedup is per calendar day in the user's local timezone, not UTC"
+        ]
+      },
+      {
+        "title": "Existing notification settings backward compatible",
+        "as_a": "returning user with existing notificationSettings in preferences",
+        "i_want_to": "my existing settings to still work when the new communicationPreferences field is introduced",
+        "so_that": "my app doesn't break after this update",
+        "acceptance_criteria": [
+          "The new communicationPreferences schema is added alongside (not replacing) the existing notificationSettings",
+          "Scheduler reads from communicationPreferences first, falls back to notificationSettings if not set",
+          "Existing User.preferences JSON field is not overwritten on migration",
+          "PATCH /api/users/me/communication-preferences writes to communicationPreferences"
+        ]
+      },
+      {
+        "title": "API rate limiting applies to notification endpoints",
+        "as_a": "system administrator",
+        "i_want_to": "notification API endpoints to be rate-limited like other /api/ endpoints",
+        "so_that": "the system is protected from abuse",
+        "acceptance_criteria": [
+          "Notification routes are mounted under /api/ and inherit the existing apiLimiter",
+          "No special rate limit is needed beyond what already applies to /api/ routes"
+        ]
+      }
+    ]
+  }
+}

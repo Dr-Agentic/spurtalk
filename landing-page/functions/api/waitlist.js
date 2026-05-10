@@ -7,36 +7,21 @@
  *   RESEND_API_KEY  — your Resend API key
  */
 
+const ALLOWED_ORIGINS = [
+  'https://spurtalk-landing.pages.dev',
+  'https://spurtalk.com',
+  'http://localhost:3000',
+];
+
 interface Env {
   RESEND_API_KEY: string;
 }
 
-const ALLOWED_ORIGINS = [
-  'https://spurtalk-landing.pages.dev',
-  'https://spurtalk.com',
-  'http://localhost:3000', // local dev
-];
-
-export async function onRequestPost(context: { request: Request; env: Env }): Promise<Response> {
-  const { request, env } = context;
-
-  // ── CORS preflight ──────────────────────────────────────────────────────────
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
-  }
-
-  // ── Origin check ───────────────────────────────────────────────────────────
+async function handlePost(request: Request, env: Env): Promise<Response> {
+  // ── CORS headers ───────────────────────────────────────────────────────────
   const origin = request.headers.get('Origin') ?? '';
   const validOrigin = ALLOWED_ORIGINS.some(o => origin.startsWith(o));
   const corsOrigin = validOrigin ? origin : ALLOWED_ORIGINS[0];
-
   const corsHeaders = {
     'Access-Control-Allow-Origin': corsOrigin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -89,28 +74,43 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       if (!resendRes.ok) {
         const errText = await resendRes.text();
         console.error(`[waitlist] Resend error: ${resendRes.status} ${errText}`);
-        // Don't fail the user-facing response — log and continue
       } else {
         console.log(`[waitlist] email sent via Resend for ${email}`);
       }
     } catch (err) {
       console.error(`[waitlist] fetch error: ${err}`);
-      // Don't fail the user-facing response
     }
   } else {
     console.warn('[waitlist] RESEND_API_KEY not set — skipping email send');
   }
 
   // ── Success response ───────────────────────────────────────────────────────
-  return jsonResponse({ success: true, message: "You're on the list! We'll be in touch soon. 💚" }, 200, corsHeaders);
+  return jsonResponse(
+    { success: true, message: "You're on the list! We'll be in touch soon. 💚" },
+    200,
+    corsHeaders,
+  );
 }
 
-function jsonResponse(body: Record<string, unknown>, status: number, headers: Record<string, string>): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-      ...headers,
-    },
-  });
-}
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        },
+      });
+    }
+
+    if (request.method === 'POST') {
+      return handlePost(request, env);
+    }
+
+    return jsonResponse({ error: 'Method not allowed' }, 405, {
+      'Access-Control-Allow-Origin': '*',
+    });
+  },
+};

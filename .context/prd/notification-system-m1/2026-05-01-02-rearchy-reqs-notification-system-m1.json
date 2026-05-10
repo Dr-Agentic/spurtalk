@@ -1,0 +1,600 @@
+{
+  "metadata": {
+    "agent": "Rearchy",
+    "created_at": "2026-05-01T04:30:00.000Z",
+    "source_prompt_file": "2026-05-01-01-maestro-prompt-notification-system-m1.json"
+  },
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "category": "Database",
+      "title": "Add InAppNotification Prisma model",
+      "description": "Add an `InAppNotification` model to `prisma/schema.prisma` with fields: `id` (UUID primary key), `userId` (String, FK to User), `triggerType` (String enum: stall | deadline | daily_checkin | streak | milestone), `message` (String), `taskId` (optional String), `deliveredAt` (DateTime, default now()), `readAt` (optional DateTime), `createdAt` (DateTime, default now()). Table mapped to `in_app_notifications`. Composite index on `[userId, readAt]` for efficient unread queries. All column names use snake_case via `@map`.",
+      "acceptance_criteria": [
+        "InAppNotification model exists in prisma/schema.prisma with all specified fields and types",
+        "Table is mapped to `in_app_notifications` via @@map",
+        "Composite index @@index([userId, readAt]) is present",
+        "All DateTime fields use snake_case @map aliases (delivered_at, read_at, created_at)",
+        "id field uses @default(uuid())"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-002",
+      "category": "Database",
+      "title": "Add User-Notification relation",
+      "description": "Add `notifications InAppNotification[]` relation to the existing `User` model in `prisma/schema.prisma`. The `InAppNotification.user` field references this via `@relation(fields: [userId], references: [id], onDelete: Cascade)`.",
+      "acceptance_criteria": [
+        "User model has `notifications InAppNotification[]` field",
+        "InAppNotification has `user User @relation(fields: [userId], references: [id], onDelete: Cascade)`",
+        "Cascade delete works: deleting a user removes all their notifications"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-003",
+      "category": "Database",
+      "title": "Run Prisma migration for notifications",
+      "description": "Execute `npx prisma migrate dev --name add-in-app-notifications` to create and apply the migration for the new InAppNotification model and User relation. The migration must apply cleanly without data loss to existing tables.",
+      "acceptance_criteria": [
+        "Migration file is generated under prisma/migrations/",
+        "`npx prisma migrate dev` succeeds without errors",
+        "Existing User and Task data is preserved",
+        "`npx prisma generate` produces updated client types"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-004",
+      "category": "Backend",
+      "title": "Create NotificationService class",
+      "description": "Create `backend/src/services/notification.ts` following the existing singleton service pattern (see `gardenService`). Export a `NotificationService` class with singleton `notificationService`. Methods: `createNotification(userId, triggerType, message, taskId?)`, `getNotifications(userId, options?)`, `markAsRead(userId, notificationId)`, `markAllAsRead(userId)`, `isInQuietHours(userId)`, `shouldDedup(userId, triggerType, taskId?)`.",
+      "acceptance_criteria": [
+        "File exists at backend/src/services/notification.ts",
+        "Class follows the same singleton pattern as GardenService",
+        "All six methods are implemented and typed",
+        "All database access goes through `prisma` from `../lib/prisma`"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-005",
+      "category": "Backend",
+      "title": "createNotification inserts InAppNotification record",
+      "description": "The `createNotification(userId, triggerType, message, taskId?)` method inserts a new `InAppNotification` record into the database. `taskId` is optional and only set for stall and deadline triggers. Returns the created notification object.",
+      "acceptance_criteria": [
+        "Inserts a record with correct userId, triggerType, message, and optional taskId",
+        "deliveredAt defaults to now()",
+        "readAt is null on creation",
+        "Returns the full created notification object"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-006",
+      "category": "Backend",
+      "title": "getNotifications with pagination and unread-first sorting",
+      "description": "The `getNotifications(userId, options?)` method returns notifications for a user with pagination. Default limit is 50. Supports `?unread=true` filter and `offset`/`limit` params. Results are sorted unread first, then by `createdAt` DESC. Response shape: `{ notifications: InAppNotification[], total: number, unread: number }`.",
+      "acceptance_criteria": [
+        "Returns notifications belonging to the authenticated user only",
+        "Unread notifications (readAt is null) appear before read ones",
+        "Within each group, sorted by createdAt DESC",
+        "Supports `unread` boolean filter in options",
+        "Supports `limit` (default 50) and `offset` (default 0) pagination",
+        "Returns total count and unread count in response"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-007",
+      "category": "Backend",
+      "title": "markAsRead sets readAt timestamp",
+      "description": "The `markAsRead(userId, notificationId)` method sets `readAt` to current timestamp for a specific notification. Returns 404 if notification is not found or not owned by the user. Returns 400 if the notification is already read.",
+      "acceptance_criteria": [
+        "Sets readAt to current timestamp",
+        "Returns 404 if notificationId does not exist or belongs to another user",
+        "Returns 400 if notification is already read (readAt is not null)",
+        "Returns the updated notification object on success"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-008",
+      "category": "Backend",
+      "title": "markAllAsRead bulk updates unread notifications",
+      "description": "The `markAllAsRead(userId)` method marks all unread notifications as read for a user by setting their `readAt` to the current timestamp. Returns the count of updated records.",
+      "acceptance_criteria": [
+        "Updates all InAppNotification records where userId matches AND readAt is null",
+        "Sets readAt to current timestamp for all matched records",
+        "Returns { updated: number } with the count of affected rows",
+        "If no unread notifications exist, returns { updated: 0 }"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-009",
+      "category": "Backend",
+      "title": "isInQuietHours checks user quiet hours window",
+      "description": "The `isInQuietHours(userId)` method reads the user's `communicationPreferences.quietHours` from `User.preferences`. It determines if the current time (in the user's timezone from `preferences.timezone`) falls within the quiet hours window. Handles cross-midnight ranges (e.g., 22:00-08:00) where start > end means the range spans midnight.",
+      "acceptance_criteria": [
+        "Reads quietHours.start and quietHours.end from user's communicationPreferences",
+        "Uses user's timezone (from preferences.timezone, default 'UTC') for time comparison",
+        "When start > end (e.g., 22:00-08:00), correctly identifies 23:00 and 07:00 as within quiet hours",
+        "When start > end, correctly identifies 08:01 and 21:59 as outside quiet hours",
+        "When start < end (e.g., 01:00-06:00), treats as same-day range",
+        "Default quiet hours are 22:00-08:00 if not configured"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-010",
+      "category": "Backend",
+      "title": "shouldDedup prevents duplicate notifications",
+      "description": "The `shouldDedup(userId, triggerType, taskId?)` method checks if a notification with the same triggerType and taskId already exists for this user within the last 24 hours. For daily_checkin and streak triggers (which have no taskId), dedup is per-user per-triggerType per calendar day (in user's local timezone). Milestone notifications are exempt from dedup.",
+      "acceptance_criteria": [
+        "For stall/deadline triggers: checks if a notification with same userId, triggerType, and taskId exists within last 24h",
+        "For daily_checkin/streak triggers: checks if a notification with same userId and triggerType exists today (user's local calendar day)",
+        "For milestone triggers: always returns false (no dedup)",
+        "Returns true if a matching notification exists (should skip), false otherwise"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-011",
+      "category": "Backend",
+      "title": "Create SchedulerService with start/stop/runEvaluationCycle",
+      "description": "Create `backend/src/services/scheduler.ts` following the existing singleton pattern. Export `SchedulerService` class with singleton `schedulerService`. The `start()` method begins a 15-minute interval timer. The `stop()` method clears the interval. The `runEvaluationCycle()` method iterates over all users, evaluates trigger conditions, and dispatches qualifying notifications via `NotificationService`. The scheduler must not block the Express event loop — process users in batches or use setImmediate.",
+      "acceptance_criteria": [
+        "File exists at backend/src/services/scheduler.ts",
+        "SchedulerService class with singleton export",
+        "start() begins a setInterval running every 15 minutes (900000ms)",
+        "stop() clears the interval timer",
+        "runEvaluationCycle() iterates users and evaluates triggers",
+        "Each cycle run logs: users evaluated, notifications created, skipped (quiet hours), skipped (dedup)",
+        "Does not block the Express event loop (uses batching or setImmediate)"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-012",
+      "category": "Backend",
+      "title": "Stall detection trigger",
+      "description": "Inside the scheduler evaluation cycle, query tasks where `state` is 'Active' or 'Deck' AND `updatedAt` is older than the stall-detection timeout (from `User.preferences.stallDetectionTimeout`, default 24h). Skip if a stall notification already exists for this task in the last 24h (dedup). Skip if user's `communicationPreferences.stallAlerts` is false. Create notification with triggerType 'stall' and message from template.",
+      "acceptance_criteria": [
+        "Queries tasks with state 'Active' or 'Deck' and updatedAt older than stallDetectionTimeout",
+        "Uses User.preferences.stallDetectionTimeout if set, otherwise defaults to 24h",
+        "Skips if stallAlerts is false in user's communicationPreferences",
+        "Skips if a stall notification for this task/user already exists within 24h (dedup)",
+        "Creates InAppNotification with triggerType 'stall' and nurturing message template",
+        "taskId is set on the notification"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-013",
+      "category": "Backend",
+      "title": "Deadline approaching trigger",
+      "description": "Inside the scheduler evaluation cycle, query tasks with a `hardDeadline` within the next 24 hours. Do NOT fire if the deadline is already past (overdue — no anxiety). Skip if a deadline notification already exists for this task in the last 24h (dedup). Skip if user's `communicationPreferences.deadlineAlerts` is false. Create notification with triggerType 'deadline' and message from template.",
+      "acceptance_criteria": [
+        "Queries tasks with hardDeadline within the next 24 hours (not past)",
+        "Does NOT generate notifications for overdue tasks (hardDeadline already passed)",
+        "Skips if deadlineAlerts is false in user's communicationPreferences",
+        "Skips if a deadline notification for this task/user already exists within 24h (dedup)",
+        "Creates InAppNotification with triggerType 'deadline' and nurturing message template",
+        "taskId is set on the notification"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-014",
+      "category": "Backend",
+      "title": "Daily check-in trigger",
+      "description": "Inside the scheduler evaluation cycle, check if the current time (in user's timezone from `preferences.timezone`) is within 15 minutes of the user's `dailyCheckInTime` (default '09:00'). Only fire once per calendar day per user (dedup by checking existing daily_checkin notification today in user's local timezone). Skip if `communicationPreferences.dailyCheckIn` is false. Create notification with triggerType 'daily_checkin' and message from template.",
+      "acceptance_criteria": [
+        "Checks if current time (in user's timezone) is within the scheduler's 15-minute window of dailyCheckInTime",
+        "Uses User.preferences.timezone for time conversion (default 'UTC')",
+        "Skips if dailyCheckIn is false in user's communicationPreferences",
+        "Only fires once per calendar day in the user's local timezone",
+        "Creates InAppNotification with triggerType 'daily_checkin' and nurturing message template",
+        "taskId is not set on the notification (user-level trigger)"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-015",
+      "category": "Backend",
+      "title": "Streak at risk trigger",
+      "description": "Inside the scheduler evaluation cycle, read `User.gardenState.currentStreak`. If streak > 0 AND the user has not completed any task today (check tasks with `completedAt` today in user's timezone), the streak is at risk. Do NOT fire if streak is already 0 (no shame). Only fire once per calendar day per user. Skip if `communicationPreferences.streakAlerts` is false. Create notification with triggerType 'streak' and message from template.",
+      "acceptance_criteria": [
+        "Reads User.gardenState.currentStreak and only fires if streak > 0",
+        "Does NOT fire if streak is already 0 (no shame notification)",
+        "Checks if user has completed any task today (completedAt in user's local timezone)",
+        "Skips if streakAlerts is false in user's communicationPreferences",
+        "Only fires once per calendar day in the user's local timezone",
+        "Creates InAppNotification with triggerType 'streak' and nurturing message template",
+        "taskId is not set on the notification (user-level trigger)"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-016",
+      "category": "Backend",
+      "title": "Milestone trigger on task completion",
+      "description": "When a user completes a task (in the existing task completion flow), check if it's their Nth completed task where N is in the set {1, 5, 10, 25, 50, 100}. If so, create a milestone notification with triggerType 'milestone'. Milestone notifications are exempt from dedup. This trigger is not part of the scheduler cycle — it fires from the task completion code path.",
+      "acceptance_criteria": [
+        "Triggered from the existing task completion flow, not the scheduler",
+        "Counts user's total completed tasks and checks against milestone thresholds (1, 5, 10, 25, 50, 100)",
+        "Creates InAppNotification with triggerType 'milestone' and nurturing message template",
+        "Milestone notifications are exempt from dedup logic",
+        "taskId is set on the notification (the completed task)"
+      ],
+      "priority": "Medium"
+    },
+    {
+      "id": "REQ-017",
+      "category": "Backend",
+      "title": "Create message templates module",
+      "description": "Create `backend/src/services/messageTemplates.ts` defining all message templates in one place. Every message must use nurturing, non-judgmental, encouraging language. Templates: stall → 'Hey, no pressure — want to do one nano-step?', deadline → 'Your deadline is tomorrow. Just one step?', daily_checkin → 'What one thing will you tackle today?', streak → 'Your streak is about to break — 5 min?', milestone → '🎉 You did it!'. Also implement a `formatMessage(template, context?)` function for optional context insertion (e.g., task title).",
+      "acceptance_criteria": [
+        "File exists at backend/src/services/messageTemplates.ts",
+        "MESSAGE_TEMPLATES const object defines all five trigger types",
+        "No template contains anxiety-inducing keywords: 'overdue', 'urgent', 'fail', 'late', 'missed', 'broken'",
+        "formatMessage(template, context?) function exists for context interpolation",
+        "Templates are short, one-sentence, action-oriented messages"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-018",
+      "category": "Backend",
+      "title": "Quiet hours defer notification delivery",
+      "description": "The scheduler must respect user quiet hours. Before creating each notification, check `isInQuietHours(userId)`. If the user is in quiet hours, do not create the notification immediately. Instead, defer delivery until the end of quiet hours (or queue for delivery when quiet hours end). Daily check-in and streak notifications during quiet hours should be skipped entirely (not deferred) since they are time-sensitive.",
+      "acceptance_criteria": [
+        "Scheduler checks isInQuietHours before creating each notification",
+        "Stall and deadline notifications during quiet hours are deferred (queued) for delivery when quiet hours end",
+        "Daily check-in and streak notifications during quiet hours are skipped (not deferred)",
+        "Skipped notifications are logged as 'skipped (quiet hours)' in cycle log",
+        "Cross-midnight quiet hours (e.g., 22:00-08:00) are handled correctly"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-019",
+      "category": "Backend",
+      "title": "Scheduler lifecycle integration in server startup/shutdown",
+      "description": "Wire the scheduler into `backend/src/index.ts`: start the scheduler on server boot (non-test environments only), and call `schedulerService.stop()` on SIGTERM/SIGINT for graceful shutdown. Also mount notification routes.",
+      "acceptance_criteria": [
+        "schedulerService.start() is called during server boot in non-test environments",
+        "schedulerService.stop() is called on SIGTERM and SIGINT signals",
+        "Notification routes are mounted at /api/notifications",
+        "Server logs 'Scheduler started' on boot"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-020",
+      "category": "Backend",
+      "title": "GET /api/notifications endpoint",
+      "description": "Create `backend/src/routes/notifications.ts` with a GET /api/notifications endpoint. Requires `authenticateToken` middleware. Query params: `?unread=true` (filter to unread only), `?limit=50`, `?offset=0`. Returns notifications sorted by createdAt DESC, unread first. Response: `{ notifications: InAppNotification[], total: number, unread: number }`. Inherits existing apiLimiter rate limiting.",
+      "acceptance_criteria": [
+        "Endpoint is at GET /api/notifications",
+        "Requires authenticateToken middleware",
+        "Supports query params: unread (boolean), limit (number, default 50), offset (number, default 0)",
+        "Returns notifications sorted unread first, then by createdAt DESC",
+        "Response includes notifications array, total count, and unread count",
+        "Only returns notifications belonging to the authenticated user",
+        "Mounted under existing apiLimiter"
+      ],
+      "priority": "High",
+      "url_path": "/api/notifications"
+    },
+    {
+      "id": "REQ-021",
+      "category": "Backend",
+      "title": "PATCH /api/notifications/:id/read endpoint",
+      "description": "Create a PATCH /api/notifications/:id/read endpoint in `backend/src/routes/notifications.ts`. Requires `authenticateToken`. Marks a single notification as read by setting readAt to now(). Returns the updated notification. Returns 404 if not found or not owned by user. Returns 400 if already read.",
+      "acceptance_criteria": [
+        "Endpoint is at PATCH /api/notifications/:id/read",
+        "Requires authenticateToken middleware",
+        "Sets readAt to current timestamp for the specified notification",
+        "Returns 404 if notificationId not found or not owned by user",
+        "Returns 400 if notification is already read",
+        "Returns updated notification object on success"
+      ],
+      "priority": "High",
+      "url_path": "/api/notifications/:id/read"
+    },
+    {
+      "id": "REQ-022",
+      "category": "Backend",
+      "title": "PATCH /api/notifications/read-all endpoint",
+      "description": "Create a PATCH /api/notifications/read-all endpoint. Requires `authenticateToken`. Marks all unread notifications as read for the authenticated user. Returns `{ updated: number }` with the count of affected rows.",
+      "acceptance_criteria": [
+        "Endpoint is at PATCH /api/notifications/read-all",
+        "Requires authenticateToken middleware",
+        "Marks all unread notifications for the user as read",
+        "Returns { updated: number } with count of updated rows",
+        "Returns { updated: 0 } when no unread notifications exist"
+      ],
+      "priority": "High",
+      "url_path": "/api/notifications/read-all"
+    },
+    {
+      "id": "REQ-023",
+      "category": "Backend",
+      "title": "GET /api/users/me/communication-preferences endpoint",
+      "description": "Create a GET /api/users/me/communication-preferences endpoint. Requires `authenticateToken`. Returns the user's `communicationPreferences` from `User.preferences`. Falls back to defaults from the Zod schema if `communicationPreferences` is not set. Reads from `communicationPreferences` first, falls back to `notificationSettings` for backward compatibility.",
+      "acceptance_criteria": [
+        "Endpoint is at GET /api/users/me/communication-preferences",
+        "Requires authenticateToken middleware",
+        "Returns user's communicationPreferences from User.preferences JSON field",
+        "Falls back to notificationSettings if communicationPreferences not set (backward compat)",
+        "Returns schema defaults if neither is set"
+      ],
+      "priority": "High",
+      "url_path": "/api/users/me/communication-preferences"
+    },
+    {
+      "id": "REQ-024",
+      "category": "Backend",
+      "title": "PATCH /api/users/me/communication-preferences endpoint",
+      "description": "Create a PATCH /api/users/me/communication-preferences endpoint. Requires `authenticateToken`. Validates body against the communicationPreferences Zod schema. Merges with existing preferences (partial update). Returns the full updated preferences object. Returns 400 for invalid input with Zod error details.",
+      "acceptance_criteria": [
+        "Endpoint is at PATCH /api/users/me/communication-preferences",
+        "Requires authenticateToken middleware",
+        "Validates request body against communicationPreferences Zod schema",
+        "Performs partial merge with existing preferences (not full replace)",
+        "Returns the full updated communicationPreferences object",
+        "Returns 400 with Zod error details for invalid input",
+        "Writes to communicationPreferences field in User.preferences"
+      ],
+      "priority": "High",
+      "url_path": "/api/users/me/communication-preferences"
+    },
+    {
+      "id": "REQ-025",
+      "category": "Backend",
+      "title": "Notification routes file and Express router setup",
+      "description": "Create `backend/src/routes/notifications.ts` with an Express Router. Mount notification routes at `/api/notifications` and user preference routes at `/api/users/me/communication-preferences`. All routes require `authenticateToken` middleware and inherit the existing `apiLimiter`.",
+      "acceptance_criteria": [
+        "File exists at backend/src/routes/notifications.ts",
+        "Uses express.Router() pattern consistent with other route files",
+        "All routes use authenticateToken middleware",
+        "Router is mounted in backend/src/index.ts at /api/notifications",
+        "User preference routes are accessible under /api/users/me/"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-026",
+      "category": "Backend",
+      "title": "Communication preferences Zod schema in shared package",
+      "description": "Add the `communicationPreferences` Zod schema to `shared/src/index.ts`. Schema includes: channels (array of 'in_app' enum, default ['in_app']), quietHours (object with start/end HH:MM strings, default 22:00/08:00), dailyCheckInTime (HH:MM string, default '09:00'), stallAlerts (boolean, default true), deadlineAlerts (boolean, default true), dailyCheckIn (boolean, default true), streakAlerts (boolean, default true). This schema is added alongside the existing `notificationSettings` schema (not replacing it).",
+      "acceptance_criteria": [
+        "communicationPreferencesSchema is exported from shared/src/index.ts",
+        "Schema validates all specified fields with correct types and defaults",
+        "quietHours.start and quietHours.end use regex /^\\d{2}:\\d{2}$/",
+        "dailyCheckInTime uses regex /^\\d{2}:\\d{2}$/",
+        "Default values match: channels=['in_app'], quietHours={start:'22:00',end:'08:00'}, dailyCheckInTime='09:00', all alerts true",
+        "Existing notificationSettings schema remains unchanged"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-027",
+      "category": "Backend",
+      "title": "Notification API request/response Zod schemas",
+      "description": "Add Zod schemas for notification API endpoints to `shared/src/index.ts`: `GetNotificationsQuerySchema` (unread boolean optional, limit number default 50, offset number default 0), `MarkAsReadResponseSchema`, and `CommunicationPreferencesUpdateSchema` (partial of communicationPreferencesSchema allowing partial updates).",
+      "acceptance_criteria": [
+        "GetNotificationsQuerySchema validates query params with correct types and defaults",
+        "CommunicationPreferencesUpdateSchema allows partial updates (all fields optional)",
+        "Schemas follow the existing pattern (e.g., CreateTaskSchema) in shared/src/index.ts",
+        "All schemas are exported from the shared package"
+      ],
+      "priority": "Medium"
+    },
+    {
+      "id": "REQ-028",
+      "category": "Backend",
+      "title": "Backward compatibility with existing notificationSettings",
+      "description": "The new `communicationPreferences` schema is added alongside (not replacing) the existing `notificationSettings` in `User.preferences`. The scheduler reads from `communicationPreferences` first and falls back to `notificationSettings` if not set. The PATCH endpoint writes to `communicationPreferences` only. Existing `User.preferences` JSON field is not overwritten on migration.",
+      "acceptance_criteria": [
+        "Existing notificationSettings schema and data are preserved",
+        "Scheduler reads communicationPreferences first, falls back to notificationSettings",
+        "PATCH /api/users/me/communication-preferences writes to communicationPreferences only",
+        "Existing User.preferences JSON is not overwritten during migration",
+        "Users with only notificationSettings still get reasonable behavior"
+      ],
+      "priority": "Medium"
+    },
+    {
+      "id": "REQ-029",
+      "category": "Backend",
+      "title": "Default preferences work out of the box for new users",
+      "description": "New users who have never set communication preferences must receive sensible defaults so they get helpful nudges immediately without configuration. Defaults come from the Zod schema: channels=['in_app'], quietHours={start:'22:00',end:'08:00'}, dailyCheckInTime='09:00', all alert flags true.",
+      "acceptance_criteria": [
+        "GET /api/users/me/communication-preferences returns defaults for users with no preferences set",
+        "Scheduler uses Zod schema defaults when user has no communicationPreferences",
+        "All alert flags default to true (stallAlerts, deadlineAlerts, dailyCheckIn, streakAlerts)",
+        "Default quiet hours span 22:00-08:00",
+        "Default daily check-in time is 09:00"
+      ],
+      "priority": "Medium"
+    },
+    {
+      "id": "REQ-030",
+      "category": "Backend",
+      "title": "Timezone-aware scheduling for daily check-in",
+      "description": "The daily check-in trigger uses the user's timezone from `User.preferences.timezone` (default 'UTC') to determine if the current time is within the check-in window. The scheduler converts the user's local `dailyCheckInTime` to UTC for comparison. Dedup is per calendar day in the user's local timezone, not UTC.",
+      "acceptance_criteria": [
+        "Uses User.preferences.timezone for time conversion (default 'UTC')",
+        "Converts user's local dailyCheckInTime to UTC for scheduler comparison",
+        "If user changes timezone, next check-in respects the new timezone",
+        "Dedup for daily_checkin is per calendar day in user's local timezone",
+        "A user in Pacific timezone at 09:00 PT triggers check-in, not at 09:00 UTC"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-031",
+      "category": "Backend",
+      "title": "Non-blocking scheduler processing",
+      "description": "The scheduler must not block the Express event loop. Use `setImmediate` or process users in batches to yield control back to the event loop between user evaluations. This ensures the API remains responsive during scheduler cycles.",
+      "acceptance_criteria": [
+        "Scheduler processes users in batches or uses setImmediate to yield to event loop",
+        "API endpoints remain responsive during scheduler cycles",
+        "No long-running synchronous loops over all users"
+      ],
+      "priority": "Medium"
+    },
+    {
+      "id": "REQ-032",
+      "category": "Testing",
+      "title": "Unit tests for NotificationService methods",
+      "description": "Create unit tests in `backend/src/test/notifications.test.ts` covering: createNotification, getNotifications (with pagination and unread filter), markAsRead (including 404 and already-read cases), markAllAsRead, isInQuietHours (including cross-midnight), shouldDedup (per-task 24h window and per-user per-day for checkin/streak).",
+      "acceptance_criteria": [
+        "Tests cover all six NotificationService methods",
+        "Tests cover cross-midnight quiet hours (22:00-08:00)",
+        "Tests cover same-day quiet hours (01:00-06:00)",
+        "Tests cover dedup for task-level triggers (stall, deadline)",
+        "Tests cover dedup for user-level triggers (daily_checkin, streak)",
+        "Tests cover milestone dedup exemption",
+        "Tests run with: cd backend && npm test"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-033",
+      "category": "Testing",
+      "title": "Unit tests for each trigger condition",
+      "description": "Create unit tests in `backend/src/test/scheduler.test.ts` covering: stall detection (active/deck tasks with old updatedAt, respects stallDetectionTimeout, skips if notification exists), deadline approaching (within 24h, not overdue, skips if disabled), daily check-in (time window match, timezone conversion, once per day), streak at risk (streak > 0, no task today, skip if streak is 0), milestone (threshold counts, exempt from dedup).",
+      "acceptance_criteria": [
+        "Tests cover all five trigger types",
+        "Stall test verifies 24h threshold and stallDetectionTimeout override",
+        "Deadline test verifies no notification for overdue tasks",
+        "Daily check-in test verifies timezone conversion",
+        "Streak test verifies no notification when streak is 0",
+        "Milestone test verifies threshold numbers (1, 5, 10, 25, 50, 100)",
+        "Tests run with: cd backend && npm test"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-034",
+      "category": "Testing",
+      "title": "Integration tests for notification API endpoints",
+      "description": "Create integration tests covering: GET /api/notifications (with unread filter, pagination), PATCH /api/notifications/:id/read (success, 404, 400), PATCH /api/notifications/read-all, GET /api/users/me/communication-preferences, PATCH /api/users/me/communication-preferences (partial update, validation error).",
+      "acceptance_criteria": [
+        "Tests cover all five API endpoints",
+        "Tests verify authentication requirement (unauthenticated returns 401)",
+        "Tests verify 404 for non-existent or non-owned notifications",
+        "Tests verify 400 for already-read notification and invalid preference updates",
+        "Tests verify pagination (limit/offset) and unread filter",
+        "Tests run with: cd backend && npm test"
+      ],
+      "priority": "High"
+    },
+    {
+      "id": "REQ-035",
+      "category": "Testing",
+      "title": "Message template nurturing language test",
+      "description": "Add a test that asserts no message template in `messageTemplates.ts` contains anxiety-inducing keywords: 'overdue', 'urgent', 'fail', 'late', 'missed', 'broken'. This test must pass for the codebase to be considered compliant with the Anti-Guilt standard.",
+      "acceptance_criteria": [
+        "Test iterates all MESSAGE_TEMPLATES values",
+        "Asserts none contain 'overdue', 'urgent', 'fail', 'late', 'missed', 'broken' (case-insensitive)",
+        "Test passes with current template definitions",
+        "Test would fail if an anxiety-inducing template were added"
+      ],
+      "priority": "Medium"
+    },
+    {
+      "id": "REQ-036",
+      "category": "Frontend",
+      "title": "Notification bell icon with unread badge in sidebar",
+      "description": "Add a notification bell icon to the app sidebar. When the user has unread notifications, display a red badge with the unread count. The bell icon is always visible in the sidebar. URL Path: `/` (sidebar is part of the main layout). Clicking the bell navigates to `/notifications` or opens the notification panel.",
+      "acceptance_criteria": [
+        "Bell icon appears in the app sidebar",
+        "Red badge shows unread count when > 0",
+        "Badge is hidden when unread count is 0",
+        "Clicking the bell navigates to the notifications view",
+        "Bell fetches unread count from GET /api/notifications?unread=true on app load"
+      ],
+      "priority": "High",
+      "url_path": "/"
+    },
+    {
+      "id": "REQ-037",
+      "category": "Frontend",
+      "title": "Notification list view",
+      "description": "Create a notification list view at `/notifications` that displays all notifications for the user. Notifications are sorted unread first, then by date. Each notification shows the message, trigger type icon, relative time, and read/unread state. Supports infinite scroll or pagination. URL Path: `/notifications`. Navigation: click the notification bell in the sidebar.",
+      "acceptance_criteria": [
+        "Route /notifications renders the notification list",
+        "Notifications are sorted unread first, then by createdAt DESC",
+        "Each notification displays message, icon, relative time, and read/unread state",
+        "Unread notifications have visual distinction (e.g., bold, dot indicator)",
+        "Fetches data from GET /api/notifications with pagination",
+        "Empty state shows encouraging message when no notifications exist"
+      ],
+      "priority": "High",
+      "url_path": "/notifications"
+    },
+    {
+      "id": "REQ-038",
+      "category": "Frontend",
+      "title": "Mark single notification as read interaction",
+      "description": "On the notification list view, clicking an unread notification marks it as read via PATCH /api/notifications/:id/read. The notification visually transitions to read state (removes bold/unread indicator). This is the primary interaction for reading a notification.",
+      "acceptance_criteria": [
+        "Clicking an unread notification calls PATCH /api/notifications/:id/read",
+        "Notification visually transitions to read state after click",
+        "Unread badge count in sidebar decrements after marking as read",
+        "Already-read notifications do not trigger an API call on click"
+      ],
+      "priority": "High",
+      "url_path": "/notifications"
+    },
+    {
+      "id": "REQ-039",
+      "category": "Frontend",
+      "title": "Mark all as read button",
+      "description": "Add a 'Mark all as read' button in the notification list view header. Clicking it calls PATCH /api/notifications/read-all and marks all visible notifications as read. Button is disabled or hidden when no unread notifications exist.",
+      "acceptance_criteria": [
+        "'Mark all as read' button appears in the notification list header",
+        "Clicking calls PATCH /api/notifications/read-all",
+        "All notifications visually transition to read state",
+        "Unread badge in sidebar resets to 0",
+        "Button is disabled or hidden when unread count is 0"
+      ],
+      "priority": "Medium",
+      "url_path": "/notifications"
+    },
+    {
+      "id": "REQ-040",
+      "category": "Frontend",
+      "title": "Communication preferences section in Settings",
+      "description": "Add a Communication Preferences section to the Settings page. URL Path: `/settings` (as a section within the existing settings page). Includes toggles for: stall alerts, deadline alerts, daily check-in, streak alerts. Includes time pickers for: quiet hours start/end, daily check-in time. Fetches current preferences from GET /api/users/me/communication-preferences. Saves changes via PATCH /api/users/me/communication-preferences.",
+      "acceptance_criteria": [
+        "Communication Preferences section exists in Settings page at /settings",
+        "Displays toggle switches for stallAlerts, deadlineAlerts, dailyCheckIn, streakAlerts",
+        "Displays time inputs for quietHours.start, quietHours.end, dailyCheckInTime",
+        "Loads current preferences on mount from GET /api/users/me/communication-preferences",
+        "Saves changes via PATCH /api/users/me/communication-preferences on save",
+        "Shows validation errors for invalid time inputs",
+        "Shows success toast/confirmation after saving"
+      ],
+      "priority": "High",
+      "url_path": "/settings"
+    },
+    {
+      "id": "REQ-041",
+      "category": "Infrastructure",
+      "title": "Notification routes inherit API rate limiting",
+      "description": "Notification routes are mounted under /api/ and inherit the existing `apiLimiter` middleware. No special rate limit is needed beyond what already applies to /api/ routes.",
+      "acceptance_criteria": [
+        "Notification routes are mounted under /api/ prefix",
+        "Routes inherit the existing apiLimiter middleware",
+        "No additional rate limiting configuration is required"
+      ],
+      "priority": "Low"
+    }
+  ]
+}

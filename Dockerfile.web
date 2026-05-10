@@ -25,8 +25,9 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy the entire .next/build from web workspace to /app/.next
-# The standalone build ends up at /app/web/.next/standalone
+# Copy static assets to the standalone .next directory (where Next.js expects them)
+COPY --from=builder --chown=nextjs:nodejs /app/web/.next/static ./standalone/web/.next/static
+# Copy the standalone server build
 COPY --from=builder --chown=nextjs:nodejs /app/web/.next/standalone ./standalone
 COPY --from=builder --chown=nextjs:nodejs /app/web/public ./public
 

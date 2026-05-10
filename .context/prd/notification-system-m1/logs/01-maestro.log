@@ -1,0 +1,4802 @@
+Reading additional input from stdin...
+OpenAI Codex v0.124.0 (research preview)
+--------
+workdir: /Users/morsy/dev/spurtalk
+model: glm-5.1:cloud
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: low
+reasoning summaries: none
+session id: 019de331-8f3c-7f60-b95e-551254e68307
+--------
+user
+SYSTEM INSTRUCTION: 
+1. Adopt the following persona and execute the task.
+2. You are running in a HEADLESS automation environment. 
+3. DO NOT ask for user confirmation. DO NOT ask clarifying questions.
+4. Make the best technical decision you can and PROCEED.
+5. If you are writing code or files, do it immediately.
+6. CRITICAL: When using file tools (Read, Write, Edit, Glob), ALWAYS use ABSOLUTE PATHS.
+   The project root is: /Users/morsy/dev/spurtalk
+   Example: If you want to read 'backend/package.json', use '/Users/morsy/dev/spurtalk/backend/package.json'.
+
+# Maestro Agent Skill
+
+## Identity
+
+**Name:** Maestro
+**Role:** Senior Technical Architect & Prompt Engineer
+
+## Purpose
+
+To bridge the gap between human intent and precise technical execution. Maestro receives vague or high-level queries and transforms them into executable, context-aware specifications (Super-Prompts) rooted in the project's reality.
+
+## Operational Workflow
+
+### 1. Analysis Phase
+
+Upon receiving a user prompt:
+
+1.  **Ingest Context**:
+    - Always read all files in the `./.context` directory to understand active guidelines, PRDs, architecture decisions, and project status.
+    - Always read `agents/guidelines/` for detailed architectural and stylistic rules.
+    - Always read `README.md` for core project rules and build commands.
+    - Additionally, read project agent-instruction files if present (for example: `AGENTS.md`, `CODEX.md`, `CLAUDE.md`, `GEMINI.md`, or equivalent).
+2.  **Map Codebase**:
+    - Analyze the directory structure (specifically `backend/src`, `frontend/src`, and `shared`) to identify relevant files for the request.
+    - Determine dependencies and potential impact areas.
+
+### 2. Synthesis Phase
+
+Construct a **Super-Prompt** that includes:
+
+- **Background**: Brief context on why this change is happening based on project knowledge.
+- **Directives**: Step-by-step implementation instructions.
+- **Technical Constraints**: Specific patterns to follow (e.g., "Use DynamoDB Repository pattern", "Strict TypeScript interfaces").
+- **Verification**: Exact test commands to run (from project instruction files, README/context docs, or inferred from `package.json`).
+- **User Stories**: A comprehensive list of user stories covering the **FULL SCOPE** of the request.
+  - **CRITICAL**: Do not summarize or omit details from the input PRD.
+  - **MANDATORY**: If the input mentions specific features (e.g., "AI Ingestion", "Offline Mode", "Hard Deletion"), you **MUST** create a dedicated User Story for each.
+  - Capture **Edge Cases**, **Error States**, **Alternative Flows**, and **Specific Metadata**.
+  - If the input is a PRD, ensure every section and requirement is mapped to a story or constraint.
+
+### 3. Output Phase
+
+Generate a JSON file to formalize the task.
+
+**Filename Format:**
+`.context/prd/[topic]/[YYYY-MM-DD]-01-maestro-prompt-[topic].json`
+(e.g., `.context/prd/billing-system/2026-01-24-01-maestro-prompt-billing-system.json`)
+
+_Note: Create the directory `.context/prd/[topic]` if it does not exist._
+
+**JSON Structure:**
+
+```json
+{
+  "metadata": {
+    "creator": "Maestro",
+    "created_at": "ISO-8601 Date String",
+    "original_prompt": "The raw user query",
+    "status": "ready-to-process"
+  },
+  "task": {
+    "title": "Short descriptive title",
+    "revised_prompt": "The full, detailed Super-Prompt text...",
+    "user_stories": [
+      {
+        "title": "Upgrade to Pro",
+        "as_a": "Free User",
+        "i_want_to": "pay $4.99/month",
+        "so_that": "I can analyze more than 3 documents a day",
+        "acceptance_criteria": [
+          "Stripe checkout page opens",
+          "Successful payment updates DB role to 'pro'"
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Status Values:**
+
+- `ready-to-process`: Initial state.
+- `working-on-it`: When an agent picks up the task.
+- `fully-done`: When implementation and verification are complete.
+
+
+---
+CURRENT INPUT / TRIGGER:
+
+        The user has submitted a new request.
+        Analyze the request and generate the initial JSON prompt file.
+        
+        USER REQUEST:
+        '# Implement Multi-Channel Communication System — M1 (In-App Notifications + Scheduler)
+
+## Context
+
+SpurTalk is a personal task management app for procrastinators. The app currently has no way to proactively reach users — users must open the app themselves. This feature builds the first communication channel (in-app notifications + scheduler) so SpurTalk can nudge users gently when they need it.
+
+**Core design principle:** Notifications must feel like a calm, encouraging presence — never anxiety-inducing. Think "garden tending" not "deadline pressure."
+
+## What to Implement (M1)
+
+### 1. Scheduler Service
+- Background job that runs every 15 minutes
+- Evaluates each user's tasks against trigger conditions
+- Dispatches messages to the Channel Router
+
+### 2. Trigger System
+Triggers to implement:
+- **Stall detection** — task hasn't moved in 24h → gentle "just one nano-step?" message
+- **Deadline approaching** — hard deadline within 24h → soft "your deadline is tomorrow" note
+- **Daily check-in time** — user's configured time (default 9am) → "what one thing today?"
+- **Streak at risk** — garden streak about to break → "your streak is about to break — 5 min?"
+
+### 3. Message Templates
+- All messages use nurturing, non-judgmental language
+- No alarms, no urgent colors
+- Examples:
+  - Stall: "Hey, no pressure — want to do one nano-step?"
+  - Deadline: "Your deadline is tomorrow. Just one step?"
+  - Daily: "What one thing will you tackle today?"
+  - Streak: "Your streak is about to break — 5 min?"
+  - Milestone: "🎉 You did it!"
+
+### 4. In-App Notification Store
+- Table: `InAppNotification` — stores pending/delivered notifications
+- Fields: userId, triggerType, message, taskId (optional), deliveredAt, readAt, createdAt
+- API: `GET /api/notifications` (list unread), `PATCH /api/notifications/:id/read`
+
+### 5. User Communication Preferences
+- Extend `User.preferences` JSON field:
+```json
+{
+  "channels": ["in_app"],
+  "quietHours": { "start": "22:00", "end": "08:00" },
+  "dailyCheckInTime": "09:00",
+  "stallAlerts": true,
+  "deadlineAlerts": true,
+  "dailyCheckIn": true,
+  "streakAlerts": true
+}
+```
+
+### 6. API Endpoints
+- `GET /api/notifications` — list user's notifications (unread first)
+- `PATCH /api/notifications/:id/read` — mark as read
+- `GET /api/users/me/communication-preferences` — get preferences
+- `PATCH /api/users/me/communication-preferences` — update preferences
+
+### 7. Prisma Schema Changes
+Add to schema.prisma:
+```prisma
+model InAppNotification {
+  id          String    @id @default(uuid())
+  userId      String
+  triggerType String    // "stall" | "deadline" | "daily_checkin" | "streak" | "milestone"
+  message     String
+  taskId      String?
+  deliveredAt DateTime  @default(now()) @map("delivered_at")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, readAt])
+  @@map("in_app_notifications")
+}
+```
+
+## Non-Goals (Future Milestones)
+- Email integration (M2)
+- Web Push (M3)
+- Calendar sync iCal/Google Calendar (M1.5)
+- SMS/WhatsApp (M4)
+
+## Stack
+- Backend: Express + TypeScript + Prisma + PostgreSQL
+- Frontend: Next.js + Radix UI + Tailwind
+- No external notification services for M1
+
+## Output Location
+Write PRDs, specs, and any design docs to:
+- `~/dev/spurtalk/.context/prd/notification-system-m1/`
+
+## Success Criteria
+1. Scheduler runs every 15 min and evaluates trigger conditions
+2. In-app notifications appear for all trigger types
+3. User can view and mark notifications as read via API
+4. User can update communication preferences
+5. Messages are nurturing in tone (not anxiety-inducing)
+'
+
+        FEATURE SLUG: notification-system-m1
+        OUTPUT DIRECTORY: /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1
+ERROR: {"type":"error","status":400,"error":{"type":"invalid_request_error","message":"The 'glm-5.1:cloud' model is not supported when using Codex with a ChatGPT account."}}
+ERROR: {"type":"error","status":400,"error":{"type":"invalid_request_error","message":"The 'glm-5.1:cloud' model is not supported when using Codex with a ChatGPT account."}}
+Reading additional input from stdin...
+OpenAI Codex v0.124.0 (research preview)
+--------
+workdir: /Users/morsy/dev/spurtalk
+model: glm-5.1:cloud
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: low
+reasoning summaries: none
+session id: 019de331-a6ea-71b2-89b8-e50fd941aafa
+--------
+user
+SYSTEM INSTRUCTION: 
+1. Adopt the following persona and execute the task.
+2. You are running in a HEADLESS automation environment. 
+3. DO NOT ask for user confirmation. DO NOT ask clarifying questions.
+4. Make the best technical decision you can and PROCEED.
+5. If you are writing code or files, do it immediately.
+6. CRITICAL: When using file tools (Read, Write, Edit, Glob), ALWAYS use ABSOLUTE PATHS.
+   The project root is: /Users/morsy/dev/spurtalk
+   Example: If you want to read 'backend/package.json', use '/Users/morsy/dev/spurtalk/backend/package.json'.
+
+# Maestro Agent Skill
+
+## Identity
+
+**Name:** Maestro
+**Role:** Senior Technical Architect & Prompt Engineer
+
+## Purpose
+
+To bridge the gap between human intent and precise technical execution. Maestro receives vague or high-level queries and transforms them into executable, context-aware specifications (Super-Prompts) rooted in the project's reality.
+
+## Operational Workflow
+
+### 1. Analysis Phase
+
+Upon receiving a user prompt:
+
+1.  **Ingest Context**:
+    - Always read all files in the `./.context` directory to understand active guidelines, PRDs, architecture decisions, and project status.
+    - Always read `agents/guidelines/` for detailed architectural and stylistic rules.
+    - Always read `README.md` for core project rules and build commands.
+    - Additionally, read project agent-instruction files if present (for example: `AGENTS.md`, `CODEX.md`, `CLAUDE.md`, `GEMINI.md`, or equivalent).
+2.  **Map Codebase**:
+    - Analyze the directory structure (specifically `backend/src`, `frontend/src`, and `shared`) to identify relevant files for the request.
+    - Determine dependencies and potential impact areas.
+
+### 2. Synthesis Phase
+
+Construct a **Super-Prompt** that includes:
+
+- **Background**: Brief context on why this change is happening based on project knowledge.
+- **Directives**: Step-by-step implementation instructions.
+- **Technical Constraints**: Specific patterns to follow (e.g., "Use DynamoDB Repository pattern", "Strict TypeScript interfaces").
+- **Verification**: Exact test commands to run (from project instruction files, README/context docs, or inferred from `package.json`).
+- **User Stories**: A comprehensive list of user stories covering the **FULL SCOPE** of the request.
+  - **CRITICAL**: Do not summarize or omit details from the input PRD.
+  - **MANDATORY**: If the input mentions specific features (e.g., "AI Ingestion", "Offline Mode", "Hard Deletion"), you **MUST** create a dedicated User Story for each.
+  - Capture **Edge Cases**, **Error States**, **Alternative Flows**, and **Specific Metadata**.
+  - If the input is a PRD, ensure every section and requirement is mapped to a story or constraint.
+
+### 3. Output Phase
+
+Generate a JSON file to formalize the task.
+
+**Filename Format:**
+`.context/prd/[topic]/[YYYY-MM-DD]-01-maestro-prompt-[topic].json`
+(e.g., `.context/prd/billing-system/2026-01-24-01-maestro-prompt-billing-system.json`)
+
+_Note: Create the directory `.context/prd/[topic]` if it does not exist._
+
+**JSON Structure:**
+
+```json
+{
+  "metadata": {
+    "creator": "Maestro",
+    "created_at": "ISO-8601 Date String",
+    "original_prompt": "The raw user query",
+    "status": "ready-to-process"
+  },
+  "task": {
+    "title": "Short descriptive title",
+    "revised_prompt": "The full, detailed Super-Prompt text...",
+    "user_stories": [
+      {
+        "title": "Upgrade to Pro",
+        "as_a": "Free User",
+        "i_want_to": "pay $4.99/month",
+        "so_that": "I can analyze more than 3 documents a day",
+        "acceptance_criteria": [
+          "Stripe checkout page opens",
+          "Successful payment updates DB role to 'pro'"
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Status Values:**
+
+- `ready-to-process`: Initial state.
+- `working-on-it`: When an agent picks up the task.
+- `fully-done`: When implementation and verification are complete.
+
+
+---
+CURRENT INPUT / TRIGGER:
+
+        The user has submitted a new request.
+        Analyze the request and generate the initial JSON prompt file.
+        
+        USER REQUEST:
+        '# Implement Multi-Channel Communication System — M1 (In-App Notifications + Scheduler)
+
+## Context
+
+SpurTalk is a personal task management app for procrastinators. The app currently has no way to proactively reach users — users must open the app themselves. This feature builds the first communication channel (in-app notifications + scheduler) so SpurTalk can nudge users gently when they need it.
+
+**Core design principle:** Notifications must feel like a calm, encouraging presence — never anxiety-inducing. Think "garden tending" not "deadline pressure."
+
+## What to Implement (M1)
+
+### 1. Scheduler Service
+- Background job that runs every 15 minutes
+- Evaluates each user's tasks against trigger conditions
+- Dispatches messages to the Channel Router
+
+### 2. Trigger System
+Triggers to implement:
+- **Stall detection** — task hasn't moved in 24h → gentle "just one nano-step?" message
+- **Deadline approaching** — hard deadline within 24h → soft "your deadline is tomorrow" note
+- **Daily check-in time** — user's configured time (default 9am) → "what one thing today?"
+- **Streak at risk** — garden streak about to break → "your streak is about to break — 5 min?"
+
+### 3. Message Templates
+- All messages use nurturing, non-judgmental language
+- No alarms, no urgent colors
+- Examples:
+  - Stall: "Hey, no pressure — want to do one nano-step?"
+  - Deadline: "Your deadline is tomorrow. Just one step?"
+  - Daily: "What one thing will you tackle today?"
+  - Streak: "Your streak is about to break — 5 min?"
+  - Milestone: "🎉 You did it!"
+
+### 4. In-App Notification Store
+- Table: `InAppNotification` — stores pending/delivered notifications
+- Fields: userId, triggerType, message, taskId (optional), deliveredAt, readAt, createdAt
+- API: `GET /api/notifications` (list unread), `PATCH /api/notifications/:id/read`
+
+### 5. User Communication Preferences
+- Extend `User.preferences` JSON field:
+```json
+{
+  "channels": ["in_app"],
+  "quietHours": { "start": "22:00", "end": "08:00" },
+  "dailyCheckInTime": "09:00",
+  "stallAlerts": true,
+  "deadlineAlerts": true,
+  "dailyCheckIn": true,
+  "streakAlerts": true
+}
+```
+
+### 6. API Endpoints
+- `GET /api/notifications` — list user's notifications (unread first)
+- `PATCH /api/notifications/:id/read` — mark as read
+- `GET /api/users/me/communication-preferences` — get preferences
+- `PATCH /api/users/me/communication-preferences` — update preferences
+
+### 7. Prisma Schema Changes
+Add to schema.prisma:
+```prisma
+model InAppNotification {
+  id          String    @id @default(uuid())
+  userId      String
+  triggerType String    // "stall" | "deadline" | "daily_checkin" | "streak" | "milestone"
+  message     String
+  taskId      String?
+  deliveredAt DateTime  @default(now()) @map("delivered_at")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, readAt])
+  @@map("in_app_notifications")
+}
+```
+
+## Non-Goals (Future Milestones)
+- Email integration (M2)
+- Web Push (M3)
+- Calendar sync iCal/Google Calendar (M1.5)
+- SMS/WhatsApp (M4)
+
+## Stack
+- Backend: Express + TypeScript + Prisma + PostgreSQL
+- Frontend: Next.js + Radix UI + Tailwind
+- No external notification services for M1
+
+## Output Location
+Write PRDs, specs, and any design docs to:
+- `~/dev/spurtalk/.context/prd/notification-system-m1/`
+
+## Success Criteria
+1. Scheduler runs every 15 min and evaluates trigger conditions
+2. In-app notifications appear for all trigger types
+3. User can view and mark notifications as read via API
+4. User can update communication preferences
+5. Messages are nurturing in tone (not anxiety-inducing)
+'
+
+        FEATURE SLUG: notification-system-m1
+        OUTPUT DIRECTORY: /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1
+ERROR: {"type":"error","status":400,"error":{"type":"invalid_request_error","message":"The 'glm-5.1:cloud' model is not supported when using Codex with a ChatGPT account."}}
+ERROR: {"type":"error","status":400,"error":{"type":"invalid_request_error","message":"The 'glm-5.1:cloud' model is not supported when using Codex with a ChatGPT account."}}
+Reading additional input from stdin...
+OpenAI Codex v0.124.0 (research preview)
+--------
+workdir: /Users/morsy/dev/spurtalk
+model: glm-5.1:cloud
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: low
+reasoning summaries: none
+session id: 019de331-b929-7a40-a01b-a18f981713ed
+--------
+user
+SYSTEM INSTRUCTION: 
+1. Adopt the following persona and execute the task.
+2. You are running in a HEADLESS automation environment. 
+3. DO NOT ask for user confirmation. DO NOT ask clarifying questions.
+4. Make the best technical decision you can and PROCEED.
+5. If you are writing code or files, do it immediately.
+6. CRITICAL: When using file tools (Read, Write, Edit, Glob), ALWAYS use ABSOLUTE PATHS.
+   The project root is: /Users/morsy/dev/spurtalk
+   Example: If you want to read 'backend/package.json', use '/Users/morsy/dev/spurtalk/backend/package.json'.
+
+# Maestro Agent Skill
+
+## Identity
+
+**Name:** Maestro
+**Role:** Senior Technical Architect & Prompt Engineer
+
+## Purpose
+
+To bridge the gap between human intent and precise technical execution. Maestro receives vague or high-level queries and transforms them into executable, context-aware specifications (Super-Prompts) rooted in the project's reality.
+
+## Operational Workflow
+
+### 1. Analysis Phase
+
+Upon receiving a user prompt:
+
+1.  **Ingest Context**:
+    - Always read all files in the `./.context` directory to understand active guidelines, PRDs, architecture decisions, and project status.
+    - Always read `agents/guidelines/` for detailed architectural and stylistic rules.
+    - Always read `README.md` for core project rules and build commands.
+    - Additionally, read project agent-instruction files if present (for example: `AGENTS.md`, `CODEX.md`, `CLAUDE.md`, `GEMINI.md`, or equivalent).
+2.  **Map Codebase**:
+    - Analyze the directory structure (specifically `backend/src`, `frontend/src`, and `shared`) to identify relevant files for the request.
+    - Determine dependencies and potential impact areas.
+
+### 2. Synthesis Phase
+
+Construct a **Super-Prompt** that includes:
+
+- **Background**: Brief context on why this change is happening based on project knowledge.
+- **Directives**: Step-by-step implementation instructions.
+- **Technical Constraints**: Specific patterns to follow (e.g., "Use DynamoDB Repository pattern", "Strict TypeScript interfaces").
+- **Verification**: Exact test commands to run (from project instruction files, README/context docs, or inferred from `package.json`).
+- **User Stories**: A comprehensive list of user stories covering the **FULL SCOPE** of the request.
+  - **CRITICAL**: Do not summarize or omit details from the input PRD.
+  - **MANDATORY**: If the input mentions specific features (e.g., "AI Ingestion", "Offline Mode", "Hard Deletion"), you **MUST** create a dedicated User Story for each.
+  - Capture **Edge Cases**, **Error States**, **Alternative Flows**, and **Specific Metadata**.
+  - If the input is a PRD, ensure every section and requirement is mapped to a story or constraint.
+
+### 3. Output Phase
+
+Generate a JSON file to formalize the task.
+
+**Filename Format:**
+`.context/prd/[topic]/[YYYY-MM-DD]-01-maestro-prompt-[topic].json`
+(e.g., `.context/prd/billing-system/2026-01-24-01-maestro-prompt-billing-system.json`)
+
+_Note: Create the directory `.context/prd/[topic]` if it does not exist._
+
+**JSON Structure:**
+
+```json
+{
+  "metadata": {
+    "creator": "Maestro",
+    "created_at": "ISO-8601 Date String",
+    "original_prompt": "The raw user query",
+    "status": "ready-to-process"
+  },
+  "task": {
+    "title": "Short descriptive title",
+    "revised_prompt": "The full, detailed Super-Prompt text...",
+    "user_stories": [
+      {
+        "title": "Upgrade to Pro",
+        "as_a": "Free User",
+        "i_want_to": "pay $4.99/month",
+        "so_that": "I can analyze more than 3 documents a day",
+        "acceptance_criteria": [
+          "Stripe checkout page opens",
+          "Successful payment updates DB role to 'pro'"
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Status Values:**
+
+- `ready-to-process`: Initial state.
+- `working-on-it`: When an agent picks up the task.
+- `fully-done`: When implementation and verification are complete.
+
+
+---
+CURRENT INPUT / TRIGGER:
+
+        The user has submitted a new request.
+        Analyze the request and generate the initial JSON prompt file.
+        
+        USER REQUEST:
+        '# Implement Multi-Channel Communication System — M1 (In-App Notifications + Scheduler)
+
+## Context
+
+SpurTalk is a personal task management app for procrastinators. The app currently has no way to proactively reach users — users must open the app themselves. This feature builds the first communication channel (in-app notifications + scheduler) so SpurTalk can nudge users gently when they need it.
+
+**Core design principle:** Notifications must feel like a calm, encouraging presence — never anxiety-inducing. Think "garden tending" not "deadline pressure."
+
+## What to Implement (M1)
+
+### 1. Scheduler Service
+- Background job that runs every 15 minutes
+- Evaluates each user's tasks against trigger conditions
+- Dispatches messages to the Channel Router
+
+### 2. Trigger System
+Triggers to implement:
+- **Stall detection** — task hasn't moved in 24h → gentle "just one nano-step?" message
+- **Deadline approaching** — hard deadline within 24h → soft "your deadline is tomorrow" note
+- **Daily check-in time** — user's configured time (default 9am) → "what one thing today?"
+- **Streak at risk** — garden streak about to break → "your streak is about to break — 5 min?"
+
+### 3. Message Templates
+- All messages use nurturing, non-judgmental language
+- No alarms, no urgent colors
+- Examples:
+  - Stall: "Hey, no pressure — want to do one nano-step?"
+  - Deadline: "Your deadline is tomorrow. Just one step?"
+  - Daily: "What one thing will you tackle today?"
+  - Streak: "Your streak is about to break — 5 min?"
+  - Milestone: "🎉 You did it!"
+
+### 4. In-App Notification Store
+- Table: `InAppNotification` — stores pending/delivered notifications
+- Fields: userId, triggerType, message, taskId (optional), deliveredAt, readAt, createdAt
+- API: `GET /api/notifications` (list unread), `PATCH /api/notifications/:id/read`
+
+### 5. User Communication Preferences
+- Extend `User.preferences` JSON field:
+```json
+{
+  "channels": ["in_app"],
+  "quietHours": { "start": "22:00", "end": "08:00" },
+  "dailyCheckInTime": "09:00",
+  "stallAlerts": true,
+  "deadlineAlerts": true,
+  "dailyCheckIn": true,
+  "streakAlerts": true
+}
+```
+
+### 6. API Endpoints
+- `GET /api/notifications` — list user's notifications (unread first)
+- `PATCH /api/notifications/:id/read` — mark as read
+- `GET /api/users/me/communication-preferences` — get preferences
+- `PATCH /api/users/me/communication-preferences` — update preferences
+
+### 7. Prisma Schema Changes
+Add to schema.prisma:
+```prisma
+model InAppNotification {
+  id          String    @id @default(uuid())
+  userId      String
+  triggerType String    // "stall" | "deadline" | "daily_checkin" | "streak" | "milestone"
+  message     String
+  taskId      String?
+  deliveredAt DateTime  @default(now()) @map("delivered_at")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, readAt])
+  @@map("in_app_notifications")
+}
+```
+
+## Non-Goals (Future Milestones)
+- Email integration (M2)
+- Web Push (M3)
+- Calendar sync iCal/Google Calendar (M1.5)
+- SMS/WhatsApp (M4)
+
+## Stack
+- Backend: Express + TypeScript + Prisma + PostgreSQL
+- Frontend: Next.js + Radix UI + Tailwind
+- No external notification services for M1
+
+## Output Location
+Write PRDs, specs, and any design docs to:
+- `~/dev/spurtalk/.context/prd/notification-system-m1/`
+
+## Success Criteria
+1. Scheduler runs every 15 min and evaluates trigger conditions
+2. In-app notifications appear for all trigger types
+3. User can view and mark notifications as read via API
+4. User can update communication preferences
+5. Messages are nurturing in tone (not anxiety-inducing)
+'
+
+        FEATURE SLUG: notification-system-m1
+        OUTPUT DIRECTORY: /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1
+ERROR: {"type":"error","status":400,"error":{"type":"invalid_request_error","message":"The 'glm-5.1:cloud' model is not supported when using Codex with a ChatGPT account."}}
+ERROR: {"type":"error","status":400,"error":{"type":"invalid_request_error","message":"The 'glm-5.1:cloud' model is not supported when using Codex with a ChatGPT account."}}
+Reading additional input from stdin...
+OpenAI Codex v0.124.0 (research preview)
+--------
+workdir: /Users/morsy/dev/spurtalk
+model: glm-5.1:cloud
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: low
+reasoning summaries: none
+session id: 019de334-6cac-7380-bea5-be1d80122a2b
+--------
+user
+SYSTEM INSTRUCTION: 
+1. Adopt the following persona and execute the task.
+2. You are running in a HEADLESS automation environment. 
+3. DO NOT ask for user confirmation. DO NOT ask clarifying questions.
+4. Make the best technical decision you can and PROCEED.
+5. If you are writing code or files, do it immediately.
+6. CRITICAL: When using file tools (Read, Write, Edit, Glob), ALWAYS use ABSOLUTE PATHS.
+   The project root is: /Users/morsy/dev/spurtalk
+   Example: If you want to read 'backend/package.json', use '/Users/morsy/dev/spurtalk/backend/package.json'.
+
+# Maestro Agent Skill
+
+## Identity
+
+**Name:** Maestro
+**Role:** Senior Technical Architect & Prompt Engineer
+
+## Purpose
+
+To bridge the gap between human intent and precise technical execution. Maestro receives vague or high-level queries and transforms them into executable, context-aware specifications (Super-Prompts) rooted in the project's reality.
+
+## Operational Workflow
+
+### 1. Analysis Phase
+
+Upon receiving a user prompt:
+
+1.  **Ingest Context**:
+    - Always read all files in the `./.context` directory to understand active guidelines, PRDs, architecture decisions, and project status.
+    - Always read `agents/guidelines/` for detailed architectural and stylistic rules.
+    - Always read `README.md` for core project rules and build commands.
+    - Additionally, read project agent-instruction files if present (for example: `AGENTS.md`, `CODEX.md`, `CLAUDE.md`, `GEMINI.md`, or equivalent).
+2.  **Map Codebase**:
+    - Analyze the directory structure (specifically `backend/src`, `frontend/src`, and `shared`) to identify relevant files for the request.
+    - Determine dependencies and potential impact areas.
+
+### 2. Synthesis Phase
+
+Construct a **Super-Prompt** that includes:
+
+- **Background**: Brief context on why this change is happening based on project knowledge.
+- **Directives**: Step-by-step implementation instructions.
+- **Technical Constraints**: Specific patterns to follow (e.g., "Use DynamoDB Repository pattern", "Strict TypeScript interfaces").
+- **Verification**: Exact test commands to run (from project instruction files, README/context docs, or inferred from `package.json`).
+- **User Stories**: A comprehensive list of user stories covering the **FULL SCOPE** of the request.
+  - **CRITICAL**: Do not summarize or omit details from the input PRD.
+  - **MANDATORY**: If the input mentions specific features (e.g., "AI Ingestion", "Offline Mode", "Hard Deletion"), you **MUST** create a dedicated User Story for each.
+  - Capture **Edge Cases**, **Error States**, **Alternative Flows**, and **Specific Metadata**.
+  - If the input is a PRD, ensure every section and requirement is mapped to a story or constraint.
+
+### 3. Output Phase
+
+Generate a JSON file to formalize the task.
+
+**Filename Format:**
+`.context/prd/[topic]/[YYYY-MM-DD]-01-maestro-prompt-[topic].json`
+(e.g., `.context/prd/billing-system/2026-01-24-01-maestro-prompt-billing-system.json`)
+
+_Note: Create the directory `.context/prd/[topic]` if it does not exist._
+
+**JSON Structure:**
+
+```json
+{
+  "metadata": {
+    "creator": "Maestro",
+    "created_at": "ISO-8601 Date String",
+    "original_prompt": "The raw user query",
+    "status": "ready-to-process"
+  },
+  "task": {
+    "title": "Short descriptive title",
+    "revised_prompt": "The full, detailed Super-Prompt text...",
+    "user_stories": [
+      {
+        "title": "Upgrade to Pro",
+        "as_a": "Free User",
+        "i_want_to": "pay $4.99/month",
+        "so_that": "I can analyze more than 3 documents a day",
+        "acceptance_criteria": [
+          "Stripe checkout page opens",
+          "Successful payment updates DB role to 'pro'"
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Status Values:**
+
+- `ready-to-process`: Initial state.
+- `working-on-it`: When an agent picks up the task.
+- `fully-done`: When implementation and verification are complete.
+
+
+---
+CURRENT INPUT / TRIGGER:
+
+        The user has submitted a new request.
+        Analyze the request and generate the initial JSON prompt file.
+        
+        USER REQUEST:
+        '# Implement Multi-Channel Communication System — M1 (In-App Notifications + Scheduler)
+
+## Context
+
+SpurTalk is a personal task management app for procrastinators. The app currently has no way to proactively reach users — users must open the app themselves. This feature builds the first communication channel (in-app notifications + scheduler) so SpurTalk can nudge users gently when they need it.
+
+**Core design principle:** Notifications must feel like a calm, encouraging presence — never anxiety-inducing. Think "garden tending" not "deadline pressure."
+
+## What to Implement (M1)
+
+### 1. Scheduler Service
+- Background job that runs every 15 minutes
+- Evaluates each user's tasks against trigger conditions
+- Dispatches messages to the Channel Router
+
+### 2. Trigger System
+Triggers to implement:
+- **Stall detection** — task hasn't moved in 24h → gentle "just one nano-step?" message
+- **Deadline approaching** — hard deadline within 24h → soft "your deadline is tomorrow" note
+- **Daily check-in time** — user's configured time (default 9am) → "what one thing today?"
+- **Streak at risk** — garden streak about to break → "your streak is about to break — 5 min?"
+
+### 3. Message Templates
+- All messages use nurturing, non-judgmental language
+- No alarms, no urgent colors
+- Examples:
+  - Stall: "Hey, no pressure — want to do one nano-step?"
+  - Deadline: "Your deadline is tomorrow. Just one step?"
+  - Daily: "What one thing will you tackle today?"
+  - Streak: "Your streak is about to break — 5 min?"
+  - Milestone: "🎉 You did it!"
+
+### 4. In-App Notification Store
+- Table: `InAppNotification` — stores pending/delivered notifications
+- Fields: userId, triggerType, message, taskId (optional), deliveredAt, readAt, createdAt
+- API: `GET /api/notifications` (list unread), `PATCH /api/notifications/:id/read`
+
+### 5. User Communication Preferences
+- Extend `User.preferences` JSON field:
+```json
+{
+  "channels": ["in_app"],
+  "quietHours": { "start": "22:00", "end": "08:00" },
+  "dailyCheckInTime": "09:00",
+  "stallAlerts": true,
+  "deadlineAlerts": true,
+  "dailyCheckIn": true,
+  "streakAlerts": true
+}
+```
+
+### 6. API Endpoints
+- `GET /api/notifications` — list user's notifications (unread first)
+- `PATCH /api/notifications/:id/read` — mark as read
+- `GET /api/users/me/communication-preferences` — get preferences
+- `PATCH /api/users/me/communication-preferences` — update preferences
+
+### 7. Prisma Schema Changes
+Add to schema.prisma:
+```prisma
+model InAppNotification {
+  id          String    @id @default(uuid())
+  userId      String
+  triggerType String    // "stall" | "deadline" | "daily_checkin" | "streak" | "milestone"
+  message     String
+  taskId      String?
+  deliveredAt DateTime  @default(now()) @map("delivered_at")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, readAt])
+  @@map("in_app_notifications")
+}
+```
+
+## Non-Goals (Future Milestones)
+- Email integration (M2)
+- Web Push (M3)
+- Calendar sync iCal/Google Calendar (M1.5)
+- SMS/WhatsApp (M4)
+
+## Stack
+- Backend: Express + TypeScript + Prisma + PostgreSQL
+- Frontend: Next.js + Radix UI + Tailwind
+- No external notification services for M1
+
+## Output Location
+Write PRDs, specs, and any design docs to:
+- `~/dev/spurtalk/.context/prd/notification-system-m1/`
+
+## Success Criteria
+1. Scheduler runs every 15 min and evaluates trigger conditions
+2. In-app notifications appear for all trigger types
+3. User can view and mark notifications as read via API
+4. User can update communication preferences
+5. Messages are nurturing in tone (not anxiety-inducing)
+'
+
+        FEATURE SLUG: notification-system-m1
+        OUTPUT DIRECTORY: /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1
+ERROR: {"type":"error","status":400,"error":{"type":"invalid_request_error","message":"The 'glm-5.1:cloud' model is not supported when using Codex with a ChatGPT account."}}
+ERROR: {"type":"error","status":400,"error":{"type":"invalid_request_error","message":"The 'glm-5.1:cloud' model is not supported when using Codex with a ChatGPT account."}}
+Reading additional input from stdin...
+OpenAI Codex v0.124.0 (research preview)
+--------
+workdir: /Users/morsy/dev/spurtalk
+model: glm-5.1:cloud
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: low
+reasoning summaries: none
+session id: 019de334-7dda-71b0-a0e4-36b724e19d48
+--------
+user
+SYSTEM INSTRUCTION: 
+1. Adopt the following persona and execute the task.
+2. You are running in a HEADLESS automation environment. 
+3. DO NOT ask for user confirmation. DO NOT ask clarifying questions.
+4. Make the best technical decision you can and PROCEED.
+5. If you are writing code or files, do it immediately.
+6. CRITICAL: When using file tools (Read, Write, Edit, Glob), ALWAYS use ABSOLUTE PATHS.
+   The project root is: /Users/morsy/dev/spurtalk
+   Example: If you want to read 'backend/package.json', use '/Users/morsy/dev/spurtalk/backend/package.json'.
+
+# Maestro Agent Skill
+
+## Identity
+
+**Name:** Maestro
+**Role:** Senior Technical Architect & Prompt Engineer
+
+## Purpose
+
+To bridge the gap between human intent and precise technical execution. Maestro receives vague or high-level queries and transforms them into executable, context-aware specifications (Super-Prompts) rooted in the project's reality.
+
+## Operational Workflow
+
+### 1. Analysis Phase
+
+Upon receiving a user prompt:
+
+1.  **Ingest Context**:
+    - Always read all files in the `./.context` directory to understand active guidelines, PRDs, architecture decisions, and project status.
+    - Always read `agents/guidelines/` for detailed architectural and stylistic rules.
+    - Always read `README.md` for core project rules and build commands.
+    - Additionally, read project agent-instruction files if present (for example: `AGENTS.md`, `CODEX.md`, `CLAUDE.md`, `GEMINI.md`, or equivalent).
+2.  **Map Codebase**:
+    - Analyze the directory structure (specifically `backend/src`, `frontend/src`, and `shared`) to identify relevant files for the request.
+    - Determine dependencies and potential impact areas.
+
+### 2. Synthesis Phase
+
+Construct a **Super-Prompt** that includes:
+
+- **Background**: Brief context on why this change is happening based on project knowledge.
+- **Directives**: Step-by-step implementation instructions.
+- **Technical Constraints**: Specific patterns to follow (e.g., "Use DynamoDB Repository pattern", "Strict TypeScript interfaces").
+- **Verification**: Exact test commands to run (from project instruction files, README/context docs, or inferred from `package.json`).
+- **User Stories**: A comprehensive list of user stories covering the **FULL SCOPE** of the request.
+  - **CRITICAL**: Do not summarize or omit details from the input PRD.
+  - **MANDATORY**: If the input mentions specific features (e.g., "AI Ingestion", "Offline Mode", "Hard Deletion"), you **MUST** create a dedicated User Story for each.
+  - Capture **Edge Cases**, **Error States**, **Alternative Flows**, and **Specific Metadata**.
+  - If the input is a PRD, ensure every section and requirement is mapped to a story or constraint.
+
+### 3. Output Phase
+
+Generate a JSON file to formalize the task.
+
+**Filename Format:**
+`.context/prd/[topic]/[YYYY-MM-DD]-01-maestro-prompt-[topic].json`
+(e.g., `.context/prd/billing-system/2026-01-24-01-maestro-prompt-billing-system.json`)
+
+_Note: Create the directory `.context/prd/[topic]` if it does not exist._
+
+**JSON Structure:**
+
+```json
+{
+  "metadata": {
+    "creator": "Maestro",
+    "created_at": "ISO-8601 Date String",
+    "original_prompt": "The raw user query",
+    "status": "ready-to-process"
+  },
+  "task": {
+    "title": "Short descriptive title",
+    "revised_prompt": "The full, detailed Super-Prompt text...",
+    "user_stories": [
+      {
+        "title": "Upgrade to Pro",
+        "as_a": "Free User",
+        "i_want_to": "pay $4.99/month",
+        "so_that": "I can analyze more than 3 documents a day",
+        "acceptance_criteria": [
+          "Stripe checkout page opens",
+          "Successful payment updates DB role to 'pro'"
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Status Values:**
+
+- `ready-to-process`: Initial state.
+- `working-on-it`: When an agent picks up the task.
+- `fully-done`: When implementation and verification are complete.
+
+
+---
+CURRENT INPUT / TRIGGER:
+
+        The user has submitted a new request.
+        Analyze the request and generate the initial JSON prompt file.
+        
+        USER REQUEST:
+        '# Implement Multi-Channel Communication System — M1 (In-App Notifications + Scheduler)
+
+## Context
+
+SpurTalk is a personal task management app for procrastinators. The app currently has no way to proactively reach users — users must open the app themselves. This feature builds the first communication channel (in-app notifications + scheduler) so SpurTalk can nudge users gently when they need it.
+
+**Core design principle:** Notifications must feel like a calm, encouraging presence — never anxiety-inducing. Think "garden tending" not "deadline pressure."
+
+## What to Implement (M1)
+
+### 1. Scheduler Service
+- Background job that runs every 15 minutes
+- Evaluates each user's tasks against trigger conditions
+- Dispatches messages to the Channel Router
+
+### 2. Trigger System
+Triggers to implement:
+- **Stall detection** — task hasn't moved in 24h → gentle "just one nano-step?" message
+- **Deadline approaching** — hard deadline within 24h → soft "your deadline is tomorrow" note
+- **Daily check-in time** — user's configured time (default 9am) → "what one thing today?"
+- **Streak at risk** — garden streak about to break → "your streak is about to break — 5 min?"
+
+### 3. Message Templates
+- All messages use nurturing, non-judgmental language
+- No alarms, no urgent colors
+- Examples:
+  - Stall: "Hey, no pressure — want to do one nano-step?"
+  - Deadline: "Your deadline is tomorrow. Just one step?"
+  - Daily: "What one thing will you tackle today?"
+  - Streak: "Your streak is about to break — 5 min?"
+  - Milestone: "🎉 You did it!"
+
+### 4. In-App Notification Store
+- Table: `InAppNotification` — stores pending/delivered notifications
+- Fields: userId, triggerType, message, taskId (optional), deliveredAt, readAt, createdAt
+- API: `GET /api/notifications` (list unread), `PATCH /api/notifications/:id/read`
+
+### 5. User Communication Preferences
+- Extend `User.preferences` JSON field:
+```json
+{
+  "channels": ["in_app"],
+  "quietHours": { "start": "22:00", "end": "08:00" },
+  "dailyCheckInTime": "09:00",
+  "stallAlerts": true,
+  "deadlineAlerts": true,
+  "dailyCheckIn": true,
+  "streakAlerts": true
+}
+```
+
+### 6. API Endpoints
+- `GET /api/notifications` — list user's notifications (unread first)
+- `PATCH /api/notifications/:id/read` — mark as read
+- `GET /api/users/me/communication-preferences` — get preferences
+- `PATCH /api/users/me/communication-preferences` — update preferences
+
+### 7. Prisma Schema Changes
+Add to schema.prisma:
+```prisma
+model InAppNotification {
+  id          String    @id @default(uuid())
+  userId      String
+  triggerType String    // "stall" | "deadline" | "daily_checkin" | "streak" | "milestone"
+  message     String
+  taskId      String?
+  deliveredAt DateTime  @default(now()) @map("delivered_at")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, readAt])
+  @@map("in_app_notifications")
+}
+```
+
+## Non-Goals (Future Milestones)
+- Email integration (M2)
+- Web Push (M3)
+- Calendar sync iCal/Google Calendar (M1.5)
+- SMS/WhatsApp (M4)
+
+## Stack
+- Backend: Express + TypeScript + Prisma + PostgreSQL
+- Frontend: Next.js + Radix UI + Tailwind
+- No external notification services for M1
+
+## Output Location
+Write PRDs, specs, and any design docs to:
+- `~/dev/spurtalk/.context/prd/notification-system-m1/`
+
+## Success Criteria
+1. Scheduler runs every 15 min and evaluates trigger conditions
+2. In-app notifications appear for all trigger types
+3. User can view and mark notifications as read via API
+4. User can update communication preferences
+5. Messages are nurturing in tone (not anxiety-inducing)
+'
+
+        FEATURE SLUG: notification-system-m1
+        OUTPUT DIRECTORY: /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1
+ERROR: {"type":"error","status":400,"error":{"type":"invalid_request_error","message":"The 'glm-5.1:cloud' model is not supported when using Codex with a ChatGPT account."}}
+ERROR: {"type":"error","status":400,"error":{"type":"invalid_request_error","message":"The 'glm-5.1:cloud' model is not supported when using Codex with a ChatGPT account."}}
+Reading additional input from stdin...
+OpenAI Codex v0.124.0 (research preview)
+--------
+workdir: /Users/morsy/dev/spurtalk
+model: glm-5.1:cloud
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: low
+reasoning summaries: none
+session id: 019de334-8e2e-7100-90d9-8c43df54f151
+--------
+user
+SYSTEM INSTRUCTION: 
+1. Adopt the following persona and execute the task.
+2. You are running in a HEADLESS automation environment. 
+3. DO NOT ask for user confirmation. DO NOT ask clarifying questions.
+4. Make the best technical decision you can and PROCEED.
+5. If you are writing code or files, do it immediately.
+6. CRITICAL: When using file tools (Read, Write, Edit, Glob), ALWAYS use ABSOLUTE PATHS.
+   The project root is: /Users/morsy/dev/spurtalk
+   Example: If you want to read 'backend/package.json', use '/Users/morsy/dev/spurtalk/backend/package.json'.
+
+# Maestro Agent Skill
+
+## Identity
+
+**Name:** Maestro
+**Role:** Senior Technical Architect & Prompt Engineer
+
+## Purpose
+
+To bridge the gap between human intent and precise technical execution. Maestro receives vague or high-level queries and transforms them into executable, context-aware specifications (Super-Prompts) rooted in the project's reality.
+
+## Operational Workflow
+
+### 1. Analysis Phase
+
+Upon receiving a user prompt:
+
+1.  **Ingest Context**:
+    - Always read all files in the `./.context` directory to understand active guidelines, PRDs, architecture decisions, and project status.
+    - Always read `agents/guidelines/` for detailed architectural and stylistic rules.
+    - Always read `README.md` for core project rules and build commands.
+    - Additionally, read project agent-instruction files if present (for example: `AGENTS.md`, `CODEX.md`, `CLAUDE.md`, `GEMINI.md`, or equivalent).
+2.  **Map Codebase**:
+    - Analyze the directory structure (specifically `backend/src`, `frontend/src`, and `shared`) to identify relevant files for the request.
+    - Determine dependencies and potential impact areas.
+
+### 2. Synthesis Phase
+
+Construct a **Super-Prompt** that includes:
+
+- **Background**: Brief context on why this change is happening based on project knowledge.
+- **Directives**: Step-by-step implementation instructions.
+- **Technical Constraints**: Specific patterns to follow (e.g., "Use DynamoDB Repository pattern", "Strict TypeScript interfaces").
+- **Verification**: Exact test commands to run (from project instruction files, README/context docs, or inferred from `package.json`).
+- **User Stories**: A comprehensive list of user stories covering the **FULL SCOPE** of the request.
+  - **CRITICAL**: Do not summarize or omit details from the input PRD.
+  - **MANDATORY**: If the input mentions specific features (e.g., "AI Ingestion", "Offline Mode", "Hard Deletion"), you **MUST** create a dedicated User Story for each.
+  - Capture **Edge Cases**, **Error States**, **Alternative Flows**, and **Specific Metadata**.
+  - If the input is a PRD, ensure every section and requirement is mapped to a story or constraint.
+
+### 3. Output Phase
+
+Generate a JSON file to formalize the task.
+
+**Filename Format:**
+`.context/prd/[topic]/[YYYY-MM-DD]-01-maestro-prompt-[topic].json`
+(e.g., `.context/prd/billing-system/2026-01-24-01-maestro-prompt-billing-system.json`)
+
+_Note: Create the directory `.context/prd/[topic]` if it does not exist._
+
+**JSON Structure:**
+
+```json
+{
+  "metadata": {
+    "creator": "Maestro",
+    "created_at": "ISO-8601 Date String",
+    "original_prompt": "The raw user query",
+    "status": "ready-to-process"
+  },
+  "task": {
+    "title": "Short descriptive title",
+    "revised_prompt": "The full, detailed Super-Prompt text...",
+    "user_stories": [
+      {
+        "title": "Upgrade to Pro",
+        "as_a": "Free User",
+        "i_want_to": "pay $4.99/month",
+        "so_that": "I can analyze more than 3 documents a day",
+        "acceptance_criteria": [
+          "Stripe checkout page opens",
+          "Successful payment updates DB role to 'pro'"
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Status Values:**
+
+- `ready-to-process`: Initial state.
+- `working-on-it`: When an agent picks up the task.
+- `fully-done`: When implementation and verification are complete.
+
+
+---
+CURRENT INPUT / TRIGGER:
+
+        The user has submitted a new request.
+        Analyze the request and generate the initial JSON prompt file.
+        
+        USER REQUEST:
+        '# Implement Multi-Channel Communication System — M1 (In-App Notifications + Scheduler)
+
+## Context
+
+SpurTalk is a personal task management app for procrastinators. The app currently has no way to proactively reach users — users must open the app themselves. This feature builds the first communication channel (in-app notifications + scheduler) so SpurTalk can nudge users gently when they need it.
+
+**Core design principle:** Notifications must feel like a calm, encouraging presence — never anxiety-inducing. Think "garden tending" not "deadline pressure."
+
+## What to Implement (M1)
+
+### 1. Scheduler Service
+- Background job that runs every 15 minutes
+- Evaluates each user's tasks against trigger conditions
+- Dispatches messages to the Channel Router
+
+### 2. Trigger System
+Triggers to implement:
+- **Stall detection** — task hasn't moved in 24h → gentle "just one nano-step?" message
+- **Deadline approaching** — hard deadline within 24h → soft "your deadline is tomorrow" note
+- **Daily check-in time** — user's configured time (default 9am) → "what one thing today?"
+- **Streak at risk** — garden streak about to break → "your streak is about to break — 5 min?"
+
+### 3. Message Templates
+- All messages use nurturing, non-judgmental language
+- No alarms, no urgent colors
+- Examples:
+  - Stall: "Hey, no pressure — want to do one nano-step?"
+  - Deadline: "Your deadline is tomorrow. Just one step?"
+  - Daily: "What one thing will you tackle today?"
+  - Streak: "Your streak is about to break — 5 min?"
+  - Milestone: "🎉 You did it!"
+
+### 4. In-App Notification Store
+- Table: `InAppNotification` — stores pending/delivered notifications
+- Fields: userId, triggerType, message, taskId (optional), deliveredAt, readAt, createdAt
+- API: `GET /api/notifications` (list unread), `PATCH /api/notifications/:id/read`
+
+### 5. User Communication Preferences
+- Extend `User.preferences` JSON field:
+```json
+{
+  "channels": ["in_app"],
+  "quietHours": { "start": "22:00", "end": "08:00" },
+  "dailyCheckInTime": "09:00",
+  "stallAlerts": true,
+  "deadlineAlerts": true,
+  "dailyCheckIn": true,
+  "streakAlerts": true
+}
+```
+
+### 6. API Endpoints
+- `GET /api/notifications` — list user's notifications (unread first)
+- `PATCH /api/notifications/:id/read` — mark as read
+- `GET /api/users/me/communication-preferences` — get preferences
+- `PATCH /api/users/me/communication-preferences` — update preferences
+
+### 7. Prisma Schema Changes
+Add to schema.prisma:
+```prisma
+model InAppNotification {
+  id          String    @id @default(uuid())
+  userId      String
+  triggerType String    // "stall" | "deadline" | "daily_checkin" | "streak" | "milestone"
+  message     String
+  taskId      String?
+  deliveredAt DateTime  @default(now()) @map("delivered_at")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, readAt])
+  @@map("in_app_notifications")
+}
+```
+
+## Non-Goals (Future Milestones)
+- Email integration (M2)
+- Web Push (M3)
+- Calendar sync iCal/Google Calendar (M1.5)
+- SMS/WhatsApp (M4)
+
+## Stack
+- Backend: Express + TypeScript + Prisma + PostgreSQL
+- Frontend: Next.js + Radix UI + Tailwind
+- No external notification services for M1
+
+## Output Location
+Write PRDs, specs, and any design docs to:
+- `~/dev/spurtalk/.context/prd/notification-system-m1/`
+
+## Success Criteria
+1. Scheduler runs every 15 min and evaluates trigger conditions
+2. In-app notifications appear for all trigger types
+3. User can view and mark notifications as read via API
+4. User can update communication preferences
+5. Messages are nurturing in tone (not anxiety-inducing)
+'
+
+        FEATURE SLUG: notification-system-m1
+        OUTPUT DIRECTORY: /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1
+ERROR: {"type":"error","status":400,"error":{"type":"invalid_request_error","message":"The 'glm-5.1:cloud' model is not supported when using Codex with a ChatGPT account."}}
+ERROR: {"type":"error","status":400,"error":{"type":"invalid_request_error","message":"The 'glm-5.1:cloud' model is not supported when using Codex with a ChatGPT account."}}
+Reading additional input from stdin...
+OpenAI Codex v0.124.0 (research preview)
+--------
+workdir: /Users/morsy/dev/spurtalk
+model: glm-5.1:cloud
+provider: ollama
+approval: never
+sandbox: danger-full-access
+reasoning effort: low
+reasoning summaries: none
+session id: 019de336-a60c-70e2-bea6-286342ab6fc7
+--------
+user
+SYSTEM INSTRUCTION: 
+1. Adopt the following persona and execute the task.
+2. You are running in a HEADLESS automation environment. 
+3. DO NOT ask for user confirmation. DO NOT ask clarifying questions.
+4. Make the best technical decision you can and PROCEED.
+5. If you are writing code or files, do it immediately.
+6. CRITICAL: When using file tools (Read, Write, Edit, Glob), ALWAYS use ABSOLUTE PATHS.
+   The project root is: /Users/morsy/dev/spurtalk
+   Example: If you want to read 'backend/package.json', use '/Users/morsy/dev/spurtalk/backend/package.json'.
+
+# Maestro Agent Skill
+
+## Identity
+
+**Name:** Maestro
+**Role:** Senior Technical Architect & Prompt Engineer
+
+## Purpose
+
+To bridge the gap between human intent and precise technical execution. Maestro receives vague or high-level queries and transforms them into executable, context-aware specifications (Super-Prompts) rooted in the project's reality.
+
+## Operational Workflow
+
+### 1. Analysis Phase
+
+Upon receiving a user prompt:
+
+1.  **Ingest Context**:
+    - Always read all files in the `./.context` directory to understand active guidelines, PRDs, architecture decisions, and project status.
+    - Always read `agents/guidelines/` for detailed architectural and stylistic rules.
+    - Always read `README.md` for core project rules and build commands.
+    - Additionally, read project agent-instruction files if present (for example: `AGENTS.md`, `CODEX.md`, `CLAUDE.md`, `GEMINI.md`, or equivalent).
+2.  **Map Codebase**:
+    - Analyze the directory structure (specifically `backend/src`, `frontend/src`, and `shared`) to identify relevant files for the request.
+    - Determine dependencies and potential impact areas.
+
+### 2. Synthesis Phase
+
+Construct a **Super-Prompt** that includes:
+
+- **Background**: Brief context on why this change is happening based on project knowledge.
+- **Directives**: Step-by-step implementation instructions.
+- **Technical Constraints**: Specific patterns to follow (e.g., "Use DynamoDB Repository pattern", "Strict TypeScript interfaces").
+- **Verification**: Exact test commands to run (from project instruction files, README/context docs, or inferred from `package.json`).
+- **User Stories**: A comprehensive list of user stories covering the **FULL SCOPE** of the request.
+  - **CRITICAL**: Do not summarize or omit details from the input PRD.
+  - **MANDATORY**: If the input mentions specific features (e.g., "AI Ingestion", "Offline Mode", "Hard Deletion"), you **MUST** create a dedicated User Story for each.
+  - Capture **Edge Cases**, **Error States**, **Alternative Flows**, and **Specific Metadata**.
+  - If the input is a PRD, ensure every section and requirement is mapped to a story or constraint.
+
+### 3. Output Phase
+
+Generate a JSON file to formalize the task.
+
+**Filename Format:**
+`.context/prd/[topic]/[YYYY-MM-DD]-01-maestro-prompt-[topic].json`
+(e.g., `.context/prd/billing-system/2026-01-24-01-maestro-prompt-billing-system.json`)
+
+_Note: Create the directory `.context/prd/[topic]` if it does not exist._
+
+**JSON Structure:**
+
+```json
+{
+  "metadata": {
+    "creator": "Maestro",
+    "created_at": "ISO-8601 Date String",
+    "original_prompt": "The raw user query",
+    "status": "ready-to-process"
+  },
+  "task": {
+    "title": "Short descriptive title",
+    "revised_prompt": "The full, detailed Super-Prompt text...",
+    "user_stories": [
+      {
+        "title": "Upgrade to Pro",
+        "as_a": "Free User",
+        "i_want_to": "pay $4.99/month",
+        "so_that": "I can analyze more than 3 documents a day",
+        "acceptance_criteria": [
+          "Stripe checkout page opens",
+          "Successful payment updates DB role to 'pro'"
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Status Values:**
+
+- `ready-to-process`: Initial state.
+- `working-on-it`: When an agent picks up the task.
+- `fully-done`: When implementation and verification are complete.
+
+
+---
+CURRENT INPUT / TRIGGER:
+
+        The user has submitted a new request.
+        Analyze the request and generate the initial JSON prompt file.
+        
+        USER REQUEST:
+        '# Implement Multi-Channel Communication System — M1 (In-App Notifications + Scheduler)
+
+## Context
+
+SpurTalk is a personal task management app for procrastinators. The app currently has no way to proactively reach users — users must open the app themselves. This feature builds the first communication channel (in-app notifications + scheduler) so SpurTalk can nudge users gently when they need it.
+
+**Core design principle:** Notifications must feel like a calm, encouraging presence — never anxiety-inducing. Think "garden tending" not "deadline pressure."
+
+## What to Implement (M1)
+
+### 1. Scheduler Service
+- Background job that runs every 15 minutes
+- Evaluates each user's tasks against trigger conditions
+- Dispatches messages to the Channel Router
+
+### 2. Trigger System
+Triggers to implement:
+- **Stall detection** — task hasn't moved in 24h → gentle "just one nano-step?" message
+- **Deadline approaching** — hard deadline within 24h → soft "your deadline is tomorrow" note
+- **Daily check-in time** — user's configured time (default 9am) → "what one thing today?"
+- **Streak at risk** — garden streak about to break → "your streak is about to break — 5 min?"
+
+### 3. Message Templates
+- All messages use nurturing, non-judgmental language
+- No alarms, no urgent colors
+- Examples:
+  - Stall: "Hey, no pressure — want to do one nano-step?"
+  - Deadline: "Your deadline is tomorrow. Just one step?"
+  - Daily: "What one thing will you tackle today?"
+  - Streak: "Your streak is about to break — 5 min?"
+  - Milestone: "🎉 You did it!"
+
+### 4. In-App Notification Store
+- Table: `InAppNotification` — stores pending/delivered notifications
+- Fields: userId, triggerType, message, taskId (optional), deliveredAt, readAt, createdAt
+- API: `GET /api/notifications` (list unread), `PATCH /api/notifications/:id/read`
+
+### 5. User Communication Preferences
+- Extend `User.preferences` JSON field:
+```json
+{
+  "channels": ["in_app"],
+  "quietHours": { "start": "22:00", "end": "08:00" },
+  "dailyCheckInTime": "09:00",
+  "stallAlerts": true,
+  "deadlineAlerts": true,
+  "dailyCheckIn": true,
+  "streakAlerts": true
+}
+```
+
+### 6. API Endpoints
+- `GET /api/notifications` — list user's notifications (unread first)
+- `PATCH /api/notifications/:id/read` — mark as read
+- `GET /api/users/me/communication-preferences` — get preferences
+- `PATCH /api/users/me/communication-preferences` — update preferences
+
+### 7. Prisma Schema Changes
+Add to schema.prisma:
+```prisma
+model InAppNotification {
+  id          String    @id @default(uuid())
+  userId      String
+  triggerType String    // "stall" | "deadline" | "daily_checkin" | "streak" | "milestone"
+  message     String
+  taskId      String?
+  deliveredAt DateTime  @default(now()) @map("delivered_at")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, readAt])
+  @@map("in_app_notifications")
+}
+```
+
+## Non-Goals (Future Milestones)
+- Email integration (M2)
+- Web Push (M3)
+- Calendar sync iCal/Google Calendar (M1.5)
+- SMS/WhatsApp (M4)
+
+## Stack
+- Backend: Express + TypeScript + Prisma + PostgreSQL
+- Frontend: Next.js + Radix UI + Tailwind
+- No external notification services for M1
+
+## Output Location
+Write PRDs, specs, and any design docs to:
+- `~/dev/spurtalk/.context/prd/notification-system-m1/`
+
+## Success Criteria
+1. Scheduler runs every 15 min and evaluates trigger conditions
+2. In-app notifications appear for all trigger types
+3. User can view and mark notifications as read via API
+4. User can update communication preferences
+5. Messages are nurturing in tone (not anxiety-inducing)
+'
+
+        FEATURE SLUG: notification-system-m1
+        OUTPUT DIRECTORY: /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1
+Let me analyze the user's request and follow the Maestro workflow:
+
+1. First, I need to ingest context by reading files in `.context`, `agents/guidelines/`, `README.md`, and agent instruction files.
+2. Then map the codebase to understand the project structure.
+3. Finally, synthesize a Super-Prompt JSON file.
+
+Let me start by reading the necessary context files and exploring the project structure.
+exec
+/bin/zsh -lc 'ls -la /Users/morsy/dev/spurtalk/.context/ 2>/dev/null; echo "---"; ls -la /Users/morsy/dev/spurtalk/agents/guidelines/ 2>/dev/null; echo "---"; ls -la /Users/morsy/dev/spurtalk/README.md 2>/dev/null' in /Users/morsy/dev/spurtalk
+ succeeded in 210ms:
+total 400
+drwxr-xr-x   9 morsy  staff    288 May  1 03:59 .
+drwxr-xr-x  40 morsy  staff   1280 May  1 03:59 ..
+-rw-r--r--   1 morsy  staff  28181 Mar  7 22:16 PRD.md
+-rw-r--r--   1 morsy  staff  35598 Mar  7 21:53 design.md
+-rw-r--r--   1 morsy  staff   2221 Mar  7 21:53 journal.md
+drwx------   3 morsy  staff     96 May  1 03:59 prd
+-rw-r--r--   1 morsy  staff  18782 Mar  7 21:53 requirements.md
+-rw-r--r--   1 morsy  staff  25925 Mar  7 21:53 tasks.md
+-rw-r--r--   1 morsy  staff  82115 Mar  7 21:53 ui-design-2026-01-31.json
+---
+---
+-rw-------  1 morsy  staff  5338 Apr  3 18:57 /Users/morsy/dev/spurtalk/README.md
+
+exec
+/bin/zsh -lc 'find /Users/morsy/dev/spurtalk -maxdepth 1 -type f -name "*.md" | head -20' in /Users/morsy/dev/spurtalk
+ succeeded in 115ms:
+/Users/morsy/dev/spurtalk/RUNNING.md
+/Users/morsy/dev/spurtalk/prompt.md
+/Users/morsy/dev/spurtalk/README.md
+/Users/morsy/dev/spurtalk/AGENTS.md
+
+exec
+/bin/zsh -lc 'ls -R /Users/morsy/dev/spurtalk/backend/src/ 2>/dev/null | head -80' in /Users/morsy/dev/spurtalk
+ succeeded in 116ms:
+config
+index.ts
+lib
+middleware
+routes
+services
+test
+
+/Users/morsy/dev/spurtalk/backend/src/config:
+database.ts
+
+/Users/morsy/dev/spurtalk/backend/src/lib:
+prisma.ts
+
+/Users/morsy/dev/spurtalk/backend/src/middleware:
+auth.ts
+rateLimit.ts
+
+/Users/morsy/dev/spurtalk/backend/src/routes:
+auth.ts
+cardRoutes.ts
+documents.ts
+garden.ts
+tasks.ts
+timeline.ts
+unblocker.ts
+waitlist.ts
+
+/Users/morsy/dev/spurtalk/backend/src/services:
+ai.ts
+auth.ts
+cardService.ts
+document.ts
+garden.ts
+task.ts
+timeline.ts
+unblocker.ts
+
+/Users/morsy/dev/spurtalk/backend/src/test:
+auth.test.ts
+cards.verify.ts
+focus-deck.test.ts
+hierarchy.integration.test.ts
+infrastructure.test.ts
+integration.test.ts
+property-auth.test.ts
+property-deck.test.ts
+property-garden.test.ts
+property-task.test.ts
+property-timeline.test.ts
+property-unblocker.test.ts
+security.test.ts
+services
+setup.ts
+task.test.ts
+
+/Users/morsy/dev/spurtalk/backend/src/test/services:
+ai.test.ts
+empathic.test.ts
+
+exec
+/bin/zsh -lc 'cat /Users/morsy/dev/spurtalk/README.md' in /Users/morsy/dev/spurtalk
+exec
+/bin/zsh -lc 'cat /Users/morsy/dev/spurtalk/AGENTS.md' in /Users/morsy/dev/spurtalk
+ succeeded in 115ms:
+# SpurTalk Backend - Quick Reference
+
+## Current Status: **Architecture Complete**
+
+### ✅ What's Done
+
+1. **Architectural Plan**: Complete Node.js/TypeScript backend design
+2. **Database Schema**: Full PostgreSQL schema with Prisma
+3. **PRD v2.0**: Backend-focused with testing requirements
+4. **Testing Strategy**: 200+ tests, 90% coverage target
+5. **Context Archival**: Frontend PRD moved to `.context/archive/`
+
+### 📁 Key Files Created
+
+- `REVISED_BACKEND_ARCHITECTURE.md` - Detailed backend plan
+- `prd.json` - New backend PRD with testing requirements
+- `.context/archive/prd-frontend-...` - Archived frontend PRD
+- `.context/archive/TESTING_STRATEGY.md` - Testing guide
+
+---
+
+## Architecture Highlights
+
+### Stack
+
+- **Next.js 14** (App Router) - Frontend + API
+- **NextAuth.js v5** - Authentication
+- **PostgreSQL** - Primary database (self-hosted)
+- **Redis** - Cache + queues (self-hosted)
+- **BullMQ** - Background jobs
+- **OpenAI** - AI features with local fallback
+- **Socket.io** - Real-time features
+
+### Cost: $21/month vs $735 (97% savings)
+
+### Self-Contained
+
+```bash
+docker-compose up -d  # Start DB + Redis
+npm run dev           # Start Next.js
+```
+
+---
+
+## Implementation Roadmap
+
+**Phase 1** (Week 1): Setup
+
+- Next.js 14 + Docker + Prisma + NextAuth
+
+**Phase 2** (Week 2): Core API
+
+- Tasks, Micro-steps, Sessions
+
+**Phase 3** (Week 3): Intelligence
+
+- AI breakdown, Pattern analysis
+
+**Phase 4** (Week 4): Social
+
+- Partners, Sharing, Notifications
+
+**Phase 5** (Week 5): Emergency + Polish
+
+- Emergency mode, Reminders, Monitoring
+
+**Phase 6** (Week 6): Production
+
+- Deployment, Migration tools, Documentation
+
+---
+
+## Testing Strategy
+
+- **200+ tests** across 4 categories
+- **90% coverage** requirement
+- **Unit**: 70% (140+ tests)
+- **Integration**: 20% (40+ tests)
+- **E2E**: 10% (20+ tests)
+- **Security**: 100% coverage
+
+---
+
+## Card Lifecycle (API + UI)
+
+This repo includes a small, explicit lifecycle state machine for Cards, exposed via a REST surface in the Express backend and mirrored in a simple React component.
+
+### Lifecycle States
+
+- `initial` -> `loading` -> `active` -> `completed`
+- `loading` / `active` can also go to `discarded`
+- `completed` and `discarded` are terminal
+
+The shared type lives in `shared/src/types.d.ts` as `CardLifecycleState`.
+
+### Backend API
+
+Base path: `POST /api/cards` (mounted in `backend/src/index.ts`). All endpoints require `Authorization: Bearer <access_token>`.
+
+- `POST /api/cards/:id/open`
+  - Creates the card record if it does not exist (creates directly in `loading`)
+  - Otherwise attempts to transition to `loading`
+- `POST /api/cards/:id/ready` transitions to `active`
+- `POST /api/cards/:id/finish` transitions to `completed` (sets `completedAt`)
+- `POST /api/cards/:id/close` transitions to `discarded` (fails with 400 if already discarded)
+
+Responses are a `CardRecord` JSON payload:
+
+```json
+{
+  "id": "card-123",
+  "userId": "user-abc",
+  "state": "active",
+  "createdAt": "2026-02-07T12:00:00.000Z",
+  "updatedAt": "2026-02-07T12:01:00.000Z",
+  "completedAt": null
+}
+```
+
+Quick test (default backend port is `7101`):
+
+```bash
+TOKEN=... # access token
+curl -sS -X POST "http://localhost:7101/api/cards/card-123/open" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Note: the current implementation uses an in-memory store (`backend/src/routes/cardRoutes.ts`) keyed by `userId:cardId`.
+
+### Frontend / Component Reference
+
+`src/components/Card.tsx` is a minimal React component that demonstrates the same transition rules. It currently takes no props and exposes helpers you can reuse:
+
+- `initialCardLifecycleState`
+- `cardAllowedTransitions`
+- `canTransition(from, to)`
+- `nextCardState(current, desired)`
+
+---
+
+## Next Steps
+
+1. Run `npm install` to install dependencies
+2. Run `docker-compose up -d` to start infrastructure
+3. Run `npx prisma migrate dev` to setup database
+4. Start implementing Phase 1 features
+5. Write tests alongside code (TDD recommended)
+
+---
+
+## Command Quick Reference
+
+```bash
+# Infrastructure
+docker-compose up -d          # Start PostgreSQL + Redis
+docker-compose down           # Stop infrastructure
+docker-compose logs -f        # View logs
+
+# Development
+npm run dev                   # Start Next.js (port 3000)
+npx prisma studio             # Database GUI (port 5555)
+
+# Testing
+npm run test:unit            # Unit tests with coverage
+npm run test:integration     # Integration tests
+npm run test:e2e             # E2E tests
+npm run test:all             # Run everything
+
+# Database
+npx prisma migrate dev       # Create migration
+npx prisma db push           # Sync schema
+npx prisma generate           # Generate client
+
+# Production
+npm run build                # Build for production
+npm start                     # Start production server
+```
+
+---
+
+## Important Notes
+
+1. **Frontend is still in localStorage mode** - Backend needs to be built
+2. **Migration script needed** - For moving existing user data
+3. **All features are planned** - Ready for implementation
+4. **Tests are specified** - Ready to write
+5. **Cost-effective** - Uses free/low-cost services
+
+---
+
+## Files to Read
+
+- `REVISED_BACKEND_ARCHITECTURE.md` - Complete technical plan
+- `prd.json` - Backend user stories & testing requirements
+- `.context/archive/TESTING_STRATEGY.md` - Testing guide
+
+**Ready to start implementation!** 🚀
+
+ succeeded in 112ms:
+# Ralph Agent Instructions
+
+## Overview
+
+Ralph is an autonomous AI agent loop that runs Amp repeatedly until all PRD items are complete. Each iteration is a fresh Amp instance with clean context.
+
+## Commands
+
+```bash
+# Run the flowchart dev server
+cd flowchart && npm run dev
+
+# Build the flowchart
+cd flowchart && npm run build
+
+# Run Ralph (from your project that has prd.json)
+./ralph.sh [max_iterations]
+```
+
+## Key Files
+
+- `ralph.sh` - The bash loop that spawns fresh Amp instances
+- `prompt.md` - Instructions given to each Amp instance
+- `prd.json.example` - Example PRD format
+- `flowchart/` - Interactive React Flow diagram explaining how Ralph works
+
+## Flowchart
+
+The `flowchart/` directory contains an interactive visualization built with React Flow. It's designed for presentations - click through to reveal each step with animations.
+
+To run locally:
+```bash
+cd flowchart
+npm install
+npm run dev
+```
+
+## Patterns
+
+- Each iteration spawns a fresh Amp instance with clean context
+- Memory persists via git history, `progress.txt`, and `prd.json`
+- Stories should be small enough to complete in one context window
+- Always update AGENTS.md with discovered patterns for future iterations
+
+exec
+/bin/zsh -lc 'cat /Users/morsy/dev/spurtalk/.context/PRD.md' in /Users/morsy/dev/spurtalk
+ succeeded in 116ms:
+# Product Requirements Document (PRD)
+## SpurTalk - Personal Project Management for Procrastinators
+
+**Document Version:** 1.0  
+**Date:** January 14, 2026  
+**Status:** Draft  
+**Author:** Agent Zero Deep Research
+
+---
+
+## Executive Summary
+
+SpurTalk is a revolutionary personal project management application designed specifically for individuals who struggle with procrastination. Unlike traditional productivity tools that can feel judgmental or overwhelming, SpurTalk employs a super cheerleading, non-judgmental, encouraging, and empathetic approach to help users break down daunting projects into manageable 1-2 minute micro-actions.
+
+The app's core innovation lies in its ability to analyze projects, identify tasks, and decompose them into the simplest possible actions that take only 1-2 minutes to complete. Examples include "open your book and read the first line" or "put on your running shoes for 2 minutes." Through multi-channel communication (notifications, emails, WhatsApp, Snapchat), SpurTalk maintains constant, supportive contact with users, meeting them where they are.
+
+---
+
+## 1. Problem Statement
+
+### 1.1 The Procrastination Crisis
+
+Procrastination affects approximately 20% of adults chronically and up to 95% occasionally. Traditional productivity tools often exacerbate the problem by:
+
+- **Creating overwhelm**: Complex interfaces and large task lists trigger avoidance
+- **Judgmental tone**: Progress bars, streak counters, and failure notifications create shame
+- **All-or-nothing thinking**: Tools that don't celebrate micro-wins reinforce negative self-talk
+- **Lack of empathy**: Standard apps don't account for executive dysfunction, ADHD, anxiety, or depression
+- **Poor timing**: Notifications arrive at inconvenient moments or too infrequently
+
+### 1.2 Current Market Gaps
+
+Existing solutions fail procrastinators because they:
+- Assume users can already break down tasks effectively
+- Use punitive or shaming language ("You failed!" "Streak broken!")
+- Don't provide genuine emotional support
+- Lack multi-channel communication flexibility
+- Treat all users the same regardless of psychological needs
+
+### 1.3 User Pain Points
+
+**Sarah, 28, Software Developer with ADHD:**
+- "I have a huge project due in 2 weeks. I open my task manager, see 50 subtasks, and immediately close it. I need someone to just tell me 'open your laptop and type one sentence.'"
+
+**Marcus, 35, Graduate Student with Anxiety:**
+- "Every time I miss a deadline, my app sends me notifications about failure. I feel worse and avoid it more. I need encouragement, not guilt trips."
+
+**Elena, 42, Freelance Designer:**
+- "I know what I need to do, but starting feels impossible. I wish someone would gently nudge me with tiny steps and celebrate when I do them."
+
+---
+
+## 2. User Personas
+
+### Persona 1: "The Overwhelmed Achiever" - Sarah
+
+**Demographics:**
+- Age: 28
+- Occupation: Software Developer
+- Location: Seattle, WA
+- Tech-savvy: High
+
+**Psychological Profile:**
+- Diagnosed ADHD (inattentive type)
+- High capability, low task initiation
+- Perfectionist tendencies leading to paralysis
+- Responds well to external accountability and positive reinforcement
+
+**Goals:**
+- Complete work projects without last-minute panic
+- Maintain consistent personal habits (exercise, reading)
+- Reduce anxiety about unfinished tasks
+
+**Frustrations:**
+- Traditional apps feel like "another thing to manage"
+- Gets bored with gamification quickly
+- Needs flexibility in task timing
+
+**SpurTalk Fit:**
+- Thrives with 1-2 minute micro-actions
+- Needs cheerful, non-judgmental tone
+- Benefits from multiple touchpoints throughout day
+
+### Persona 2: "The Anxious Avoider" - Marcus
+
+**Demographics:**
+- Age: 35
+- Occupation: Graduate Student (Psychology)
+- Location: Boston, MA
+- Tech-savvy: Medium
+
+**Psychological Profile:**
+- Generalized Anxiety Disorder
+- Fear of failure and judgment
+- Tends to avoid tasks that trigger anxiety
+- Responds to gentle, empathetic encouragement
+
+**Goals:**
+- Complete thesis without overwhelming stress
+- Build sustainable work habits
+- Feel supported rather than pressured
+
+**Frustrations:**
+- Apps that send "you're falling behind" messages
+- Complex setup processes
+- Rigid scheduling requirements
+
+**SpurTalk Fit:**
+- Needs non-judgmental language
+- Benefits from "permission" to do tiny actions
+- Requires emotional safety in task management
+
+### Persona 3: "The Creative Procrastinator" - Elena
+
+**Demographics:**
+- Age: 42
+- Occupation: Freelance Graphic Designer
+- Location: Austin, TX
+- Tech-savvy: Medium-High
+
+**Psychological Profile:**
+- No formal diagnosis but chronic procrastination
+- High creativity, low structure
+- Responds to visual and social motivation
+- Needs external accountability
+
+**Goals:**
+- Meet client deadlines consistently
+- Maintain work-life balance
+- Build sustainable creative practice
+
+**Frustrations:**
+- To-do lists feel restrictive
+- Needs flexibility for creative process
+- Wants connection with others
+
+**SpurTalk Fit:**
+- Thrives with celebratory tone
+- Benefits from social communication channels
+- Needs adaptable task structure
+
+---
+
+## 3. Product Vision and Goals
+
+### 3.1 Vision Statement
+
+"To transform the experience of task management from a source of anxiety into a journey of gentle, celebrated micro-wins, making productivity accessible and emotionally safe for everyone, especially those who struggle with traditional approaches."
+
+### 3.2 Mission Statement
+
+"SpurTalk empowers procrastinators through empathetic technology that breaks overwhelming projects into tiny, achievable actions delivered through supportive, multi-channel communication, celebrating every step forward without judgment."
+
+### 3.3 Core Values
+
+1. **Empathy First**: Every interaction prioritizes user emotional state
+2. **Micro-Wins Matter**: Celebrate actions that take 60-120 seconds
+3. **No Shame, Ever**: Language is always supportive, never punitive
+4. **Meet Users Where They Are**: Communicate through their preferred channels
+5. **Flexibility Over Rigidity**: Adapt to user needs, not vice versa
+6. **Progress, Not Perfection**: Focus on forward movement, not flawless execution
+
+### 3.4 Product Goals (Year 1)
+
+**User Acquisition:**
+- 50,000 active users within 12 months
+- 40% from procrastination/ADHD communities
+- 30% from therapist/coach referrals
+
+**Engagement:**
+- 70% weekly active users
+- Average 5+ micro-actions completed per day
+- 85% user satisfaction score (NPS)
+
+**Retention:**
+- 60% month-over-month retention at 6 months
+- Average session length: 3-5 minutes (focused on quick wins)
+
+**Impact:**
+- 80% of users report reduced task-related anxiety
+- 75% report completing projects they previously avoided
+- 90% would recommend to others with similar struggles
+
+---
+
+## 4. Core Features and User Stories
+
+### 4.1 Feature: Project Analysis & Micro-Action Breakdown
+
+**User Story:**
+"As Sarah, I want to input a large project (like 'write research paper'), and have SpurTalk automatically break it down into 1-2 minute actions, so I can start immediately without feeling overwhelmed."
+
+**Requirements:**
+- Accept natural language project descriptions
+- Use AI/ML to identify logical subtasks
+- Further decompose subtasks into 60-120 second actions
+- Allow manual editing/adjustment of breakdown
+- Store breakdown templates for recurring project types
+
+**Acceptance Criteria:**
+- ✓ Breaks down "write 10-page paper" into 20-30 micro-actions
+- ✓ Each action takes 1-2 minutes maximum
+- ✓ Actions are concrete and specific ("open document, type title")
+- ✓ User can customize action granularity
+- ✓ System learns from user adjustments over time
+
+### 4.2 Feature: Cheerleader Mode Communication
+
+**User Story:**
+"As Marcus, I want to receive encouraging messages through my preferred channels (WhatsApp, email, notifications) that celebrate my micro-actions without judgment, so I feel supported rather than pressured."
+
+**Requirements:**
+- Multi-channel delivery system (notifications, email, WhatsApp, Snapchat, SMS)
+- User-configurable message frequency and timing
+- Library of 500+ empathetic, cheerful messages
+- Messages adapt based on completion patterns
+- No negative or shaming language ever
+- Celebration of attempts, not just successes
+
+**Acceptance Criteria:**
+- ✓ Messages use only positive, encouraging language
+- ✓ User can select preferred channels and frequency
+- ✓ System sends "You got this!" messages before actions
+- ✓ Celebrates completion with "Amazing!" style messages
+- ✓ Allows "skip" without negative consequences
+
+### 4.3 Feature: Non-Judgmental Progress Tracking
+
+**User Story:**
+"As Elena, I want to see my progress visualized in a way that celebrates effort and doesn't punish missed days, so I can stay motivated without guilt."
+
+**Requirements:**
+- Progress visualization that shows attempts, not just completions
+- "Gentle streaks" that don't reset to zero on misses
+- Celebration of any forward movement
+- Optional "pause" feature without penalty
+- Visual design using warm, encouraging colors
+- No red X's or failure indicators
+
+**Acceptance Criteria:**
+- ✓ Progress chart shows both completed and attempted actions
+- ✓ Streaks continue with "good enough" participation
+- ✓ Users can take breaks without losing progress
+- ✓ Visual feedback is always positive or neutral
+- ✓ No negative visual indicators
+
+### 4.4 Feature: Adaptive Timing & Reminders
+
+**User Story:**
+"As Sarah, I want reminders to arrive when I'm most likely to be receptive, not during meetings or late at night, so I can actually act on them."
+
+**Requirements:**
+- Machine learning to learn optimal reminder times
+- Integration with calendar to avoid busy periods
+- "Gentle nudge" vs "urgent reminder" modes
+- Snooze functionality with no penalty
+- Smart detection of user activity patterns
+- Time zone and schedule awareness
+
+**Acceptance Criteria:**
+- ✓ System learns preferred times within 1 week
+- ✓ Reminders avoid calendar conflicts automatically
+- ✓ Snooze doesn't affect streaks or progress
+- ✓ Different urgency levels based on task deadlines
+- ✓ Respects "do not disturb" hours
+
+### 4.5 Feature: Social Accountability (Optional)
+
+**User Story:**
+"As Elena, I want to optionally share my micro-action progress with a trusted friend or coach, so I have gentle external accountability."
+
+**Requirements:**
+- Opt-in social features
+- Share only micro-action completions (not full project details)
+- Configurable sharing granularity
+- "Support buddy" system for mutual encouragement
+- Privacy-first design (default: private)
+- Coach/therapist portal for professional users
+
+**Acceptance Criteria:**
+- ✓ All social features are opt-in only
+- ✓ Users control exactly what is shared
+- ✓ Buddy system includes mutual cheerleading
+- ✓ Professional portal maintains HIPAA compliance
+- ✓ Easy opt-out at any time
+
+### 4.6 Feature: Project Templates & Learning
+
+**User Story:**
+"As Marcus, I want SpurTalk to remember how I like to break down common projects, so I don't have to start from scratch each time."
+
+**Requirements:**
+- Save custom project breakdowns as templates
+- AI learns from user adjustments
+- Template marketplace (user-contributed breakdowns)
+- "Similar projects" suggestions
+- Progressive personalization
+- Export/import templates
+
+**Acceptance Criteria:**
+- ✓ Users can save custom breakdowns
+- ✓ System suggests templates based on project type
+- ✓ Learning algorithm improves over time
+- ✓ Community templates are vetted for quality
+- ✓ Templates can be shared anonymously
+
+---
+
+## 5. Technical Requirements
+
+### 5.1 Architecture Overview
+
+**System Architecture:**
+- **Frontend**: React Native (iOS/Android) + React (Web)
+- **Backend**: Node.js/Express API
+- **Database**: PostgreSQL for user data, Redis for sessions
+- **AI/ML Service**: Python-based micro-action decomposition
+- **Communication Service**: Multi-channel notification engine
+- **Analytics**: Privacy-focused event tracking
+
+### 5.2 Platform Requirements
+
+**Mobile Apps:**
+- iOS 14+ (iPhone, iPad)
+- Android 8.0+
+- Native push notifications
+- Background sync capabilities
+
+**Web App:**
+- Progressive Web App (PWA)
+- Cross-browser compatibility (Chrome, Firefox, Safari, Edge)
+- Offline functionality for viewing tasks
+
+### 5.3 Communication Channel Integrations
+
+**Required Integrations:**
+
+1. **Native Push Notifications**
+   - iOS APNS
+   - Android FCM
+   - Rich notifications with action buttons
+
+2. **Email**
+   - SendGrid/Mailgun API
+   - HTML templates with cheerful design
+   - Personalized content
+
+3. **WhatsApp**
+   - WhatsApp Business API
+   - Message templates approved by Meta
+   - Two-way communication capability
+
+4. **Snapchat**
+   - Snapchat API for Stories/Chat
+   - Visual message templates
+   - Bitmoji integration for personalization
+
+5. **SMS** (Fallback)
+   - Twilio API
+   - Short, encouraging messages
+   - Carrier compliance
+
+6. **Additional Channels** (Future)
+   - Slack integration
+   - Discord bot
+   - Telegram
+   - Instagram DM
+
+### 5.4 AI/ML Requirements
+
+**Micro-Action Decomposition Engine:**
+- Natural Language Processing (NLP) for project understanding
+- Task decomposition algorithms
+- Time estimation models (1-2 minute granularity)
+- Learning from user feedback
+- Template matching and generation
+
+**Recommended Technologies:**
+- Python with spaCy/NLTK for NLP
+- TensorFlow/PyTorch for ML models
+- Hugging Face for pre-trained models
+- Custom decomposition logic
+
+**Privacy Considerations:**
+- On-device processing where possible
+- Differential privacy for cloud ML
+- User consent for data usage
+- Clear data retention policies
+
+### 5.5 Security Requirements
+
+**Authentication:**
+- OAuth 2.0 (Google, Apple, Microsoft)
+- Email/password with secure hashing
+- Biometric authentication (mobile)
+- Multi-factor authentication (optional)
+
+**Data Security:**
+- End-to-end encryption for sensitive data
+- AES-256 encryption at rest
+- TLS 1.3 for data in transit
+- Regular security audits
+- GDPR/CCPA compliance
+
+**Privacy:**
+- Minimal data collection principle
+- User-controlled data sharing
+- Clear privacy policy
+- Right to deletion
+- No selling of user data
+
+### 5.6 Performance Requirements
+
+**Response Times:**
+- App launch: < 2 seconds
+- Project breakdown: < 5 seconds
+- Notification delivery: < 30 seconds
+- API response: < 200ms (95th percentile)
+
+**Scalability:**
+- Support 100,000 concurrent users
+- Handle 1M+ micro-actions per day
+- 99.9% uptime SLA
+- Auto-scaling infrastructure
+
+**Reliability:**
+- Zero data loss guarantee
+- Graceful degradation during outages
+- Offline mode for core features
+- Automatic backup and recovery
+
+---
+
+## 6. Communication Channels Integration
+
+### 6.1 Channel Strategy
+
+**Primary Channels (Launch):**
+1. **Native Push Notifications** - Default, immediate, high engagement
+2. **Email** - Daily summaries, weekly progress reports
+3. **WhatsApp** - For users who prefer messaging apps
+
+**Secondary Channels (Post-launch):**
+4. **SMS** - Fallback for non-smartphone users
+5. **Snapchat** - Younger demographic engagement
+6. **Additional platforms** - Based on user demand
+
+### 6.2 Message Types & Timing
+
+**Pre-Action Messages (Nudges):**
+- Timing: 5-10 minutes before optimal user time
+- Tone: "Ready for your 2-minute win?"
+- Content: Single micro-action, encouragement
+- Frequency: 1-3 per day (configurable)
+
+**During-Action Messages (Support):**
+- Timing: After 30 seconds of inactivity
+- Tone: "You've got this! Just 60 more seconds!"
+- Content: Encouragement, progress indicator
+- Frequency: Max 1 per action
+
+**Post-Action Messages (Celebration):**
+- Timing: Immediately upon completion
+- Tone: "Amazing work! You did it!"
+- Content: Celebration, next micro-action preview
+- Frequency: Every completion
+
+**Summary Messages:**
+- Timing: Evening (8-9 PM) or user preference
+- Tone: "Look at what you accomplished today!"
+- Content: Daily wins, gentle encouragement for tomorrow
+- Frequency: Daily (optional)
+
+### 6.3 Personalization Engine
+
+**Message Customization Factors:**
+- User's preferred tone (cheerful, calm, humorous)
+- Time of day patterns
+- Completion history
+- Current stress level (self-reported)
+- Channel preferences
+- Language and cultural context
+
+**A/B Testing Framework:**
+- Message tone variations
+- Timing optimization
+- Channel effectiveness
+- Call-to-action phrasing
+- Celebration styles
+
+### 6.4 Compliance & Opt-Out
+
+**Legal Requirements:**
+- CAN-SPAM compliance for emails
+- TCPA compliance for SMS
+- GDPR consent for all channels
+- Clear opt-out mechanisms
+- Preference center
+
+**User Control:**
+- Granular channel preferences
+- Frequency controls
+- "Snooze" functionality (1 hour to 1 week)
+- "Vacation mode" without penalty
+- Easy unsubscribe from any channel
+
+---
+
+## 7. UI/UX Principles (Cheerful, Empathetic Design)
+
+### 7.1 Design Philosophy
+
+**Core Principles:**
+1. **Warmth Over Efficiency**: Prioritize emotional comfort over speed
+2. **Gentle Guidance**: Never force, always invite
+3. **Celebration Over Metrics**: Highlight effort, not just completion
+4. **Flexibility**: Adapts to user needs, not vice versa
+5. **Safety**: No shame, no judgment, no failure states
+
+### 7.2 Visual Design System
+
+**Color Palette:**
+- **Primary**: Warm, soft colors
+  - Coral: #FF6B6B (energy, warmth)
+  - Soft Yellow: #FFD93D (optimism)
+  - Mint: #6BCB77 (growth, calm)
+  - Sky Blue: #4D96FF (trust, openness)
+- **Backgrounds**: Warm off-whites (#FFF8F0, #FDF8F5)
+- **Avoid**: Cold blues, harsh reds, dark grays
+
+**Typography:**
+- **Headings**: Rounded, friendly sans-serif (e.g., "Nunito", "Quicksand")
+- **Body**: Readable, warm sans-serif (e.g., "Inter", "Open Sans")
+- **Messages**: Slightly larger, softer fonts for emotional impact
+- **Avoid**: Sharp, technical fonts (no Helvetica, no monospace for body)
+
+**Iconography:**
+- Rounded corners on all icons
+- Soft, friendly shapes
+- Celebratory elements (stars, hearts, confetti)
+- No checkmarks (use stars or hearts instead)
+- Progressive disclosure (no overwhelming icon sets)
+
+### 7.3 Interface Components
+
+**Task Input Screen:**
+- Large, welcoming text input
+- Placeholder: "What's on your mind? (We'll break it down!)"
+- No character limits visible
+- Gentle prompts: "No task too big or too small"
+- Example suggestions: "Write book", "Clean room", "Start exercise"
+
+**Micro-Action Display:**
+- Single action per screen (no overwhelming lists)
+- Large, encouraging text: "Open your book to page 1"
+- Timer option (optional) showing 1-2 minutes
+- "I did it!" button (celebratory)
+- "Not right now" button (no penalty, gentle "That's okay!")
+- "Break this down more" option (always available)
+
+**Progress Visualization:**
+- **No**: Red X's, broken streaks, failure messages
+- **Yes**: Gentle progress bars, stars earned, hearts collected
+- **Visual**: "You've collected 5 stars today!"
+- **Timeline**: Shows attempts and successes (both valued)
+- **No**: Percentage complete (can feel overwhelming)
+
+**Celebration Moments:**
+- Micro-animations (confetti, stars, gentle bouncing)
+- Sound effects (optional, soft and positive)
+- Message: "Amazing! You did a 2-minute action!"
+- No: "Finally!" or "About time!"
+
+### 7.4 Interaction Design
+
+**Button Design:**
+- Rounded corners (12-16px radius)
+- Soft, warm colors
+- Generous padding
+- Clear, encouraging labels:
+  - "Let's do this!" (instead of "Start")
+  - "I'll come back" (instead of "Skip")
+  - "That was fun!" (instead of "Complete")
+
+**Swipe Gestures:**
+- Swipe right: "I did it!" (celebration)
+- Swipe left: "Not right now" (no penalty)
+- Swipe up: "Break this down more"
+- Gentle haptic feedback
+
+**Voice Interactions:**
+- Optional voice input for task entry
+- Voice responses: "You've got this!" (optional)
+- Always optional, never default
+
+### 7.5 Onboarding Experience
+
+**First Launch:**
+1. **Welcome**: "Welcome to SpurTalk! We're so glad you're here."
+2. **Philosophy**: "We break big things into tiny, doable steps. No judgment, just support."
+3. **Example**: Show a 2-minute action example
+4. **Try it**: User enters their first project
+5. **Channel setup**: Choose preferred communication methods
+6. **Tone preference**: Select communication style (cheerful, calm, humorous)
+
+**First Week:**
+- Daily check-ins: "How are you feeling about your tasks today?"
+- Gentle suggestions: "Want to try a 2-minute action?"
+- Celebration of any progress
+- No pressure to use daily
+
+### 7.6 Accessibility
+
+**Visual Accessibility:**
+- High contrast options
+- Large text mode
+- Screen reader support
+- Color-blind friendly palette
+
+**Cognitive Accessibility:**
+- Simple language (8th-grade reading level)
+- No complex navigation
+- Clear, single-purpose screens
+- Option to hide progress metrics
+
+**Motor Accessibility:**
+- Large touch targets (44x44px minimum)
+- Voice control support
+- Keyboard navigation (web)
+- No time-limited interactions
+
+**Neurodiversity Support:**
+- ADHD-friendly: Single focus per screen
+- Anxiety-friendly: No surprise notifications
+- Depression-friendly: Low-pressure mode
+- Autism-friendly: Predictable patterns, clear language
+
+---
+
+## 8. Success Metrics
+
+### 8.1 User Engagement Metrics
+
+**Daily Active Users (DAU):**
+- Target: 30% of registered users
+- Measurement: App open + any interaction
+- Segment: By user persona
+
+**Micro-Actions Completed:**
+- Target: Average 5+ per user per day
+- Measurement: Count of "I did it!" button presses
+- Quality check: Actions should be 1-2 minutes
+
+**Communication Channel Engagement:**
+- Push notification open rate: >40%
+- Email open rate: >25%
+- WhatsApp response rate: >35%
+- Snapchat story views: >50% of followers
+
+**Session Frequency:**
+- Target: 3+ sessions per day per active user
+- Average session length: 3-5 minutes
+- Time to first action: <2 minutes from app open
+
+### 8.2 User Satisfaction Metrics
+
+**Net Promoter Score (NPS):**
+- Target: 70+ (excellent)
+- Measurement: Quarterly surveys
+- Segment: By persona and usage frequency
+
+**Task Completion Rate:**
+- Target: 75% of started micro-actions completed
+- Measurement: Actions started vs. marked complete
+- Note: "Not right now" is not a failure
+
+**Anxiety Reduction:**
+- Target: 80% report reduced task anxiety
+- Measurement: Pre/post surveys (GAD-7 scale)
+- Qualitative feedback collection
+
+**Feature Satisfaction:**
+- Micro-action breakdown: >85% satisfaction
+- Communication tone: >90% satisfaction
+- Multi-channel support: >80% satisfaction
+- Empathetic design: >90% satisfaction
+
+### 8.3 Retention Metrics
+
+**Day 1 Retention:**
+- Target: 60%
+- Measurement: Users returning within 24 hours
+
+**Day 7 Retention:**
+- Target: 45%
+- Measurement: Users returning within 7 days
+
+**Day 30 Retention:**
+- Target: 35%
+- Measurement: Users returning within 30 days
+
+**Month 6 Retention:**
+- Target: 25%
+- Measurement: Long-term engagement
+
+**Churn Analysis:**
+- Track reasons for app abandonment
+- Identify friction points
+- Measure impact of new features on retention
+
+### 8.4 Impact Metrics
+
+**Productivity Impact:**
+- Target: 75% report completing previously avoided projects
+- Measurement: User surveys
+- Qualitative case studies
+
+**Mental Health Impact:**
+- Target: 80% report reduced procrastination-related stress
+- Measurement: Standardized anxiety/depression scales
+- Partner with mental health professionals for validation
+
+**Behavior Change:**
+- Target: 60% develop consistent micro-habits
+- Measurement: Long-term usage patterns
+- Habit formation tracking
+
+**Community Impact:**
+- Target: 1000+ user testimonials
+- Measurement: App store reviews, social media mentions
+- Case studies for marketing
+
+### 8.5 Business Metrics
+
+**Conversion Rate:**
+- Free to paid: 8-12%
+- Trial to paid: 25-30%
+
+**Customer Lifetime Value (CLV):**
+- Target: $50-75 per paid user
+- Measurement: Subscription revenue over time
+
+**Customer Acquisition Cost (CAC):**
+- Target: <$20 per user
+- Measurement: Marketing spend / new users
+
+**CAC/CLV Ratio:**
+- Target: <1:3
+- Measurement: Sustainable growth indicator
+
+### 8.6 Quality Metrics
+
+**App Store Ratings:**
+- Target: 4.5+ stars
+- Measurement: iOS and Android
+- Response rate to reviews: 100%
+
+**Bug Reports:**
+- Target: <1% of sessions
+- Measurement: Crashlytics/Sentry
+- Time to resolution: <48 hours for critical
+
+**Support Tickets:**
+- Target: <5% of users per month
+- Measurement: Help desk system
+- Response time: <4 hours
+
+### 8.7 Ethical Metrics
+
+**Privacy Compliance:**
+- 100% GDPR/CCPA compliance
+- Zero data breaches
+- User data deletion requests: <24 hour turnaround
+
+**Inclusivity:**
+- Representation in marketing: Diverse personas
+- Accessibility score: >90% (WCAG 2.1 AA)
+- Language support: 5+ languages by end of Year 1
+
+**User Safety:**
+- Zero reports of shaming/judgmental language
+- 100% opt-in for all features
+- Easy opt-out: <3 clicks from any screen
+
+---
+
+## 9. Implementation Roadmap
+
+### Phase 1: MVP (Months 1-3)
+
+**Core Features:**
+- Basic project input and micro-action breakdown
+- Native push notifications
+- Email communication
+- Simple progress tracking
+- iOS and Android apps
+
+**Target Metrics:**
+- 1,000 beta users
+- 50% DAU
+- 4+ micro-actions per day
+- NPS 60+
+
+### Phase 2: Enhanced Communication (Months 4-6)
+
+**New Features:**
+- WhatsApp integration
+- Advanced message personalization
+- Multi-channel preference center
+- Enhanced celebration animations
+- Web app (PWA)
+
+**Target Metrics:**
+- 10,000 users
+- 60% DAU
+- 5+ micro-actions per day
+- NPS 65+
+
+### Phase 3: Intelligence & Learning (Months 7-9)
+
+**New Features:**
+- AI-powered learning from user adjustments
+- Template marketplace
+- Smart timing optimization
+- Advanced analytics dashboard
+- Coach/therapist portal
+
+**Target Metrics:**
+- 25,000 users
+- 65% DAU
+- 6+ micro-actions per day
+- NPS 70+
+
+### Phase 4: Social & Community (Months 10-12)
+
+**New Features:**
+- Optional social accountability
+- Buddy system
+- Community templates
+- Snapchat integration
+- Advanced accessibility features
+
+**Target Metrics:**
+- 50,000 users
+- 70% DAU
+- 7+ micro-actions per day
+- NPS 75+
+
+---
+
+## 10. Risks & Mitigation
+
+### Risk 1: AI Breakdown Quality
+**Impact**: High - Poor breakdowns reduce user trust
+**Mitigation**: 
+- Human-in-the-loop for initial training
+- User feedback loop for continuous improvement
+- Fallback to manual breakdown
+- Template library for common projects
+
+### Risk 2: Communication Fatigue
+**Impact**: High - Users may disable notifications
+**Mitigation**:
+- Aggressive user control over frequency
+- Smart timing algorithms
+- "Snooze" and "vacation mode"
+- Quality over quantity (max 3 messages/day)
+
+### Risk 3: Privacy Concerns
+**Impact**: High - Multi-channel requires data sharing
+**Mitigation**:
+- On-device processing where possible
+- Clear privacy policy
+- Granular consent controls
+- No data selling
+- Regular security audits
+
+### Risk 4: Platform Dependency
+**Impact**: Medium - WhatsApp/Snapchat API changes
+**Mitigation**:
+- Multi-channel redundancy
+- Easy channel switching
+- Platform-agnostic core
+- Monitor API changes
+
+### Risk 5: User Acquisition Cost
+**Impact**: Medium - Niche market
+**Mitigation**:
+- Partner with mental health professionals
+- Community building in procrastination forums
+- Content marketing (blog, podcast)
+- Referral incentives
+
+---
+
+## 11. Appendix
+
+### A. Glossary
+
+- **Micro-action**: A task that takes 60-120 seconds to complete
+- **Cheerleader Mode**: SpurTalk's supportive communication style
+- **Gentle Streak**: Progress tracking without penalty for misses
+- **Project Breakdown**: AI-powered decomposition of large tasks
+- **Multi-channel**: Using multiple communication methods
+
+### B. References
+
+- ADHD and procrastination research
+- Behavioral psychology studies on task initiation
+- Anxiety and productivity literature
+- Mobile app engagement studies
+- Privacy-by-design principles
+
+### C. Legal & Compliance
+
+- GDPR compliance checklist
+- CCPA compliance checklist
+- CAN-SPAM requirements
+- TCPA requirements
+- App store guidelines (Apple, Google)
+
+### D. Technical Specifications
+
+- API documentation
+- Database schema
+- Security protocols
+- Integration specifications
+- Performance benchmarks
+
+---
+
+**Document End**
+
+*This PRD represents the comprehensive product vision for SpurTalk. All features, metrics, and timelines are subject to iterative refinement based on user feedback and market validation.*
+
+exec
+/bin/zsh -lc 'cat /Users/morsy/dev/spurtalk/.context/requirements.md | head -200' in /Users/morsy/dev/spurtalk
+exec
+/bin/zsh -lc 'cat /Users/morsy/dev/spurtalk/.context/design.md | head -200' in /Users/morsy/dev/spurtalk
+ succeeded in 165ms:
+# Design Document: SpurTalk Core
+
+## Overview
+
+SpurTalk is a procrastination-friendly project management application built on the "Anti-Guilt" standard. The system transforms traditional productivity tools into empathetic, anti-guilt interfaces that reduce anxiety and decision paralysis. The architecture emphasizes psychological safety through calming design, intelligent task decomposition, and persistent progress visualization.
+
+The application consists of a unified backend API serving both a responsive web application and an Expo-based mobile app. The core innovation lies in AI-powered empathic planning and nano-step task decomposition, designed to lower barriers to task initiation while maintaining user motivation through positive reinforcement.
+
+## Architecture
+
+### System Architecture
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        WEB[Web App<br/>React/TypeScript]
+        MOBILE[Mobile App<br/>Expo/React Native]
+    end
+    
+    subgraph "API Gateway"
+        GATEWAY[API Gateway<br/>Rate Limiting & Auth]
+    end
+    
+    subgraph "Application Layer"
+        API[REST API<br/>Node.js/Express]
+        AUTH[Authentication<br/>JWT + OAuth]
+    end
+    
+    subgraph "AI Services"
+        PLANNER[Empathic Planner<br/>Document Parser]
+        UNBLOCKER[Nano-Step Unblocker<br/>Task Decomposer]
+        OCR[OCR Service<br/>Text Extraction]
+    end
+    
+    subgraph "Data Layer"
+        DB[(PostgreSQL<br/>Primary Database)]
+        REDIS[(Redis<br/>Cache & Sessions)]
+        STORAGE[File Storage<br/>Document Uploads]
+    end
+    
+    subgraph "External Services"
+        AI_API[AI API<br/>OpenAI/Anthropic]
+        PAYMENT[Payment<br/>Stripe]
+        EMAIL[Email<br/>SendGrid]
+    end
+    
+    WEB --> GATEWAY
+    MOBILE --> GATEWAY
+    GATEWAY --> API
+    API --> AUTH
+    API --> PLANNER
+    API --> UNBLOCKER
+    PLANNER --> OCR
+    PLANNER --> AI_API
+    UNBLOCKER --> AI_API
+    API --> DB
+    API --> REDIS
+    API --> STORAGE
+    API --> PAYMENT
+    API --> EMAIL
+```
+
+### Deployment Architecture
+
+```mermaid
+graph TB
+    subgraph "Development"
+        DEV_WEB[Web Dev Server]
+        DEV_MOBILE[Expo Go]
+        DEV_API[Local API]
+        DEV_DB[(Local PostgreSQL)]
+    end
+    
+    subgraph "Render.com Production"
+        PROD_WEB[Web App<br/>Static Hosting]
+        PROD_API[API Container<br/>Docker]
+        PROD_DB[(Managed PostgreSQL)]
+        PROD_REDIS[(Managed Redis)]
+    end
+    
+    subgraph "Mobile Distribution"
+        APP_STORE[iOS App Store]
+        PLAY_STORE[Google Play Store]
+    end
+    
+    subgraph "CI/CD Pipeline"
+        GITHUB[GitHub Actions]
+        DOCKER[Docker Registry]
+        TESTS[Automated Tests]
+    end
+    
+    GITHUB --> TESTS
+    TESTS --> DOCKER
+    DOCKER --> PROD_API
+    GITHUB --> PROD_WEB
+    
+    PROD_API --> PROD_DB
+    PROD_API --> PROD_REDIS
+    
+    EXPO_BUILD[Expo Build Service] --> APP_STORE
+    EXPO_BUILD --> PLAY_STORE
+```
+
+## Components and Interfaces
+
+### UI Stack and Design System
+
+#### Senior UI Architecture Principles
+**Implementation Philosophy**:
+- **Architectural Integrity**: Robust, modular, reusable solutions over temporary patches
+- **Fail Fast & Explicitly**: Expose configuration errors early for easier maintenance
+- **Strict TypeScript**: Enforce `strict` mode for all interfaces, props, and state
+- **Reuse & Modularize**: Aggressively leverage existing components and APIs
+
+**Design System Architecture**:
+- **Design Tokens as Source of Truth**: All visual properties as semantic variables
+- **Dynamic Theming**: Runtime switching support (Light/Dark modes)
+- **4pt Base Spacing Grid**: Strict adherence to 4, 8, 12, 16, 24, 32pt increments
+- **Typography Hierarchy**: Headers (24–32pt), Subheaders (18–22pt), Body (14–16pt), Captions (12–14pt)
+
+**Accessibility & Inclusivity**:
+- **WCAG AA Compliance**: 4.5:1 minimum contrast ratios
+- **Semantic Structure**: Proper HTML tags and ARIA roles
+- **44x44pt Touch Targets**: Minimum interactive element size
+- **Information Redundancy**: Color + icons/text for status communication
+
+#### Web Application UI Stack
+**Framework**: Next.js 14+ (App Router) with TypeScript
+**Styling**: Tailwind CSS 3.4+ with CSS Variables for design tokens
+**Component Library**: Shadcn/ui + Radix UI (Headless accessibility primitives)
+**State Management**: Zustand (Global) + TanStack Query (Server State)
+**Testing**: Jest + React Testing Library
+**Animations**: Framer Motion for smooth transitions
+
+**Design Token Architecture**:
+```typescript
+// Semantic design tokens following UI architect principles
+interface DesignTokens {
+  colors: {
+    // Psychological safety palette mapped to semantic tokens
+    surface: {
+      primary: 'var(--color-cream-100)',    // Primary background
+      secondary: 'var(--color-cream-200)',  // Secondary background
+      elevated: 'var(--color-cream-50)'     // Elevated surfaces
+    },
+    text: {
+      primary: 'var(--color-sage-700)',     // Primary text
+      secondary: 'var(--color-sage-500)',   // Secondary text
+      accent: 'var(--color-lavender-600)'   // Accent text
+    },
+    action: {
+      primary: 'var(--color-teal-500)',     // Primary actions
+      hover: 'var(--color-teal-600)',       // Hover states
+      disabled: 'var(--color-sage-300)'     // Disabled states
+    }
+  },
+  spacing: {
+    1: '4px',   // 4pt base
+    2: '8px',   // 8pt
+    3: '12px',  // 12pt
+    4: '16px',  // 16pt
+    6: '24px',  // 24pt
+    8: '32px'   // 32pt
+  },
+  radius: {
+    sm: '4px',
+    md: '8px',
+    lg: '12px',
+    xl: '16px'
+  }
+}
+```
+
+#### Mobile Application UI Stack
+**Framework**: Expo (React Native) with TypeScript
+**Styling**: StyleSheet with shared design tokens via useTheme() hook
+**Component Library**: React Native Elements + Custom native components
+**Navigation**: React Navigation 6 with custom psychological safety transitions
+**Animations**: React Native Reanimated 3 for 60fps performance
+**Gestures**: React Native Gesture Handler for native interactions
+
+**Cross-Platform Best Practices**:
+- **Stable References**: useRef for mutable values (Animation objects)
+- **Optimized Event Handlers**: useCallback for stable function identity
+- **Safe Animation Management**: Cleanup listeners in useEffect return
+- **Hook-based Theming**: Separate theming from layout for dynamic switching
+
+#### Shared Design System
+**Color Palette** (Psychological Safety Colors following 70/20/10 distribution):
+```typescript
+interface PsychologicalSafetyColors {
+  // 70% Neutral tones (backgrounds, text) - Psychological Safety Priority
+  neutral: {
+    cream: {
+      50: '#fefefe',   // Softest background (never stark white)
+      100: '#faf9f7',  // Primary background (70% usage)
+      200: '#f5f4f1'   // Secondary background
+    },
+    sage: {
+      300: '#a7c4a0',  // Disabled states
+
+ succeeded in 165ms:
+# Requirements Document
+
+## Introduction
+
+SpurTalk is a project management application specifically designed for procrastinators, built on the "Anti-Guilt" standard. The system emphasizes psychological safety, friction reduction, and cognitive offloading while rejecting aggressive alerts and shame-based motivation. The application transforms traditional productivity tools into empathetic, anti-guilt interfaces that reduce anxiety and decision paralysis.
+
+## Glossary
+
+- **System**: The SpurTalk application
+- **Empathic_Planner**: AI agent that parses unstructured input and creates psychologically safe timelines
+- **Nano_Step_Unblocker**: AI agent that decomposes tasks into micro-steps when users are stalled
+- **Focus_Deck**: Card-based interface showing one task at a time to reduce decision paralysis
+- **River_Timeline**: Vertical flowing timeline where immediate tasks are clear and future tasks are blurred
+- **Garden_View**: Visual representation of completed tasks as persistent garden elements
+- **Buffer_Days**: Rest periods automatically inserted before high-stress deadlines
+- **Nano_Steps**: Micro-tasks designed to take less than 2 minutes with zero emotional effort
+- **Fuzzy_Deadline**: User-friendly deadline labels like "Soon" or "This Week" instead of exact dates
+- **Compelling_Event**: AI-generated motivational context for why a task should be completed
+
+## Requirements
+
+### Requirement 1: Task Input and Processing
+
+**User Story:** As a procrastinator, I want to upload unstructured context about my projects, so that the system can automatically organize my tasks without me having to think through the details.
+
+#### Acceptance Criteria
+
+1. WHEN a user uploads a PDF document, THEN THE Empathic_Planner SHALL extract dates and tasks from the content
+2. WHEN a user uploads an email screenshot, THEN THE Empathic_Planner SHALL parse relevant deadlines and action items
+3. WHEN a user submits a voice note, THEN THE Empathic_Planner SHALL transcribe and extract task information
+4. WHEN the system processes any input, THEN THE Empathic_Planner SHALL apply empathy logic to identify high-stress periods
+5. WHEN high-stress clusters are detected, THEN THE Empathic_Planner SHALL automatically insert Buffer_Days before major deadlines
+
+### Requirement 2: Psychological Safety Interface
+
+**User Story:** As a neurodivergent user, I want the interface to use calming colors and encouraging language, so that I feel supported rather than judged when managing my tasks.
+
+#### Acceptance Criteria
+
+1. THE System SHALL use only deep lavenders, sage greens, warm sand, and teal colors in the interface
+2. THE System SHALL use off-white or cream backgrounds and never stark white backgrounds
+3. WHEN displaying overdue items, THE System SHALL never use red coloring or alarmist language
+4. THE System SHALL use rounded, friendly typography throughout the interface
+5. WHEN providing feedback to users, THE System SHALL use warm, forgiving, and encouraging tone
+6. THE System SHALL never display labels such as "Overdue," "Late," or "Urgent"
+
+### Requirement 3: River Timeline Visualization
+
+**User Story:** As a user prone to overwhelm, I want to see my tasks in a flowing timeline where future tasks are less prominent, so that I can focus on immediate priorities without anxiety about the future.
+
+#### Acceptance Criteria
+
+1. THE System SHALL display tasks in a vertical, flowing River_Timeline interface
+2. WHEN displaying immediate tasks, THE System SHALL render them as clear, prominent elements
+3. WHEN displaying future tasks, THE System SHALL render them as blurred or misty elements
+4. WHEN a task deadline is missed, THE System SHALL flow the timeline around it without changing colors to red
+5. THE System SHALL sequence tasks logically based on dependencies
+
+### Requirement 4: Stall Detection and Nano-Step Generation
+
+**User Story:** As someone who gets stuck on tasks, I want the system to automatically detect when I'm stalled and break down tasks into tiny steps, so that I can overcome procrastination paralysis.
+
+#### Acceptance Criteria
+
+1. WHEN a user clicks "I'm Stuck" or "Help me start," THEN THE Nano_Step_Unblocker SHALL activate immediately
+2. WHEN a task remains in "Active" state for more than 24 hours, THEN THE Nano_Step_Unblocker SHALL automatically trigger
+3. WHEN the unblocker activates, THEN THE System SHALL decompose the parent task into 3-5 Nano_Steps
+4. THE first Nano_Step SHALL require less than 2 minutes and zero emotional effort to complete
+5. WHEN Nano_Steps are generated, THE System SHALL display them in Cinema Mode with screen dimming
+
+### Requirement 5: Focus Deck Interface
+
+**User Story:** As someone who experiences decision paralysis with long task lists, I want to see only one task at a time in a card format, so that I can make simple decisions without being overwhelmed.
+
+#### Acceptance Criteria
+
+1. THE System SHALL display tasks in a Focus_Deck card stack showing only the top task
+2. WHEN a user swipes right on a task card, THEN THE System SHALL enter Focus Mode for that task
+3. WHEN a user swipes left on a task card, THEN THE System SHALL move the task to the bottom of the deck
+4. WHEN a user swipes down on a task card, THEN THE System SHALL trigger the Nano_Step_Unblocker
+5. THE System SHALL provide smooth swipe animations for all card interactions
+
+### Requirement 6: Garden Progress Visualization
+
+**User Story:** As someone who needs to see my accomplishments, I want completed tasks to create persistent visual elements, so that my progress doesn't disappear when tasks are checked off.
+
+#### Acceptance Criteria
+
+1. WHEN a tiny task is completed, THEN THE System SHALL generate a flower in the Garden_View
+2. WHEN a big task is completed, THEN THE System SHALL generate a tree in the Garden_View
+3. WHEN a user maintains a completion streak, THEN THE System SHALL increase the sun brightness in the Garden_View
+4. THE Garden_View SHALL persist all visual elements permanently
+5. THE System SHALL display the Garden_View in a footer area accessible from all screens
+
+### Requirement 7: Task Data Management
+
+**User Story:** As a user, I want my tasks to be stored with rich metadata including effort levels and motivational context, so that the system can provide personalized assistance.
+
+#### Acceptance Criteria
+
+1. WHEN a task is created, THE System SHALL assign an effort_level of Tiny, Small, Medium, or Big
+2. WHERE applicable, THE System SHALL tag tasks with emotional_tag of Boring, Scary, or Fun
+3. THE System SHALL assign Fuzzy_Deadline labels while storing actual hard_deadline dates in metadata
+4. WHEN generating tasks, THE Empathic_Planner SHALL create a Compelling_Event string for motivation
+5. THE System SHALL categorize motivation as Relief, Energy, Achievement, or Identity
+
+### Requirement 8: AI Agent Integration
+
+**User Story:** As a user, I want intelligent agents to help parse my documents and break down my tasks, so that I receive personalized assistance without manual configuration.
+
+#### Acceptance Criteria
+
+1. THE Empathic_Planner SHALL analyze uploaded documents and extract key dates and tasks
+2. WHEN creating schedules, THE Empathic_Planner SHALL insert rest days before high-stress periods
+3. THE Empathic_Planner SHALL generate encouraging milestone labels instead of cold task names
+4. THE Nano_Step_Unblocker SHALL focus solely on lowering barriers to task initiation
+5. WHEN decomposing tasks, THE Nano_Step_Unblocker SHALL ensure the first step is impossible to refuse
+
+### Requirement 9: User Authentication and Data Security
+
+**User Story:** As a user, I want secure access to my personal productivity data, so that my tasks and progress are protected and accessible only to me.
+
+#### Acceptance Criteria
+
+1. WHEN a user creates an account, THE System SHALL require secure authentication credentials
+2. THE System SHALL encrypt all user data both in transit and at rest
+3. WHEN a user logs in, THE System SHALL verify their identity before granting access
+4. THE System SHALL provide secure password reset functionality
+5. THE System SHALL comply with data protection regulations for user privacy
+
+### Requirement 10: Data Persistence and Synchronization
+
+**User Story:** As a user who works across multiple devices, I want my tasks and progress to sync seamlessly, so that I can access my productivity system anywhere.
+
+#### Acceptance Criteria
+
+1. WHEN a user makes changes on one device, THE System SHALL synchronize data to all other devices
+2. THE System SHALL handle offline scenarios by queuing changes for later synchronization
+3. WHEN conflicts occur during sync, THE System SHALL resolve them without data loss
+4. THE System SHALL backup user data regularly to prevent loss
+5. THE System SHALL provide data export functionality for user control
+
+### Requirement 11: Performance and Scalability
+
+**User Story:** As a user, I want the application to respond quickly and reliably, so that task capture remains under 3 seconds as promised.
+
+#### Acceptance Criteria
+
+1. WHEN a user creates a task, THE System SHALL complete the action within 3 seconds
+2. THE System SHALL load the main interface within 2 seconds of app launch
+3. WHEN processing AI requests, THE System SHALL provide progress feedback for operations over 5 seconds
+4. THE System SHALL handle at least 10,000 tasks per user without performance degradation
+5. THE System SHALL maintain 99.9% uptime for cloud services
+
+### Requirement 12: Error Handling and Recovery
+
+**User Story:** As a user, I want the system to handle errors gracefully, so that technical issues don't disrupt my productivity flow.
+
+#### Acceptance Criteria
+
+1. WHEN an error occurs, THE System SHALL display user-friendly messages without technical jargon
+2. WHEN network connectivity is lost, THE System SHALL continue functioning in offline mode
+3. WHEN AI services are unavailable, THE System SHALL provide fallback functionality
+4. THE System SHALL automatically retry failed operations with exponential backoff
+5. WHEN data corruption is detected, THE System SHALL restore from the most recent valid backup
+
+### Requirement 13: Accessibility and Inclusivity
+
+**User Story:** As a user with accessibility needs, I want the application to work with assistive technologies, so that I can use all features regardless of my abilities.
+
+#### Acceptance Criteria
+
+1. THE System SHALL provide keyboard navigation for all interactive elements
+2. THE System SHALL include proper ARIA labels for screen readers
+3. THE System SHALL support high contrast mode for visual accessibility
+4. THE System SHALL allow font size adjustment for readability
+5. THE System SHALL provide alternative text for all visual elements in the Garden_View
+
+### Requirement 14: Billing and Subscription Management
+
+**User Story:** As a user, I want transparent and flexible billing options, so that I can access premium features while maintaining control over my subscription.
+
+#### Acceptance Criteria
+
+1. THE System SHALL provide a free tier with core task management functionality
+2. WHEN a user upgrades to premium, THE System SHALL unlock advanced AI features and unlimited document uploads
+3. THE System SHALL process payments securely through established payment providers
+4. WHEN a subscription expires, THE System SHALL gracefully downgrade to free tier without data loss
+5. THE System SHALL provide clear billing history and upcoming charge notifications
+6. THE System SHALL allow users to cancel subscriptions at any time without penalty
+7. WHEN billing issues occur, THE System SHALL provide user-friendly resolution options
+
+### Requirement 15: Analytics and Monitoring
+
+**User Story:** As a product team, we need to monitor application health and user behavior, so that we can maintain service quality and improve the user experience.
+
+#### Acceptance Criteria
+
+1. THE System SHALL log all critical application events for debugging and monitoring
+2. THE System SHALL track performance metrics including response times and error rates
+
+exec
+/bin/zsh -lc 'cat /Users/morsy/dev/spurtalk/backend/prisma/schema.prisma' in /Users/morsy/dev/spurtalk
+ exited 1 in 118ms:
+cat: /Users/morsy/dev/spurtalk/backend/prisma/schema.prisma: No such file or directory
+
+exec
+/bin/zsh -lc 'find /Users/morsy/dev/spurtalk -name "schema.prisma" 2>/dev/null' in /Users/morsy/dev/spurtalk
+exec
+/bin/zsh -lc 'ls -la /Users/morsy/dev/spurtalk/.context/prd/ 2>/dev/null' in /Users/morsy/dev/spurtalk
+ succeeded in 109ms:
+total 0
+drwx------  3 morsy  staff   96 May  1 03:59 .
+drwxr-xr-x  9 morsy  staff  288 May  1 03:59 ..
+drwx------  4 morsy  staff  128 May  1 03:59 notification-system-m1
+
+exec
+/bin/zsh -lc 'find /Users/morsy/dev/spurtalk -name "package.json" -not -path "*/node_modules/*" | head -10' in /Users/morsy/dev/spurtalk
+ succeeded in 4773ms:
+/Users/morsy/dev/spurtalk/node_modules/.prisma/client/schema.prisma
+/Users/morsy/dev/spurtalk/prisma/schema.prisma
+
+ succeeded in 4190ms:
+/Users/morsy/dev/spurtalk/types/package.json
+/Users/morsy/dev/spurtalk/web/.next/standalone/web/.next/package.json
+/Users/morsy/dev/spurtalk/web/.next/standalone/web/package.json
+/Users/morsy/dev/spurtalk/web/.next/package.json
+/Users/morsy/dev/spurtalk/web/.next/dev/package.json
+/Users/morsy/dev/spurtalk/web/.next/dev/build/package.json
+/Users/morsy/dev/spurtalk/web/.next/build/package.json
+/Users/morsy/dev/spurtalk/web/package.json
+/Users/morsy/dev/spurtalk/backend/package.json
+/Users/morsy/dev/spurtalk/shared/package.json
+
+exec
+/bin/zsh -lc 'cat /Users/morsy/dev/spurtalk/prisma/schema.prisma' in /Users/morsy/dev/spurtalk
+exec
+/bin/zsh -lc 'cat /Users/morsy/dev/spurtalk/backend/package.json' in /Users/morsy/dev/spurtalk
+ succeeded in 122ms:
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String     @map("password_hash")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  preferences  Json       @default("{}")
+  subscription Json       @default("{}")
+  gardenState  Json       @default("{}") @map("garden_state")
+  documents    Document[]
+  tasks        Task[]
+  timelines    Timeline[]
+
+  @@map("users")
+}
+
+model Task {
+  id                 String    @id @default(uuid())
+  userId             String    @map("user_id")
+  title              String
+  description        String?
+  effortLevel        String    @map("effort_level")
+  emotionalTag       String?   @map("emotional_tag")
+  fuzzyDeadline      String?   @map("fuzzy_deadline")
+  hardDeadline       DateTime? @map("hard_deadline")
+  compellingEvent    String?   @map("compelling_event")
+  motivationCategory String?   @map("motivation_category")
+  state              String    @default("Deck")
+  nanoSteps          Json      @default("[]") @map("nano_steps")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  completedAt        DateTime? @map("completed_at")
+  stallDetectedAt    DateTime? @map("stall_detected_at")
+  parentTaskId       String?   @map("parent_task_id")
+  dependencies       Json      @default("[]") @map("dependencies")
+  tags               Json      @default("[]") @map("tags")
+  deckOrder          Int?      @default(0) @map("deck_order")
+  parentTask         Task?     @relation("TaskHierarchy", fields: [parentTaskId], references: [id])
+  subtasks           Task[]    @relation("TaskHierarchy")
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([state])
+  @@index([hardDeadline])
+  @@map("tasks")
+}
+
+model Document {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  filename         String
+  fileType         String   @map("file_type")
+  fileSize         Int      @map("file_size")
+  uploadedAt       DateTime @default(now()) @map("uploaded_at")
+  processingStatus String   @default("pending") @map("processing_status")
+  extractedText    String?  @map("extracted_text")
+  parsedTasks      Json     @default("[]") @map("parsed_tasks")
+  confidence       Decimal? @db.Decimal(3, 2)
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([processingStatus])
+  @@map("documents")
+}
+
+model Timeline {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  tasks          Json     @default("[]")
+  bufferDays     Json     @default("[]") @map("buffer_days")
+  stressClusters Json     @default("[]") @map("stress_clusters")
+  generatedAt    DateTime @default(now()) @map("generated_at")
+  lastModified   DateTime @updatedAt @map("last_modified")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("timelines")
+}
+
+model WaitlistEntry {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("waitlist_entries")
+}
+
+ succeeded in 117ms:
+{
+  "name": "@spurtalk/backend",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@prisma/client": "6.2.1",
+    "@spurtalk/shared": "*",
+    "@spurtalk/types": "*",
+    "@types/multer": "^2.0.0",
+    "@types/pdf-parse": "^1.1.5",
+    "axios": "^1.13.5",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.4",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "form-data": "^4.0.5",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "mammoth": "^1.11.0",
+    "multer": "^2.0.2",
+    "openai": "^6.18.0",
+    "pdf-parse": "^2.4.5",
+    "pg": "^8.18.0",
+    "redis": "^5.10.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^25.2.2",
+    "@types/pg": "^8.16.0",
+    "@types/redis": "^4.0.11",
+    "@types/supertest": "^6.0.3",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
+    "fast-check": "^4.5.3",
+    "jest": "^30.2.0",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0"
+  }
+}
+exec
+/bin/zsh -lc 'ls -la /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1/' in /Users/morsy/dev/spurtalk
+ succeeded in 115ms:
+total 128
+drwx------  4 morsy  staff    128 May  1 03:59 .
+drwx------  3 morsy  staff     96 May  1 03:59 ..
+drwx------  3 morsy  staff     96 May  1 03:59 logs
+-rw-------  1 morsy  staff  61785 May  1 04:05 orchestration.log
+
+exec
+/bin/zsh -lc 'cat /Users/morsy/dev/spurtalk/backend/src/index.ts' in /Users/morsy/dev/spurtalk
+exec
+/bin/zsh -lc 'cat /Users/morsy/dev/spurtalk/backend/src/routes/tasks.ts' in /Users/morsy/dev/spurtalk
+ succeeded in 123ms:
+import dotenv from "dotenv";
+dotenv.config({ quiet: true });
+
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import authRoutes from "./routes/auth";
+import taskRoutes from "./routes/tasks";
+import timelineRoutes from "./routes/timeline";
+import gardenRoutes from "./routes/garden";
+import unblockerRoutes from "./routes/unblocker";
+import documentRoutes from "./routes/documents";
+import cardRoutes from "./routes/cardRoutes";
+import waitlistRoutes from "./routes/waitlist";
+import { apiLimiter, authLimiter } from "./middleware/rateLimit";
+
+const app = express();
+
+// Trust proxy if behind a load balancer (like in production or some dev setups)
+app.set("trust proxy", 1);
+
+// Request logging - simplified for development
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`);
+  next();
+});
+
+const PORT = process.env.PORT || 7101;
+
+// Security headers
+app.use(helmet({ contentSecurityPolicy: false }));
+
+// CORS configuration
+app.use(cors({ origin: true, credentials: true }));
+
+// Body parsing
+app.use(express.json({ limit: "10mb" })); // Limit body size
+
+// Rate limiting
+// Order matters: specific ones first
+app.use("/api/auth", authLimiter);
+app.use("/api", apiLimiter);
+
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+app.use("/api/auth", authRoutes);
+app.use("/api/tasks", taskRoutes);
+app.use("/api/timeline", timelineRoutes);
+app.use("/api/garden", gardenRoutes);
+app.use("/api/unblocker", unblockerRoutes);
+app.use("/api/documents", documentRoutes);
+app.use("/api/cards", cardRoutes);
+app.use("/api/waitlist", waitlistRoutes);
+
+// Export app for testing
+if (process.env.NODE_ENV === "test") {
+  module.exports = app;
+} else {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+ succeeded in 115ms:
+import { Router, Response } from "express";
+import { taskService } from "../services/task";
+import { authenticateToken, AuthRequest } from "../middleware/auth";
+import { CreateTaskSchema, UpdateTaskSchema } from "@spurtalk/shared";
+import { z } from "zod";
+
+const router = Router();
+
+router.use(authenticateToken);
+
+router.post("/", async (req: AuthRequest, res: Response) => {
+  try {
+    const validatedData = CreateTaskSchema.parse(req.body);
+    const task = await taskService.createTask(req.userId!, validatedData);
+    res.status(201).json(task);
+  } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.issues });
+    }
+    const message = error instanceof Error ? error.message : "Failed to create task";
+    console.error("Failed to create task:", error);
+    res.status(500).json({ error: message });
+  }
+});
+
+router.get("/deck", async (req: AuthRequest, res: Response) => {
+  try {
+    const deck = await taskService.getDeck(req.userId!);
+    res.json(deck);
+  } catch (error) {
+    console.error("Failed to fetch focus deck:", error);
+    res.status(500).json({ error: "Failed to fetch focus deck" });
+  }
+});
+
+router.post("/deck/:id/swipe", async (req: AuthRequest, res: Response) => {
+  try {
+    const { direction } = req.body;
+    if (!["right", "left", "down"].includes(direction)) {
+      return res.status(400).json({ error: "Invalid swipe direction" });
+    }
+
+    const task = await taskService.handleSwipe(
+      req.userId!,
+      req.params.id as string,
+      direction
+    );
+    res.json(task);
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === "Task not found") {
+      return res.status(404).json({ error: error.message });
+    }
+    if (error instanceof Error && error.message === "Task is not in Deck state") {
+      return res.status(400).json({ error: error.message });
+    }
+    res.status(500).json({ error: "Failed to process swipe" });
+  }
+});
+
+router.get("/", async (req: AuthRequest, res: Response) => {
+  try {
+    const tasks = await taskService.getTasks(req.userId!, {
+      state: req.query.state as string,
+    });
+    res.json(tasks);
+  } catch (error) {
+    console.error("Failed to fetch tasks:", error);
+    res.status(500).json({ error: "Failed to fetch tasks" });
+  }
+});
+
+router.get("/:id", async (req: AuthRequest, res: Response) => {
+  try {
+    const task = await taskService.getTask(req.userId!, req.params.id as string);
+    res.json(task);
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === "Task not found") {
+      return res.status(404).json({ error: error.message });
+    }
+    res.status(500).json({ error: "Failed to fetch task" });
+  }
+});
+
+router.put("/:id", async (req: AuthRequest, res: Response) => {
+  try {
+    const validatedData = UpdateTaskSchema.parse(req.body);
+    const task = await taskService.updateTask(
+      req.userId!,
+      req.params.id as string,
+      validatedData
+    );
+    res.json(task);
+  } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.issues });
+    }
+    if (error instanceof Error && error.message === "Task not found") {
+      return res.status(404).json({ error: error.message });
+    }
+    const message = error instanceof Error ? error.message : "Failed to update task";
+    res.status(500).json({ error: message });
+  }
+});
+
+router.delete("/:id", async (req: AuthRequest, res: Response) => {
+  try {
+    await taskService.deleteTask(req.userId!, req.params.id as string);
+    res.status(204).send();
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === "Task not found") {
+      return res.status(404).json({ error: error.message });
+    }
+    res.status(500).json({ error: "Failed to delete task" });
+  }
+});
+
+router.get("/:id/plan", async (req: AuthRequest, res: Response) => {
+  try {
+    const plan = await taskService.planSubtasks(
+      req.userId!,
+      req.params.id as string
+    );
+    res.json(plan);
+  } catch (error) {
+    console.error("Failed to plan subtasks:", error);
+    res.status(500).json({ error: "Failed to plan subtasks" });
+  }
+});
+
+router.post("/:id/subtasks", async (req: AuthRequest, res: Response) => {
+  try {
+    const { subtasks, strategy } = req.body;
+    const createdTasks = await taskService.createSubtasks(
+      req.userId!,
+      req.params.id as string,
+      subtasks,
+      strategy
+    );
+    res.status(201).json(createdTasks);
+  } catch (error) {
+    console.error("Failed to create subtasks:", error);
+    res.status(500).json({ error: "Failed to create subtasks" });
+  }
+});
+
+export default router;
+
+exec
+/bin/zsh -lc 'cat /Users/morsy/dev/spurtalk/backend/src/services/task.ts | head -80' in /Users/morsy/dev/spurtalk
+ succeeded in 121ms:
+import { prisma } from "../lib/prisma";
+import { Task } from "@prisma/client";
+import { CreateTask, UpdateTask, UserPreferences } from "@spurtalk/shared";
+import { aiService } from "./ai";
+import { unblockerService } from "./unblocker";
+
+export class TaskService {
+  async createTask(userId: string, data: CreateTask) {
+    // Validate that dependencies exist and belong to user
+    if (data.dependencies && data.dependencies.length > 0) {
+      const count = await prisma.task.count({
+        where: {
+          id: { in: data.dependencies },
+          userId,
+        },
+      });
+      if (count !== data.dependencies.length) {
+        throw new Error("Invalid dependencies");
+      }
+    }
+
+    let compellingEvent = data.compellingEvent;
+    if (!compellingEvent && data.motivationCategory) {
+      compellingEvent = await aiService.generateCompellingEvent(
+        data.title,
+        data.motivationCategory
+      );
+    }
+
+    const task = await prisma.task.create({
+      data: {
+        userId,
+        title: data.title,
+        description: data.description,
+        effortLevel: data.effortLevel,
+        emotionalTag: data.emotionalTag,
+        fuzzyDeadline: data.fuzzyDeadline ?? null,
+        hardDeadline: data.hardDeadline ?? null,
+        compellingEvent: data.compellingEvent ?? null,
+        motivationCategory: data.motivationCategory ?? null,
+        dependencies: data.dependencies || [],
+        tags: data.tags || [],
+        parentTaskId: data.parentTaskId ?? null,
+        state: "Deck",
+      } as any,
+      include: {
+        subtasks: true,
+        parentTask: true,
+      },
+    });
+
+    if (data.parentTaskId) {
+      await this.updateTask(userId, data.parentTaskId, { state: "Tracking" });
+    }
+
+    return task;
+  }
+
+  async createSubtasks(
+    userId: string,
+    parentTaskId: string,
+    subtasks: CreateTask[],
+    strategy: "replace" | "supplement" = "supplement"
+  ) {
+    // Ensure parent exists and user owns it
+    await this.getTask(userId, parentTaskId);
+
+    if (strategy === "replace") {
+      // Wipe existing subtasks
+      await prisma.task.deleteMany({
+        where: { parentTaskId, userId },
+      });
+    }
+
+    const createdSubtasks = await Promise.all(
+      subtasks.map((data) =>
+        prisma.task.create({
+          data: {
+            userId,
+            title: data.title,
+
+exec
+/bin/zsh -lc 'cat /Users/morsy/dev/spurtalk/backend/src/middleware/auth.ts' in /Users/morsy/dev/spurtalk
+ succeeded in 121ms:
+import { Request, Response, NextFunction } from "express";
+import { authService } from "../services/auth";
+
+export interface AuthRequest extends Request {
+  userId?: string;
+}
+
+export function authenticateToken(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) {
+  const authHeader = req.headers.authorization;
+  const headerValue = Array.isArray(authHeader) ? authHeader[0] : authHeader;
+
+  if (!headerValue || !headerValue.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const token = headerValue.substring(7);
+  const decoded = authService.verifyAccessToken(token);
+
+  if (!decoded) {
+    return res.status(401).json({ error: "Invalid token" });
+  }
+
+  req.userId = decoded.userId;
+  next();
+}
+
+exec
+/bin/zsh -lc 'cat /Users/morsy/dev/spurtalk/backend/src/services/garden.ts' in /Users/morsy/dev/spurtalk
+ succeeded in 122ms:
+import { PrismaClient } from "@prisma/client";
+import { GardenState, GardenElement } from "@spurtalk/shared";
+import { prisma } from "../lib/prisma";
+import type { Prisma } from "@prisma/client";
+
+export class GardenService {
+  async getGardenState(userId: string): Promise<GardenState> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { gardenState: true },
+    });
+
+    if (!user) throw new Error("User not found");
+
+    return user.gardenState as unknown as GardenState;
+  }
+
+  async processTaskCompletion(
+    userId: string,
+    taskId: string
+  ): Promise<GardenState> {
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+    });
+
+    if (!task || task.userId !== userId) throw new Error("Task not found");
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { gardenState: true },
+    });
+
+    if (!user) throw new Error("User not found");
+
+    let state = user.gardenState as unknown as GardenState;
+
+    // Initialize if empty
+    if (!state || !state.elements) {
+      state = {
+        userId,
+        elements: [],
+        sunBrightness: 0.5,
+        currentStreak: 0,
+        longestStreak: 0,
+        totalFlowers: 0,
+        totalTrees: 0,
+        lastUpdated: new Date(),
+      };
+    }
+
+    // Determine element type based on effort (Requirement 6.1, 6.2)
+    const type =
+      task.effortLevel === "Big" || task.effortLevel === "Medium"
+        ? "tree"
+        : "flower";
+
+    // Create new element
+    const newElement: GardenElement = {
+      id: crypto.randomUUID(),
+      type,
+      position: this.calculateNextPosition(state.elements.length), // Simple grid layout for now
+      size: type === "tree" ? 2 : 1,
+      color: this.getRandomPsychologicalSafetyColor(),
+      taskId,
+      createdAt: new Date(),
+    };
+
+    // Update stats
+    state.elements.push(newElement);
+    if (type === "tree") state.totalTrees++;
+    else state.totalFlowers++;
+
+    // Update streak (Requirement 6.3)
+    // Basic daily streak logic: check if lastUpdated was yesterday or today
+    const now = new Date();
+    const lastUpdate = new Date(state.lastUpdated);
+    const diffHours = (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60);
+
+    if (diffHours < 24 && now.getDate() !== lastUpdate.getDate()) {
+      // Completed task on a new consecutive day
+      state.currentStreak++;
+    } else if (diffHours >= 48) {
+      // Streak broken
+      state.currentStreak = 1;
+    } else if (state.currentStreak === 0) {
+      state.currentStreak = 1;
+    }
+
+    state.longestStreak = Math.max(state.currentStreak, state.longestStreak);
+
+    // Sun brightness increases with streak (Requirement 6.3)
+    // Max brightness 1.0, min 0.5, +0.1 per streak day
+    state.sunBrightness = Math.min(0.5 + state.currentStreak * 0.1, 1.0);
+
+    state.lastUpdated = now;
+
+    // Persist
+    await prisma.user.update({
+      where: { id: userId },
+      data: { gardenState: state as unknown as Prisma.InputJsonValue },
+    });
+
+    return state;
+  }
+
+  private calculateNextPosition(index: number) {
+    // Simple spiral or grid logic placeholder
+    // x, y coordinates
+    const rowLength = 5;
+    return {
+      x: (index % rowLength) * 20,
+      y: Math.floor(index / rowLength) * 20,
+    };
+  }
+
+  private getRandomPsychologicalSafetyColor() {
+    // Requirement 2.1: deep lavenders, sage greens, warm sand, teal
+    const colors = [
+      "#8b7cf6", // Lavender
+      "#10b981", // Sage
+      "#f59e0b", // Sand
+      "#14b8a6", // Teal
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
+  }
+}
+
+export const gardenService = new GardenService();
+
+exec
+/bin/zsh -lc 'ls /Users/morsy/dev/spurtalk/shared/src/ 2>/dev/null && cat /Users/morsy/dev/spurtalk/shared/src/index.ts 2>/dev/null' in /Users/morsy/dev/spurtalk
+ succeeded in 176ms:
+index.d.ts
+index.d.ts.map
+index.js
+index.test.ts
+index.ts
+types.d.ts
+import { z } from "zod";
+
+// Export types from types.d.ts
+export type {
+  Card,
+  CardInput,
+  ChecklistItem,
+  ParentTask,
+  EmotionTag,
+  CardLifecycleState,
+} from "./types";
+
+export const UserPreferencesSchema = z
+  .object({
+    stallDetectionTimeout: z.number().min(1).max(168).default(24),
+    colorPalette: z.enum(["default", "high_contrast"]).default("default"),
+    fuzzyDeadlineLabels: z
+      .object({
+        soon: z.number().default(2),
+        thisWeek: z.number().default(7),
+        eventually: z.number().default(30),
+      })
+      .default({
+        soon: 2,
+        thisWeek: 7,
+        eventually: 30,
+      }),
+    notificationSettings: z
+      .object({
+        taskReminders: z.boolean().default(true),
+        stallDetection: z.boolean().default(true),
+        milestoneCelebrations: z.boolean().default(true),
+      })
+      .default({
+        taskReminders: true,
+        stallDetection: true,
+        milestoneCelebrations: true,
+      }),
+    timezone: z.string().default("UTC"),
+  })
+  .default({
+    stallDetectionTimeout: 24,
+    colorPalette: "default",
+    fuzzyDeadlineLabels: { soon: 2, thisWeek: 7, eventually: 30 },
+    notificationSettings: {
+      taskReminders: true,
+      stallDetection: true,
+      milestoneCelebrations: true,
+    },
+    timezone: "UTC",
+  });
+
+export const TaskSchema = z.object({
+  title: z.string().min(1).max(500),
+  description: z.string().optional(),
+  effortLevel: z.enum(["Tiny", "Small", "Medium", "Big"]),
+  emotionalTag: z.enum(["Boring", "Scary", "Fun", "Hard"]).optional(),
+  fuzzyDeadline: z.enum(["Soon", "This Week", "Eventually"]),
+  hardDeadline: z
+    .string()
+    .or(z.date())
+    .transform((val) => new Date(val)),
+  compellingEvent: z.string().optional(),
+  motivationCategory: z
+    .enum(["Relief", "Energy", "Achievement", "Identity"])
+    .optional(),
+  dependencies: z.array(z.string()).default([]),
+  tags: z.array(z.string()).default([]),
+  deckOrder: z.number().optional(),
+  parentTaskId: z.string().optional(),
+});
+
+export const NanoStepSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  estimatedSeconds: z.number().max(120), // Max 2 minutes as per req
+  emotionalEffort: z.enum(["zero", "minimal"]),
+  isCompleted: z.boolean(),
+  parentTaskId: z.string(),
+  generatedByAI: z.boolean().optional(),
+});
+
+export type Task = z.infer<typeof TaskSchema> & {
+  id: string;
+  userId: string;
+  state:
+  | "Deck"
+  | "River"
+  | "Garden"
+  | "Stalled"
+  | "Active"
+  | "Completed"
+  | "Tracking";
+  nanoSteps: NanoStep[];
+  subtasks?: Task[];
+  parentTask?: Task;
+  createdAt: Date;
+  updatedAt: Date;
+  deckOrder?: number;
+};
+
+export const TaskResponseSchema: z.ZodType<Task> = TaskSchema.extend({
+  id: z.string(),
+  userId: z.string(),
+  state: z.enum([
+    "Deck",
+    "River",
+    "Garden",
+    "Stalled",
+    "Active",
+    "Completed",
+    "Tracking",
+  ]),
+  nanoSteps: z.array(NanoStepSchema).default([]),
+  subtasks: z.array(z.lazy(() => TaskResponseSchema)).optional(),
+  parentTask: z.lazy(() => TaskResponseSchema).optional(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  deckOrder: z.number().optional(),
+}) as z.ZodType<Task>;
+
+export const CreateTaskSchema = z
+  .object({
+    title: z
+      .string()
+      .min(1, "Give your card a title")
+      .max(
+        500,
+        "Keep the title under 500 characters - you can add more details in the description"
+      ),
+    description: z
+      .string()
+      .max(
+        2000,
+        "Description is a bit long - try keeping it under 2000 characters"
+      )
+      .optional(),
+    effortLevel: z.enum(["Tiny", "Small", "Medium", "Big"], {
+      message: "Let us know how big this feels",
+    }),
+    emotionalTag: z.enum(["Boring", "Scary", "Fun", "Hard"]).optional(),
+    fuzzyDeadline: z.enum(["Soon", "This Week", "Eventually"]).optional(),
+    hardDeadline: z
+      .string()
+      .or(z.date())
+      .transform((val) => new Date(val))
+      .optional(),
+    tags: z
+      .union([
+        z.array(z.string()),
+        z.string().transform((val) => val.split(",").map((t) => t.trim())),
+      ])
+      .default([]),
+  })
+  .extend({
+    dependencies: z.array(z.string()).optional(),
+    compellingEvent: z.string().optional(),
+    motivationCategory: z
+      .enum(["Relief", "Energy", "Achievement", "Identity"])
+      .optional(),
+    parentTaskId: z.string().optional(),
+  })
+  .refine((data) => !(data.fuzzyDeadline && data.hardDeadline), {
+    message: "Choose either a flexible timeframe or a specific date - not both",
+    path: ["fuzzyDeadline"],
+  })
+  .refine((data) => !data.hardDeadline || data.hardDeadline > new Date(), {
+    message:
+      "Pick a date in the future so you have time to work on it",
+    path: ["hardDeadline"],
+  });
+
+export const UpdateTaskSchema = TaskSchema.partial().extend({
+  state: z
+    .enum([
+      "Deck",
+      "River",
+      "Garden",
+      "Stalled",
+      "Active",
+      "Completed",
+      "Tracking",
+    ])
+    .optional(),
+  nanoSteps: z.array(NanoStepSchema).optional(),
+});
+
+export type UserPreferences = z.infer<typeof UserPreferencesSchema>;
+export type CreateTask = z.infer<typeof CreateTaskSchema>;
+export type UpdateTask = z.infer<typeof UpdateTaskSchema>;
+export type NanoStep = z.infer<typeof NanoStepSchema>;
+
+export interface Timeline {
+  id: string;
+  userId: string;
+  tasks: TimelineTask[];
+  bufferDays: BufferDay[];
+  stressClusters: StressCluster[];
+  generatedAt: Date;
+  lastModified: Date;
+}
+
+export interface TimelineTask {
+  taskId: string;
+  title: string;
+  position: number;
+  renderStyle: "clear" | "blurred" | "misty";
+  scheduledDate: Date;
+  dependencies: string[];
+  effortLevel: "Tiny" | "Small" | "Medium" | "Big";
+  emotionalTag?: "Boring" | "Scary" | "Fun" | "Hard";
+  nanoSteps: NanoStep[];
+}
+
+export interface BufferDay {
+  date: Date;
+  reason: string;
+  isInserted: boolean;
+}
+
+export interface StressCluster {
+  startDate: Date;
+  endDate: Date;
+  severity: "low" | "medium" | "high";
+  taskCount: number;
+}
+
+export interface GardenState {
+  userId: string;
+  elements: GardenElement[];
+  sunBrightness: number;
+  currentStreak: number;
+  longestStreak: number;
+  totalFlowers: number;
+  totalTrees: number;
+  lastUpdated: Date;
+}
+
+export interface GardenElement {
+  id: string;
+  type: "flower" | "tree" | "sun";
+  position: { x: number; y: number };
+  size: number;
+  color: string;
+  taskId: string;
+  createdAt: Date;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  preferences: UserPreferences;
+  gardenState: GardenState;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+exec
+/bin/zsh -lc 'cat /Users/morsy/dev/spurtalk/backend/src/services/unblocker.ts' in /Users/morsy/dev/spurtalk
+exec
+/bin/zsh -lc 'cat /Users/morsy/dev/spurtalk/backend/src/test/setup.ts' in /Users/morsy/dev/spurtalk
+ succeeded in 233ms:
+import { PrismaClient, type Prisma } from "@prisma/client";
+import { NanoStep } from "@spurtalk/shared";
+import { aiService } from "./ai";
+import { prisma } from "../lib/prisma";
+
+export class UnblockerService {
+  async detectStalls(userId: string): Promise<string[]> {
+    // ... same as before
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { preferences: true },
+    });
+
+    const timeoutHours =
+      (user?.preferences as Prisma.JsonObject | null)?.stallDetectionTimeout as number || 24;
+    const timeoutDate = new Date(Date.now() - timeoutHours * 60 * 60 * 1000);
+
+    const stalledTasks = await prisma.task.findMany({
+      where: {
+        userId,
+        state: "Active",
+        updatedAt: {
+          lt: timeoutDate,
+        },
+        stallDetectedAt: null,
+      },
+    });
+
+    const stalledIds: string[] = [];
+
+    for (const task of stalledTasks) {
+      await prisma.task.update({
+        where: { id: task.id },
+        data: {
+          stallDetectedAt: new Date(),
+          state: "Stalled",
+        },
+      });
+      stalledIds.push(task.id);
+    }
+
+    return stalledIds;
+  }
+
+  async decomposeTask(userId: string, taskId: string): Promise<NanoStep[]> {
+    const task = await prisma.task.findFirst({
+      where: { id: taskId, userId },
+    });
+
+    if (!task) throw new Error("Task not found");
+
+    // Requirement 4.3: Decompose into 3-5 Nano_Steps using AI
+    const aiSteps = await aiService.decomposeTask(task.title, task.description);
+
+    const steps: NanoStep[] = aiSteps.map((step) => ({
+      id: crypto.randomUUID(),
+      text: step.text,
+      estimatedSeconds: step.estimatedSeconds,
+      emotionalEffort: step.emotionalEffort,
+      isCompleted: false,
+      parentTaskId: taskId,
+      generatedByAI: true,
+    }));
+
+    await prisma.task.update({
+      where: { id: taskId },
+      data: {
+        nanoSteps: steps as unknown as Prisma.InputJsonValue,
+        // stay in Deck state so user can decide to snooze or start
+      },
+    });
+
+    return steps;
+  }
+}
+
+export const unblockerService = new UnblockerService();
+
+ succeeded in 213ms:
+import dotenv from "dotenv";
+import path from "path";
+dotenv.config({ path: path.join(__dirname, "../../.env") });
+
+import { pool, redisClient } from "../config/database";
+
+jest.setTimeout(15000);
+
+beforeAll(async () => {
+  // Ensure we start with a clean state if possible, or just connect
+  try {
+    // pool.connect() returns a client, we just want to ensure pool is ready?
+    // actually pool manages itself. We don't strictly need to "connect" the pool globally
+    // but the tests expect 'pool' to be usable.
+    // The previous code did pool.connect() which checks out a client then discards it.
+    // That might leave a client checked out if not released?
+    // Yes! `await pool.connect()` checks out a client. If we don't release it, it hangs?
+    // Let's check pool usage.
+
+    // Actually, for Redis:
+    if (!redisClient.isOpen) {
+      await redisClient.connect();
+    }
+  } catch (e) {
+    console.error("Setup connection error", e);
+  }
+});
+
+afterAll(async () => {
+  try {
+    if (redisClient.isOpen) {
+      await redisClient.quit();
+    }
+    // pool.end() closes all clients.
+    await pool.end();
+  } catch (e) {
+    console.error("Teardown error", e);
+  }
+});
+
+exec
+/bin/zsh -lc 'cat /Users/morsy/dev/spurtalk/.context/tasks.md | head -150' in /Users/morsy/dev/spurtalk
+exec
+/bin/zsh -lc 'cat /Users/morsy/dev/spurtalk/.context/journal.md' in /Users/morsy/dev/spurtalk
+ succeeded in 222ms:
+# Project Journal: Compliance & Evolution
+
+## Status Check (2026-01-31)
+
+I have conducted a comprehensive audit of the backend implementation against the requirements defined in `.context/requirements.md` and `.context/design.md`.
+
+### ✅ Requirements Met
+- **Requirement 1.4 & 1.5 (Empathic Planning)**: `TimelineService` now correctly detects "Stress Clusters" (4+ high-effort tasks in proximity) and automatically inserts "Buffer Days" (rest periods) before major deadlines.
+- **Requirement 4.3 & 4.4 (Nano-Step Generation)**: `UnblockerService` and `AiService` now use Gemini Flash to decompose tasks into 3-5 steps. The first step is explicitly forced to be < 2 minutes and "zero effort" to lower initiation barriers.
+- **Requirement 5.4 (Focus Deck Interaction)**: Swipe down on a task card now correctly triggers the AI decomposer while keeping the task in the "Deck" state for user review.
+- **Requirement 6.1, 6.2 & 6.4 (Garden View)**: `GardenService` correctly generates elements (flowers/trees) based on task size and persists them in the `users.garden_state` JSON field.
+- **Requirement 7+ (Rich Metadata)**: All tasks now store AI-generated `compelling_event` strings and `motivation_category` (Achievement, Social, Joy, Relief).
+
+### ⚠️ Gaps Identified
+- **Requirement 1.3 (Voice Note Transcription)**: The `DocumentService` currently lacks audio processing logic. Transcribing and extracting tasks from voice notes is not yet implemented.
+- **Requirement 4.5 (Cinema Mode UI Trigger)**: While the backend provides nano-steps, there is no explicit `cinema_mode` flag. The system relies on the frontend to trigger this mode when nano-steps are present.
+
+### 🚀 Additions & Refinements
+- **Data Portability (Compliance)**: Implemented `GET /api/auth/export-data` to allow users to export their entire history (tasks, documents, preferences) in a sanitized, machine-readable format.
+- **Centralized AiService**: Refactored all LLM logic from individual services into a dedicated `AiService` to ensure prompt consistency and anti-guilt tone management.
+- **Test Baseline**: Established 100% pass rate for property tests and 100% coverage for the new empathic services.
+
+---
+*End of Entry - Antigravity*
+
+ succeeded in 225ms:
+# Implementation Plan: SpurTalk Core
+
+## Overview
+
+This implementation plan transforms the SpurTalk design into a series of incremental development tasks. The approach prioritizes core functionality first, followed by AI integration, then advanced features. Each task builds on previous work and includes comprehensive testing to ensure reliability and correctness.
+
+The implementation uses TypeScript for both backend (Node.js) and frontend (Next.js/Expo), with PostgreSQL for data persistence and Redis for caching. The web application uses Next.js 14+ with Shadcn/ui + Radix UI components, while mobile uses Expo with React Native Elements. State management is handled by Zustand for global state and TanStack Query for server state. Property-based testing with fast-check validates universal correctness properties, while Jest and unit tests cover specific examples and edge cases.
+
+## Tasks
+
+- [ ] 1. Project Setup and Infrastructure Foundation
+  - Initialize monorepo structure with backend API and shared types
+  - Set up PostgreSQL database with initial schema
+  - Configure Redis for caching and sessions
+  - Set up Docker containers for development environment
+  - Configure TypeScript, ESLint, and Prettier
+  - Set up testing framework (Jest) and property-based testing (fast-check)
+  - _Requirements: 19.1, 19.3, 21.1_
+
+- [ ] 1.1 Write infrastructure validation tests
+  - Test database connection and schema validation
+  - Test Redis connectivity and basic operations
+  - Test Docker container health checks
+  - _Requirements: 19.1, 21.1_
+
+- [ ] 2. Core Data Models and Database Layer
+  - [ ] 2.1 Implement User model with authentication schema
+    - Create User entity with preferences and garden state
+    - Implement password hashing and JWT token management
+    - Add user registration and login endpoints
+    - _Requirements: 9.1, 9.3, 7.1_
+
+  - [ ] 2.2 Write property test for user authentication
+    - **Property 1: Authentication round trip**
+    - **Validates: Requirements 9.1, 9.3**
+
+  - [ ] 2.3 Implement Task model with rich metadata
+    - Create Task entity with effort levels, emotional tags, and motivation
+    - Implement fuzzy deadline management with hard deadline storage
+    - Add task CRUD operations with proper validation
+    - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
+
+  - [ ] 2.4 Write property test for task metadata assignment
+    - **Property 14: Task metadata assignment**
+    - **Validates: Requirements 7.1, 7.2, 7.4, 7.5**
+
+  - [ ] 2.5 Write property test for fuzzy deadline management
+    - **Property 15: Fuzzy deadline management**
+    - **Validates: Requirements 7.3**
+
+- [ ] 3. Authentication and Security Layer
+  - [ ] 3.1 Implement JWT authentication with refresh tokens
+    - Set up JWT token generation and validation
+    - Implement refresh token rotation
+    - Add middleware for protected routes
+    - _Requirements: 9.1, 9.2, 9.3_
+
+  - [ ] 3.2 Add rate limiting and security headers
+    - Implement API rate limiting per user/IP
+    - Add security headers (HSTS, CSP, etc.)
+    - Set up request validation and sanitization
+    - _Requirements: 16.3, 17.1_
+
+  - [ ] 3.3 Write security validation tests
+    - Test rate limiting enforcement
+    - Test JWT token validation and expiration
+    - Test input sanitization and validation
+    - _Requirements: 9.1, 16.3, 17.1_
+
+- [ ] 4. Basic Task Management API
+  - [ ] 4.1 Implement task CRUD endpoints
+    - Create REST endpoints for task management
+    - Add task filtering and sorting capabilities
+    - Implement task state transitions
+    - _Requirements: 7.1, 7.2, 7.3_
+
+  - [ ] 4.2 Add task dependency management
+    - Implement task dependency relationships
+    - Add dependency validation to prevent cycles
+    - Create dependency-aware task sequencing
+    - _Requirements: 3.5_
+
+  - [ ] 4.3 Write property test for task dependency sequencing
+    - **Property 6: Task dependency sequencing**
+    - **Validates: Requirements 3.5**
+
+  - [ ] 4.4 Write unit tests for task CRUD operations
+    - Test task creation with various metadata
+    - Test task state transitions
+    - Test dependency cycle prevention
+    - _Requirements: 7.1, 7.2, 7.3, 3.5_
+
+- [ ] 5. Checkpoint - Core Backend Validation
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 6. Focus Deck Implementation
+  - [ ] 6.1 Create Focus Deck API endpoints
+    - Implement deck card retrieval and ordering
+    - Add swipe action endpoints (right, left, down)
+    - Create deck state management
+    - _Requirements: 5.1, 5.2, 5.3, 5.4_
+
+  - [ ] 6.2 Write property test for focus deck card interaction
+    - **Property 10: Focus Deck card interaction**
+    - **Validates: Requirements 5.1, 5.2, 5.3, 5.4**
+
+  - [ ] 6.3 Implement deck reordering logic
+    - Add logic for moving cards to bottom of deck
+    - Implement deck shuffling and prioritization
+    - Add deck persistence across sessions
+    - _Requirements: 5.3_
+
+- [ ] 7. River Timeline Implementation
+  - [ ] 7.1 Create timeline generation algorithm
+    - Implement timeline task positioning
+    - Add visual hierarchy calculation (clear vs blurred)
+    - Create timeline rendering data structure
+    - _Requirements: 3.1, 3.2, 3.3_
+
+  - [ ] 7.2 Write property test for river timeline visual hierarchy
+    - **Property 5: River Timeline visual hierarchy**
+    - **Validates: Requirements 3.1, 3.2, 3.3**
+
+  - [ ] 7.3 Add missed deadline handling
+    - Implement non-punitive overdue task handling
+    - Ensure no red coloring for missed deadlines
+    - Add timeline flow-around logic for overdue items
+    - _Requirements: 3.4, 2.3_
+
+  - [ ] 7.4 Write property test for psychological safety colors
+    - **Property 2: Psychological safety color compliance**
+    - **Validates: Requirements 2.1, 2.2, 2.3, 3.4**
+
+- [ ] 8. Garden Progress System
+  - [ ] 8.1 Implement garden state management
+    - Create garden element generation logic
+    - Add persistence for garden elements
+    - Implement streak tracking and sun brightness
+    - _Requirements: 6.1, 6.2, 6.3, 6.4_
+
+  - [ ] 8.2 Write property test for garden element generation
+    - **Property 12: Garden element generation**
+    - **Validates: Requirements 6.1, 6.2, 6.3**
+
+  - [ ] 8.3 Write property test for garden persistence
+    - **Property 13: Garden persistence and accessibility**
+    - **Validates: Requirements 6.4, 6.5**
+
+  - [ ] 8.4 Add garden visualization API
+    - Create endpoints for garden state retrieval
+
+Now I have a comprehensive understanding of the project. Let me synthesize the Super-Prompt JSON file. I need to:
+
+1. Understand the existing codebase patterns (Express + TypeScript + Prisma, service pattern, route pattern, shared types)
+2. Map the user request against the existing codebase
+3. Create a comprehensive JSON PRD file
+
+Key observations:
+- Backend uses Express + TypeScript + Prisma + PostgreSQL
+- Services follow a class pattern with a singleton export
+- Routes use the `authenticateToken` middleware
+- Shared types use Zod schemas
+- Prisma schema is in `/Users/morsy/dev/spurtalk/prisma/schema.prisma`
+- Garden service tracks streaks (relevant for streak-at-risk trigger)
+- Unblocker service already has stall detection logic
+- User.preferences is a JSON field that can be extended
+- No existing notification system
+
+Now let me create the JSON file with comprehensive user stories covering the full scope of the request.
+exec
+/bin/zsh -lc 'mkdir -p /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1' in /Users/morsy/dev/spurtalk
+ succeeded in 120ms:
+exec
+/bin/zsh -lc "cat > /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1/2026-05-01-01-maestro-prompt-notification-system-m1.json << 'HEREDOC_EOF'
+{
+  \"metadata\": {
+    \"creator\": \"Maestro\",
+    \"created_at\": \"2026-05-01T04:05:00.000Z\",
+    \"original_prompt\": \"Implement Multi-Channel Communication System — M1 (In-App Notifications + Scheduler). Scheduler runs every 15 min evaluating trigger conditions, dispatches messages to Channel Router. Triggers: stall detection, deadline approaching, daily check-in, streak at risk. In-app notification store with API. User communication preferences. All messages use nurturing, non-judgmental language.\",
+    \"status\": \"ready-to-process\"
+  },
+  \"task\": {
+    \"title\": \"Multi-Channel Communication System — M1 (In-App Notifications + Scheduler)\",
+    \"revised_prompt\": \"## Background\\n\\nSpurTalk is a personal task management app for procrastinators built on the 'Anti-Guilt' standard. The backend is Express + TypeScript + Prisma + PostgreSQL. Services follow a class-based singleton pattern (see "'`backend/src/services/garden.ts`, `backend/src/services/unblocker.ts`). Routes use the `authenticateToken` middleware from `backend/src/middleware/auth.ts`. Shared Zod schemas live in `shared/src/index.ts`. The Prisma schema is at `prisma/schema.prisma`.'"\\n\\nThe app currently has NO proactive communication channel — users must open the app themselves. This M1 milestone builds the first channel: in-app notifications + a background scheduler, so SpurTalk can gently nudge users when they need it.\\n\\n**Core design principle:** Notifications must feel like a calm, encouraging presence — never anxiety-inducing. Think 'garden tending' not 'deadline pressure.'\\n\\n## Directives\\n\\n### 1. Prisma Schema — Add "'`InAppNotification` Model'"\\n\\nAdd to "'`prisma/schema.prisma`:'"\\n\\n"'```prisma'"\\nmodel InAppNotification {\\n  id          String    @id @default(uuid())\\n  userId      String\\n  triggerType String    // \\\"stall\\\" | \\\"deadline\\\" | \\\"daily_checkin\\\" | \\\"streak\\\" | \\\"milestone\\\"\\n  message     String\\n  taskId      String?\\n  deliveredAt DateTime  @default(now()) @map(\\\"delivered_at\\\")\\n  readAt      DateTime? @map(\\\"read_at\\\")\\n  createdAt   DateTime  @default(now()) @map(\\\"created_at\\\")\\n  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)\\n\\n  @@index([userId, readAt])\\n  @@map(\\\"in_app_notifications\\\")\\n}\\n"'```'"\\n\\nAlso add the relation to the "'`User` model:'"\\n"'```prisma'"\\nmodel User {\\n  // ... existing fields ...\\n  notifications InAppNotification[]\\n}\\n"'```'"\\n\\nThen run "'`npx prisma migrate dev --name add-in-app-notifications`.'"\\n\\n### 2. Scheduler Service\\n\\nCreate "'`backend/src/services/scheduler.ts` following the existing service pattern.'"\\n\\n- Export a "'`SchedulerService` class with a singleton `schedulerService`.'"\\n- Method "'`start()`: sets a `setInterval` (or Node.js timer) that runs every 15 minutes.'"\\n- Method "'`stop()`: clears the interval.'"\\n- Method "'`runEvaluationCycle()`: for each user, evaluates all trigger conditions and dispatches qualifying notifications via the `NotificationService`.'"\\n- The scheduler should respect user quiet hours — do not dispatch during quiet hours; instead queue and deliver at the end of quiet hours.\\n- Each trigger should only fire once per user per task per 24h window (dedup via checking recent "'`InAppNotification` records).'"\\n- Log each cycle run with counts: users evaluated, notifications created, skipped (quiet hours), skipped (dedup).\\n\\n### 3. Trigger System\\n\\nImplement four triggers inside the scheduler evaluation cycle:\\n\\n**3a. Stall Detection Trigger**\\n- Query tasks where "'`state` is `Active` or `Deck` AND `updatedAt` is older than 24 hours AND no stall notification exists for this task in the last 24h.'"\\n- Reuse the stall-detection-timeout from "'`User.preferences.stallDetectionTimeout` (default 24h).'"\\n- Message: 'Hey, no pressure — want to do one nano-step?'\\n- triggerType: "'`'"'stall'"'`'"\\n\\n**3b. Deadline Approaching Trigger**\\n- Query tasks with a "'`hardDeadline` within the next 24 hours AND no deadline notification for this task in the last 24h.'"\\n- Only fire if "'`User.preferences.deadlineAlerts` is not `false`.'"\\n- Message: 'Your deadline is tomorrow. Just one step?'\\n- triggerType: "'`'"'deadline'"'`'"\\n- Edge case: If deadline is past (overdue), do NOT generate a deadline notification (no anxiety).\\n\\n**3c. Daily Check-In Trigger**\\n- Check if current time (in user's timezone from "'`User.preferences.timezone`) matches the user'"'s configured "'`dailyCheckInTime` (default `'"'09:00'"'`).'"\\n- Only fire once per calendar day per user.\\n- Only fire if "'`User.preferences.dailyCheckIn` is not `false`.'"\\n- Message: 'What one thing will you tackle today?'\\n- triggerType: "'`'"'daily_checkin'"'`'"\\n\\n**3d. Streak at Risk Trigger**\\n- Read "'`User.gardenState.currentStreak`. If streak > 0 AND the user has not completed any task today (check tasks with `completedAt` today), the streak is at risk.'"\\n- Only fire once per calendar day per user.\\n- Only fire if "'`User.preferences.streakAlerts` is not `false`.'"\\n- Message: 'Your streak is about to break — 5 min?'\\n- triggerType: "'`'"'streak'"'`'"\\n- Edge case: If streak is already 0, no notification (no shame).\\n\\n**3e. Milestone Trigger (bonus)**\\n- When a user completes a task, check if it's their Nth task (e.g., 1st, 5th, 10th, 25th, 50th, 100th). If so, create a milestone notification.\\n- triggerType: "'`'"'milestone'"'`'"\\n- Message: '🎉 You did it"'!'"'\\n- This can be triggered from the existing task completion flow rather than the scheduler.\\n\\n### 4. Notification Service\\n\\nCreate "'`backend/src/services/notification.ts`:'"\\n\\n- "'`createNotification(userId, triggerType, message, taskId?)` — inserts an `InAppNotification` record.'"\\n- "'`getNotifications(userId, options?)` — returns user'"'s notifications, unread first, with pagination (default limit 50).\\n- "'`markAsRead(userId, notificationId)` — sets `readAt` to now. Returns 404 if not found or not owned by user.'"\\n- "'`markAllAsRead(userId)` — marks all unread notifications as read for a user.'"\\n- "'`isInQuietHours(userId)` — reads user'"'s "'`communicationPreferences.quietHours` and checks if current time (in user timezone) falls within quiet hours.'"\\n- "'`shouldDedup(userId, triggerType, taskId?)` — checks if a notification of this type for this task already exists within the last 24h.'"\\n\\n### 5. Message Templates\\n\\nCreate "'`backend/src/services/messageTemplates.ts`:'"\\n\\nDefine all message templates in one place. Every message must use nurturing, non-judgmental language. No alarms, no urgent colors, no shame.\\n\\n"'```typescript'"\\nconst MESSAGE_TEMPLATES = {\\n  stall: 'Hey, no pressure — want to do one nano-step?',\\n  deadline: 'Your deadline is tomorrow. Just one step?',\\n  daily_checkin: 'What one thing will you tackle today?',\\n  streak: 'Your streak is about to break — 5 min?',\\n  milestone: '🎉 You did it"'!'"',\\n} as const;\\n"'```'"\\n\\nAlso define a "'`formatMessage(template, context?)` function that allows inserting task title or other context when appropriate.'"\\n\\n### 6. User Communication Preferences\\n\\nExtend "'`User.preferences` JSON field. The existing `UserPreferencesSchema` in `shared/src/index.ts` already has a `notificationSettings` object with `taskReminders`, `stallDetection`, and `milestoneCelebrations`. Extend it with communication-specific preferences:'"\\n\\n"'```typescript'"\\ncommunicationPreferences: z.object({\\n  channels: z.array(z.enum(['in_app'])).default(['in_app']),\\n  quietHours: z.object({\\n    start: z.string().regex(/"'^'"\\\\d{2}:\\\\d{2}"'$/).default('"'22:00'),\\n    end: z.string().regex(/"'^'"\\\\d{2}:\\\\d{2}"'$/).default('"'08:00'),\\n  }).default({ start: '22:00', end: '08:00' }),\\n  dailyCheckInTime: z.string().regex(/"'^'"\\\\d{2}:\\\\d{2}"'$/).default('"'09:00'),\\n  stallAlerts: z.boolean().default(true),\\n  deadlineAlerts: z.boolean().default(true),\\n  dailyCheckIn: z.boolean().default(true),\\n  streakAlerts: z.boolean().default(true),\\n}).default({\\n  channels: ['in_app'],\\n  quietHours: { start: '22:00', end: '08:00' },\\n  dailyCheckInTime: '09:00',\\n  stallAlerts: true,\\n  deadlineAlerts: true,\\n  dailyCheckIn: true,\\n  streakAlerts: true,\\n})\\n"'```'"\\n\\nMigrate the existing "'`notificationSettings` into this new `communicationPreferences` structure, or keep both and have the scheduler read from `communicationPreferences` with fallback to `notificationSettings` for backward compatibility.'"\\n\\n### 7. API Endpoints\\n\\nCreate "'`backend/src/routes/notifications.ts`:'"\\n\\n**GET /api/notifications**\\n- Requires "'`authenticateToken`'"\\n- Query params: "'`?unread=true` (filter to unread only), `?limit=50`, `?offset=0`'"\\n- Returns notifications sorted by "'`createdAt` DESC, unread first'"\\n- Response: "'`{ notifications: InAppNotification[], total: number, unread: number }`'"\\n\\n**PATCH /api/notifications/:id/read**\\n- Requires "'`authenticateToken`'"\\n- Marks a single notification as read\\n- Returns updated notification\\n- 404 if not found or not owned by user\\n- 400 if already read\\n\\n**PATCH /api/notifications/read-all**\\n- Requires "'`authenticateToken`'"\\n- Marks all unread notifications as read for the authenticated user\\n- Returns "'`{ updated: number }`'"\\n\\n**GET /api/users/me/communication-preferences**\\n- Requires "'`authenticateToken`'"\\n- Returns the user's "'`communicationPreferences` from `User.preferences`'"\\n\\n**PATCH /api/users/me/communication-preferences**\\n- Requires "'`authenticateToken`'"\\n- Validates body against the communication preferences schema\\n- Merges with existing preferences (partial update)\\n- Returns updated preferences\\n\\n### 8. Wire Up in "'`backend/src/index.ts`'"\\n\\n- Import and mount notification routes: "'`app.use('"'/api/notifications', notificationRoutes)"'`'"\\n- Start the scheduler on server boot (non-test environments): call "'`schedulerService.start()`'"\\n- Graceful shutdown: call "'`schedulerService.stop()` on SIGTERM/SIGINT'"\\n\\n### 9. Tests\\n\\nCreate "'`backend/src/test/notifications.test.ts` and `backend/src/test/scheduler.test.ts`:'"\\n\\n- Unit tests for "'`NotificationService` (create, get, markAsRead, markAllAsRead, quiet hours, dedup)'"\\n- Unit tests for each trigger condition (stall, deadline, daily check-in, streak, milestone)\\n- Unit tests for quiet hours logic (cross-midnight quiet hours, e.g., 22:00-08:00)\\n- Unit tests for dedup logic (no duplicate notifications within 24h)\\n- Integration tests for API endpoints (GET /api/notifications, PATCH read, PATCH read-all, GET/PATCH preferences)\\n- Test that messages use nurturing language (no 'overdue', 'urgent', 'fail' words)\\n- Run with: "'`cd backend && npm test`'"\\n\\n## Technical Constraints\\n\\n- Follow existing service class + singleton export pattern (see "'`gardenService`, `unblockerService`)'"\\n- Use "'`authenticateToken` middleware for all notification endpoints'"\\n- Use Zod for request validation (see existing "'`CreateTaskSchema` pattern)'"\\n- Use "'`@spurtalk/shared` for shared types and schemas'"\\n- No external notification services for M1 — everything stays in-process\\n- No Redis/BullMQ for M1 — use "'`setInterval` for the scheduler (can be upgraded later)'"\\n- The scheduler must not block the Express event loop — use "'`setImmediate` or process users in batches'"\\n- All database access through Prisma client (see "'`backend/src/lib/prisma.ts`)'"\\n- Never use anxiety-inducing language in any message template\\n- Never send notifications during user's configured quiet hours\\n- Never send duplicate notifications (dedup within 24h per trigger+task per user)\\n\\n## Verification\\n\\n1. "'`cd /Users/morsy/dev/spurtalk && npx prisma migrate dev --name add-in-app-notifications` — migration applies cleanly'"\\n2. "'`cd /Users/morsy/dev/spurtalk/backend && npm run typecheck` — no TypeScript errors'"\\n3. "'`cd /Users/morsy/dev/spurtalk/backend && npm test` — all tests pass'"\\n4. "'`cd /Users/morsy/dev/spurtalk/backend && npm run dev` — server starts, scheduler logs '"'Scheduler started' message\\n5. Manual: "'`GET /api/notifications` returns 200 with notification list'"\\n6. Manual: "'`PATCH /api/notifications/:id/read` marks notification as read'"\\n7. Manual: "'`GET /api/users/me/communication-preferences` returns preferences'"\\n8. Manual: "'`PATCH /api/users/me/communication-preferences` updates preferences",
+    "user_stories": [
+      {
+        "title": "Scheduler runs periodic evaluation cycle",
+        "as_a": "SpurTalk system",
+        "i_want_to": "run a background job every 15 minutes that evaluates each user'"'s tasks against trigger conditions\",
+        \"so_that\": \"users receive timely nudges without manual intervention\",
+        \"acceptance_criteria\": [
+          \"Scheduler starts automatically when the server boots (non-test environments)\",
+          \"Scheduler runs an evaluation cycle every 15 minutes\",
+          \"Each cycle iterates over all users and evaluates trigger conditions\",
+          \"Cycle logs count of users evaluated, notifications created, skipped (quiet hours), skipped (dedup)\",
+          \"Scheduler stops gracefully on SIGTERM/SIGINT\",
+          \"Scheduler does not block the Express event loop\"
+        ]
+      },
+      {
+        \"title\": \"Stall detection trigger fires nurturing nudge\",
+        \"as_a\": \"procrastinator who hasn't touched a task in 24 hours\",
+        \"i_want_to\": \"receive a gentle 'Hey, no pressure — want to do one nano-step?' notification\",
+        \"so_that\": \"I'm reminded without feeling judged\",
+        \"acceptance_criteria\": [
+          \"Trigger detects tasks in 'Active' or 'Deck' state with updatedAt older than the user's stallDetectionTimeout (default 24h)\",
+          \"Creates an InAppNotification with triggerType 'stall' and nurturing message\",
+          \"Only fires once per task per 24h window (dedup)\",
+          \"Respects user's stallAlerts preference (default true)\",
+          \"Respects user's quiet hours — does not deliver during quiet hours\",
+          \"Does not use anxiety-inducing language like 'overdue' or 'urgent'\"
+        ]
+      },
+      {
+        \"title\": \"Deadline approaching trigger fires soft reminder\",
+        \"as_a\": \"procrastinator with a hard deadline tomorrow\",
+        \"i_want_to\": \"receive a soft 'Your deadline is tomorrow. Just one step?' note\",
+        \"so_that\": \"I'm aware of the deadline without panicking\",
+        \"acceptance_criteria\": [
+          \"Trigger detects tasks with hardDeadline within the next 24 hours\",
+          \"Does NOT fire for tasks whose hardDeadline is already past (no overdue shaming)\",
+          \"Creates an InAppNotification with triggerType 'deadline' and nurturing message\",
+          \"Only fires once per task per 24h window (dedup)\",
+          \"Respects user's deadlineAlerts preference (default true)\",
+          \"Respects user's quiet hours\"
+        ]
+      },
+      {
+        \"title\": \"Daily check-in trigger fires morning prompt\",
+        \"as_a\": \"procrastinator starting my day\",
+        \"i_want_to\": \"receive a 'What one thing will you tackle today?' notification at my configured check-in time\",
+        \"so_that\": \"I can gently set an intention for the day\",
+        \"acceptance_criteria\": [
+          \"Trigger fires at the user's configured dailyCheckInTime (default 09:00) in the user's timezone\",
+          \"Creates an InAppNotification with triggerType 'daily_checkin'\",
+          \"Only fires once per calendar day per user\",
+          \"Respects user's dailyCheckIn preference (default true)\",
+          \"Respects user's quiet hours — if check-in time falls in quiet hours, delivers at end of quiet hours\"
+        ]
+      },
+      {
+        \"title\": \"Streak at risk trigger fires gentle nudge\",
+        \"as_a\": \"procrastinator with an active garden streak\",
+        \"i_want_to\": \"receive a 'Your streak is about to break — 5 min?' notification if I haven't completed a task today\",
+        \"so_that\": \"I'm gently reminded to keep my streak alive without shame\",
+        \"acceptance_criteria\": [
+          \"Trigger checks User.gardenState.currentStreak > 0 AND no task completed today\",
+          \"Creates an InAppNotification with triggerType 'streak'\",
+          \"Only fires once per calendar day per user\",
+          \"Does NOT fire if streak is already 0 (no shame for already-broken streaks)\",
+          \"Respects user's streakAlerts preference (default true)\",
+          \"Respects user's quiet hours\"
+        ]
+      },
+      {
+        \"title\": \"Milestone notification on task completion\",
+        \"as_a\": \"procrastinator who just completed a task\",
+        \"i_want_to\": \"receive a '🎉 You did it"'!'"' celebration notification for milestone completions (1st, 5th, 10th, 25th, 50th, 100th task)\",
+        \"so_that\": \"I feel celebrated and motivated to keep going\",
+        \"acceptance_criteria\": [
+          \"When a task is completed, check if the total completed count hits a milestone (1, 5, 10, 25, 50, 100)\",
+          \"Creates an InAppNotification with triggerType 'milestone'\",
+          \"Message uses celebratory, nurturing language\",
+          \"Milestone notifications are not subject to dedup (they only fire once per milestone naturally)\",
+          \"Does not require the scheduler — triggered from task completion flow\"
+        ]
+      },
+      {
+        \"title\": \"In-app notification store persists notifications\",
+        \"as_a\": \"SpurTalk system\",
+        \"i_want_to\": \"store all in-app notifications in a PostgreSQL table with userId, triggerType, message, taskId, deliveredAt, readAt, createdAt\",
+        \"so_that\": \"notifications are durable and queryable\",
+        \"acceptance_criteria\": [
+          \"InAppNotification model exists in Prisma schema with all specified fields\",
+          \"Migration applies cleanly with "'`npx prisma migrate dev`",
+          "InAppNotification has a foreign key relation to User with onDelete: Cascade",
+          "Index on (userId, readAt) for efficient unread queries",
+          "Table is mapped to '"'in_app_notifications' in the database\"
+        ]
+      },
+      {
+        \"title\": \"List unread notifications\",
+        \"as_a\": \"user\",
+        \"i_want_to\": \"call GET /api/notifications and see my notifications sorted with unread first\",
+        \"so_that\": \"I can quickly see what needs my attention\",
+        \"acceptance_criteria\": [
+          \"GET /api/notifications returns notifications for the authenticated user only\",
+          \"Notifications are sorted by createdAt DESC, unread first\",
+          \"Supports ?unread=true query param to filter to unread only\",
+          \"Supports ?limit and ?offset pagination (default limit 50)\",
+          \"Response includes notifications array, total count, and unread count\",
+          \"Requires authentication — returns 401 without valid token\"
+        ]
+      },
+      {
+        \"title\": \"Mark notification as read\",
+        \"as_a\": \"user\",
+        \"i_want_to\": \"call PATCH /api/notifications/:id/read to mark a single notification as read\",
+        \"so_that\": \"I can manage my notification state\",
+        \"acceptance_criteria\": [
+          \"PATCH /api/notifications/:id/read sets readAt to current timestamp\",
+          \"Returns the updated notification\",
+          \"Returns 404 if notification not found or not owned by user\",
+          \"Returns 400 if notification is already read\",
+          \"Requires authentication\"
+        ]
+      },
+      {
+        \"title\": \"Mark all notifications as read\",
+        \"as_a\": \"user\",
+        \"i_want_to\": \"call PATCH /api/notifications/read-all to mark all my unread notifications as read at once\",
+        \"so_that\": \"I can quickly clear my notification backlog\",
+        \"acceptance_criteria\": [
+          \"PATCH /api/notifications/read-all sets readAt for all unread notifications owned by the user\",
+          \"Returns { updated: number } indicating how many were marked read\",
+          \"Works even if there are zero unread notifications (returns { updated: 0 })\",
+          \"Requires authentication\"
+        ]
+      },
+      {
+        \"title\": \"Get communication preferences\",
+        \"as_a\": \"user\",
+        \"i_want_to\": \"call GET /api/users/me/communication-preferences to see my notification and quiet-hours settings\",
+        \"so_that\": \"I know what communication settings are active\",
+        \"acceptance_criteria\": [
+          \"GET /api/users/me/communication-preferences returns the user's communication preferences\",
+          \"Returns defaults if user has not customized preferences\",
+          \"Includes channels, quietHours, dailyCheckInTime, stallAlerts, deadlineAlerts, dailyCheckIn, streakAlerts\",
+          \"Requires authentication\"
+        ]
+      },
+      {
+        \"title\": \"Update communication preferences\",
+        \"as_a\": \"user\",
+        \"i_want_to\": \"call PATCH /api/users/me/communication-preferences to update my quiet hours, check-in time, and alert toggles\",
+        \"so_that\": \"I have full control over when and how SpurTalk communicates with me\",
+        \"acceptance_criteria\": [
+          \"PATCH /api/users/me/communication-preferences accepts partial updates (merge with existing)\",
+          \"Validates quietHours.start and quietHours.end as HH:MM format\",
+          \"Validates dailyCheckInTime as HH:MM format\",
+          \"Validates boolean fields for stallAlerts, deadlineAlerts, dailyCheckIn, streakAlerts\",
+          \"Returns the full updated preferences object\",
+          \"Returns 400 for invalid input with Zod error details\",
+          \"Requires authentication\"
+        ]
+      },
+      {
+        \"title\": \"Quiet hours suppress delivery\",
+        \"as_a\": \"user with quiet hours set to 22:00-08:00\",
+        \"i_want_to\": \"not receive any notifications during my quiet hours\",
+        \"so_that\": \"I'm not disturbed when I'm winding down or sleeping\",
+        \"acceptance_criteria\": [
+          \"Scheduler checks isInQuietHours before creating each notification\",
+          \"Quiet hours spanning midnight (e.g., 22:00-08:00) are handled correctly\",
+          \"If a trigger fires during quiet hours, the notification is deferred until the end of quiet hours\",
+          \"User can set custom quiet hours via PATCH /api/users/me/communication-preferences\",
+          \"Default quiet hours are 22:00-08:00\"
+        ]
+      },
+      {
+        \"title\": \"Dedup prevents notification spam\",
+        \"as_a\": \"user\",
+        \"i_want_to\": \"never receive duplicate notifications for the same trigger+task within a 24-hour window\",
+        \"so_that\": \"I'm not annoyed by repeated messages\",
+        \"acceptance_criteria\": [
+          \"Before creating a notification, the system checks if a notification with the same triggerType and taskId already exists for this user within the last 24h\",
+          \"For daily_checkin and streak triggers (no taskId), dedup is per user per triggerType per calendar day\",
+          \"Deduped notifications are logged as 'skipped (dedup)' in the scheduler cycle log\",
+          \"Milestone notifications are exempt from dedup\"
+        ]
+      },
+      {
+        \"title\": \"Message templates use nurturing language\",
+        \"as_a\": \"procrastinator\",
+        \"i_want_to\": \"all notification messages to use warm, non-judgmental, encouraging language\",
+        \"so_that\": \"receiving notifications feels like gentle encouragement, never like pressure or shame\",
+        \"acceptance_criteria\": [
+          \"All message templates are defined in a single messageTemplates.ts file\",
+          \"No message contains words like 'overdue', 'urgent', 'fail', 'late', 'missed', 'broken' (except 'streak about to break' which is framed gently)\",
+          \"Messages are short and action-oriented (one sentence)\",
+          \"A formatMessage function exists for optional context insertion (e.g., task title)\",
+          \"Test asserts that no message template contains anxiety-inducing keywords\"
+        ]
+      },
+      {
+        \"title\": \"Default preferences work out of the box\",
+        \"as_a\": \"new user\",
+        \"i_want_to\": \"have sensible default communication preferences so I start receiving helpful nudges immediately\",
+        \"so_that\": \"I don't have to configure anything before the system starts helping me\",
+        \"acceptance_criteria\": [
+          \"Default channels: ['in_app']\",
+          \"Default quietHours: { start: '22:00', end: '08:00' }\",
+          \"Default dailyCheckInTime: '09:00'\",
+          \"Default stallAlerts: true, deadlineAlerts: true, dailyCheckIn: true, streakAlerts: true\",
+          \"User who has never set preferences gets these defaults from the Zod schema\"
+        ]
+      },
+      {
+        \"title\": \"Cross-midnight quiet hours work correctly\",
+        \"as_a\": \"user with quiet hours 22:00-08:00\",
+        \"i_want_to\": \"notifications suppressed from 10pm to 8am even though this range spans midnight\",
+        \"so_that\": \"my sleep schedule is fully respected\",
+        \"acceptance_criteria\": [
+          \"If quietHours.start > quietHours.end (e.g., 22:00 > 08:00), the system interprets this as spanning midnight\",
+          \"A notification at 23:00 is suppressed (within quiet hours)\",
+          \"A notification at 07:00 is suppressed (within quiet hours)\",
+          \"A notification at 08:01 is delivered (outside quiet hours)\",
+          \"A notification at 21:59 is delivered (outside quiet hours)\",
+          \"If quietHours.start < quietHours.end (e.g., 01:00-06:00), treated as same-day range\"
+        ]
+      },
+      {
+        \"title\": \"Timezone-aware daily check-in\",
+        \"as_a\": \"user in Pacific timezone\",
+        \"i_want_to\": \"receive my daily check-in at 09:00 Pacific, not 09:00 UTC\",
+        \"so_that\": \"notifications respect my local time\",
+        \"acceptance_criteria\": [
+          \"Daily check-in uses User.preferences.timezone (default 'UTC')\",
+          \"Scheduler converts user's local dailyCheckInTime to UTC for comparison\",
+          \"If user changes timezone, the next check-in respects the new timezone\",
+          \"Dedup is per calendar day in the user's local timezone, not UTC\"
+        ]
+      },
+      {
+        \"title\": \"Existing notification settings backward compatible\",
+        \"as_a\": \"returning user with existing notificationSettings in preferences\",
+        \"i_want_to\": \"my existing settings to still work when the new communicationPreferences field is introduced\",
+        \"so_that\": \"my app doesn't break after this update\",
+        \"acceptance_criteria\": [
+          \"The new communicationPreferences schema is added alongside (not replacing) the existing notificationSettings\",
+          \"Scheduler reads from communicationPreferences first, falls back to notificationSettings if not set\",
+          \"Existing User.preferences JSON field is not overwritten on migration\",
+          \"PATCH /api/users/me/communication-preferences writes to communicationPreferences\"
+        ]
+      },
+      {
+        \"title\": \"API rate limiting applies to notification endpoints\",
+        \"as_a\": \"system administrator\",
+        \"i_want_to\": \"notification API endpoints to be rate-limited like other /api/ endpoints\",
+        \"so_that\": \"the system is protected from abuse\",
+        \"acceptance_criteria\": [
+          \"Notification routes are mounted under /api/ and inherit the existing apiLimiter\",
+          \"No special rate limit is needed beyond what already applies to /api/ routes\"
+        ]
+      }
+    ]
+  }
+}
+HEREDOC_EOF" in /Users/morsy/dev/spurtalk
+ succeeded in 130ms:
+exec
+/bin/zsh -lc 'cat /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1/2026-05-01-01-maestro-prompt-notification-system-m1.json | python3 -m json.tool > /dev/null && echo "Valid JSON" || echo "Invalid JSON"' in /Users/morsy/dev/spurtalk
+ succeeded in 475ms:
+Valid JSON
+
+exec
+/bin/zsh -lc 'wc -l /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1/2026-05-01-01-maestro-prompt-notification-system-m1.json' in /Users/morsy/dev/spurtalk
+ succeeded in 166ms:
+     274 /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1/2026-05-01-01-maestro-prompt-notification-system-m1.json
+
+All steps complete — the Maestro prompt JSON has been written and validated.
+  ✓ Ingest project context (AGENTS.md, README, .context/, codebase)
+  ✓ Map codebase structure and existing patterns
+  ✓ Synthesize Super-Prompt with full user stories
+  ✓ Write JSON PRD file to output directory
+codex
+The Maestro prompt file has been generated and validated.
+
+**Output:** `.context/prd/notification-system-m1/2026-05-01-01-maestro-prompt-notification-system-m1.json`
+
+**What it covers (20 user stories):**
+
+- **Scheduler Service** — 15-min interval, batch evaluation, graceful start/stop, cycle logging
+- **4 Trigger Types** — Stall detection, Deadline approaching, Daily check-in (timezone-aware), Streak at risk
+- **Milestone trigger** — Celebratory nudge on 1st/5th/10th/25th/50th/100th task completion
+- **In-App Notification Store** — Prisma `InAppNotification` model, migration, cascade delete, index
+- **API Endpoints** — `GET /api/notifications`, `PATCH :id/read`, `PATCH read-all`, `GET/PATCH communication-preferences`
+- **Quiet Hours** — Cross-midnight handling (e.g., 22:00–08:00), deferred delivery
+- **Dedup logic** — No duplicate notifications per trigger+task per 24h window
+- **Message Templates** — Centralized, nurturing-language-only, testable against anxiety keywords
+- **Backward compatibility** — Merges new `communicationPreferences` with existing `notificationSettings`
+- **Default preferences** — Sensible out-of-the-box settings for new users
+tokens used
+437,440
+The Maestro prompt file has been generated and validated.
+
+**Output:** `.context/prd/notification-system-m1/2026-05-01-01-maestro-prompt-notification-system-m1.json`
+
+**What it covers (20 user stories):**
+
+- **Scheduler Service** — 15-min interval, batch evaluation, graceful start/stop, cycle logging
+- **4 Trigger Types** — Stall detection, Deadline approaching, Daily check-in (timezone-aware), Streak at risk
+- **Milestone trigger** — Celebratory nudge on 1st/5th/10th/25th/50th/100th task completion
+- **In-App Notification Store** — Prisma `InAppNotification` model, migration, cascade delete, index
+- **API Endpoints** — `GET /api/notifications`, `PATCH :id/read`, `PATCH read-all`, `GET/PATCH communication-preferences`
+- **Quiet Hours** — Cross-midnight handling (e.g., 22:00–08:00), deferred delivery
+- **Dedup logic** — No duplicate notifications per trigger+task per 24h window
+- **Message Templates** — Centralized, nurturing-language-only, testable against anxiety keywords
+- **Backward compatibility** — Merges new `communicationPreferences` with existing `notificationSettings`
+- **Default preferences** — Sensible out-of-the-box settings for new users

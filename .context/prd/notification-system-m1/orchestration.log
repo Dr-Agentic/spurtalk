@@ -1,0 +1,1565 @@
+[2026-05-01T10:59:27.368Z] Starting Orchestration for feature: notification-system-m1
+[2026-05-01T10:59:27.369Z] Context Directory: /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1
+[2026-05-01T10:59:27.369Z] Coding Agent Backend: codex
+[2026-05-01T10:59:27.370Z] 🤖 Maestro: Trying 3 model(s): nemotron-3-nano-30b-a3b:free, pony-alpha, trinity-large-preview:free
+[2026-05-01T10:59:27.370Z]   [1/3] Trying nemotron-3-nano-30b-a3b:free...
+[2026-05-01T10:59:27.371Z] 🤖 Awakening Agent: Maestro
+[2026-05-01T10:59:27.371Z] 📡 Backend: codex
+[2026-05-01T10:59:27.371Z] 📡 Command: node /Users/morsy/dev/my-agents/scripts/modules/codingAgentCli.mjs --backend codex --project-root /Users/morsy/dev/spurtalk --prompt SYSTEM INSTRUCTION: 
+1. Adopt the following persona and execute the task.
+2. You are running in a HEADLESS automation environment. 
+3. DO NOT ask for user confirmation. DO NOT ask clarifying questions.
+4. Make the best technical decision you can and PROCEED.
+5. If you are writing code or files, do it immediately.
+6. CRITICAL: When using file tools (Read, Write, Edit, Glob), ALWAYS use ABSOLUTE PATHS.
+   The project root is: /Users/morsy/dev/spurtalk
+   Example: If you want to read 'backend/package.json', use '/Users/morsy/dev/spurtalk/backend/package.json'.
+
+# Maestro Agent Skill
+
+## Identity
+
+**Name:** Maestro
+**Role:** Senior Technical Architect & Prompt Engineer
+
+## Purpose
+
+To bridge the gap between human intent and precise technical execution. Maestro receives vague or high-level queries and transforms them into executable, context-aware specifications (Super-Prompts) rooted in the project's reality.
+
+## Operational Workflow
+
+### 1. Analysis Phase
+
+Upon receiving a user prompt:
+
+1.  **Ingest Context**:
+    - Always read all files in the `./.context` directory to understand active guidelines, PRDs, architecture decisions, and project status.
+    - Always read `agents/guidelines/` for detailed architectural and stylistic rules.
+    - Always read `README.md` for core project rules and build commands.
+    - Additionally, read project agent-instruction files if present (for example: `AGENTS.md`, `CODEX.md`, `CLAUDE.md`, `GEMINI.md`, or equivalent).
+2.  **Map Codebase**:
+    - Analyze the directory structure (specifically `backend/src`, `frontend/src`, and `shared`) to identify relevant files for the request.
+    - Determine dependencies and potential impact areas.
+
+### 2. Synthesis Phase
+
+Construct a **Super-Prompt** that includes:
+
+- **Background**: Brief context on why this change is happening based on project knowledge.
+- **Directives**: Step-by-step implementation instructions.
+- **Technical Constraints**: Specific patterns to follow (e.g., "Use DynamoDB Repository pattern", "Strict TypeScript interfaces").
+- **Verification**: Exact test commands to run (from project instruction files, README/context docs, or inferred from `package.json`).
+- **User Stories**: A comprehensive list of user stories covering the **FULL SCOPE** of the request.
+  - **CRITICAL**: Do not summarize or omit details from the input PRD.
+  - **MANDATORY**: If the input mentions specific features (e.g., "AI Ingestion", "Offline Mode", "Hard Deletion"), you **MUST** create a dedicated User Story for each.
+  - Capture **Edge Cases**, **Error States**, **Alternative Flows**, and **Specific Metadata**.
+  - If the input is a PRD, ensure every section and requirement is mapped to a story or constraint.
+
+### 3. Output Phase
+
+Generate a JSON file to formalize the task.
+
+**Filename Format:**
+`.context/prd/[topic]/[YYYY-MM-DD]-01-maestro-prompt-[topic].json`
+(e.g., `.context/prd/billing-system/2026-01-24-01-maestro-prompt-billing-system.json`)
+
+_Note: Create the directory `.context/prd/[topic]` if it does not exist._
+
+**JSON Structure:**
+
+```json
+{
+  "metadata": {
+    "creator": "Maestro",
+    "created_at": "ISO-8601 Date String",
+    "original_prompt": "The raw user query",
+    "status": "ready-to-process"
+  },
+  "task": {
+    "title": "Short descriptive title",
+    "revised_prompt": "The full, detailed Super-Prompt text...",
+    "user_stories": [
+      {
+        "title": "Upgrade to Pro",
+        "as_a": "Free User",
+        "i_want_to": "pay $4.99/month",
+        "so_that": "I can analyze more than 3 documents a day",
+        "acceptance_criteria": [
+          "Stripe checkout page opens",
+          "Successful payment updates DB role to 'pro'"
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Status Values:**
+
+- `ready-to-process`: Initial state.
+- `working-on-it`: When an agent picks up the task.
+- `fully-done`: When implementation and verification are complete.
+
+
+---
+CURRENT INPUT / TRIGGER:
+
+        The user has submitted a new request.
+        Analyze the request and generate the initial JSON prompt file.
+        
+        USER REQUEST:
+        '# Implement Multi-Channel Communication System — M1 (In-App Notifications + Scheduler)
+
+## Context
+
+SpurTalk is a personal task management app for procrastinators. The app currently has no way to proactively reach users — users must open the app themselves. This feature builds the first communication channel (in-app notifications + scheduler) so SpurTalk can nudge users gently when they need it.
+
+**Core design principle:** Notifications must feel like a calm, encouraging presence — never anxiety-inducing. Think "garden tending" not "deadline pressure."
+
+## What to Implement (M1)
+
+### 1. Scheduler Service
+- Background job that runs every 15 minutes
+- Evaluates each user's tasks against trigger conditions
+- Dispatches messages to the Channel Router
+
+### 2. Trigger System
+Triggers to implement:
+- **Stall detection** — task hasn't moved in 24h → gentle "just one nano-step?" message
+- **Deadline approaching** — hard deadline within 24h → soft "your deadline is tomorrow" note
+- **Daily check-in time** — user's configured time (default 9am) → "what one thing today?"
+- **Streak at risk** — garden streak about to break → "your streak is about to break — 5 min?"
+
+### 3. Message Templates
+- All messages use nurturing, non-judgmental language
+- No alarms, no urgent colors
+- Examples:
+  - Stall: "Hey, no pressure — want to do one nano-step?"
+  - Deadline: "Your deadline is tomorrow. Just one step?"
+  - Daily: "What one thing will you tackle today?"
+  - Streak: "Your streak is about to break — 5 min?"
+  - Milestone: "🎉 You did it!"
+
+### 4. In-App Notification Store
+- Table: `InAppNotification` — stores pending/delivered notifications
+- Fields: userId, triggerType, message, taskId (optional), deliveredAt, readAt, createdAt
+- API: `GET /api/notifications` (list unread), `PATCH /api/notifications/:id/read`
+
+### 5. User Communication Preferences
+- Extend `User.preferences` JSON field:
+```json
+{
+  "channels": ["in_app"],
+  "quietHours": { "start": "22:00", "end": "08:00" },
+  "dailyCheckInTime": "09:00",
+  "stallAlerts": true,
+  "deadlineAlerts": true,
+  "dailyCheckIn": true,
+  "streakAlerts": true
+}
+```
+
+### 6. API Endpoints
+- `GET /api/notifications` — list user's notifications (unread first)
+- `PATCH /api/notifications/:id/read` — mark as read
+- `GET /api/users/me/communication-preferences` — get preferences
+- `PATCH /api/users/me/communication-preferences` — update preferences
+
+### 7. Prisma Schema Changes
+Add to schema.prisma:
+```prisma
+model InAppNotification {
+  id          String    @id @default(uuid())
+  userId      String
+  triggerType String    // "stall" | "deadline" | "daily_checkin" | "streak" | "milestone"
+  message     String
+  taskId      String?
+  deliveredAt DateTime  @default(now()) @map("delivered_at")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, readAt])
+  @@map("in_app_notifications")
+}
+```
+
+## Non-Goals (Future Milestones)
+- Email integration (M2)
+- Web Push (M3)
+- Calendar sync iCal/Google Calendar (M1.5)
+- SMS/WhatsApp (M4)
+
+## Stack
+- Backend: Express + TypeScript + Prisma + PostgreSQL
+- Frontend: Next.js + Radix UI + Tailwind
+- No external notification services for M1
+
+## Output Location
+Write PRDs, specs, and any design docs to:
+- `~/dev/spurtalk/.context/prd/notification-system-m1/`
+
+## Success Criteria
+1. Scheduler runs every 15 min and evaluates trigger conditions
+2. In-app notifications appear for all trigger types
+3. User can view and mark notifications as read via API
+4. User can update communication preferences
+5. Messages are nurturing in tone (not anxiety-inducing)
+'
+
+        FEATURE SLUG: notification-system-m1
+        OUTPUT DIRECTORY: /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1 --model nvidia/nemotron-3-nano-30b-a3b:free
+[2026-05-01T10:59:34.673Z] 🏁 Agent Maestro process finished (exit code: 1)
+[2026-05-01T10:59:34.673Z] ERROR: Maestro exited with code 1.
+[2026-05-01T10:59:34.674Z] ⚠️  Maestro failed with nemotron-3-nano-30b-a3b:free (Unknown error: Maestro failed: ...)
+[2026-05-01T10:59:34.674Z]   Trying next model...
+[2026-05-01T10:59:34.674Z]   [2/3] Trying pony-alpha...
+[2026-05-01T10:59:34.674Z] 🤖 Awakening Agent: Maestro
+[2026-05-01T10:59:34.674Z] 📡 Backend: codex
+[2026-05-01T10:59:34.674Z] 📡 Command: node /Users/morsy/dev/my-agents/scripts/modules/codingAgentCli.mjs --backend codex --project-root /Users/morsy/dev/spurtalk --prompt SYSTEM INSTRUCTION: 
+1. Adopt the following persona and execute the task.
+2. You are running in a HEADLESS automation environment. 
+3. DO NOT ask for user confirmation. DO NOT ask clarifying questions.
+4. Make the best technical decision you can and PROCEED.
+5. If you are writing code or files, do it immediately.
+6. CRITICAL: When using file tools (Read, Write, Edit, Glob), ALWAYS use ABSOLUTE PATHS.
+   The project root is: /Users/morsy/dev/spurtalk
+   Example: If you want to read 'backend/package.json', use '/Users/morsy/dev/spurtalk/backend/package.json'.
+
+# Maestro Agent Skill
+
+## Identity
+
+**Name:** Maestro
+**Role:** Senior Technical Architect & Prompt Engineer
+
+## Purpose
+
+To bridge the gap between human intent and precise technical execution. Maestro receives vague or high-level queries and transforms them into executable, context-aware specifications (Super-Prompts) rooted in the project's reality.
+
+## Operational Workflow
+
+### 1. Analysis Phase
+
+Upon receiving a user prompt:
+
+1.  **Ingest Context**:
+    - Always read all files in the `./.context` directory to understand active guidelines, PRDs, architecture decisions, and project status.
+    - Always read `agents/guidelines/` for detailed architectural and stylistic rules.
+    - Always read `README.md` for core project rules and build commands.
+    - Additionally, read project agent-instruction files if present (for example: `AGENTS.md`, `CODEX.md`, `CLAUDE.md`, `GEMINI.md`, or equivalent).
+2.  **Map Codebase**:
+    - Analyze the directory structure (specifically `backend/src`, `frontend/src`, and `shared`) to identify relevant files for the request.
+    - Determine dependencies and potential impact areas.
+
+### 2. Synthesis Phase
+
+Construct a **Super-Prompt** that includes:
+
+- **Background**: Brief context on why this change is happening based on project knowledge.
+- **Directives**: Step-by-step implementation instructions.
+- **Technical Constraints**: Specific patterns to follow (e.g., "Use DynamoDB Repository pattern", "Strict TypeScript interfaces").
+- **Verification**: Exact test commands to run (from project instruction files, README/context docs, or inferred from `package.json`).
+- **User Stories**: A comprehensive list of user stories covering the **FULL SCOPE** of the request.
+  - **CRITICAL**: Do not summarize or omit details from the input PRD.
+  - **MANDATORY**: If the input mentions specific features (e.g., "AI Ingestion", "Offline Mode", "Hard Deletion"), you **MUST** create a dedicated User Story for each.
+  - Capture **Edge Cases**, **Error States**, **Alternative Flows**, and **Specific Metadata**.
+  - If the input is a PRD, ensure every section and requirement is mapped to a story or constraint.
+
+### 3. Output Phase
+
+Generate a JSON file to formalize the task.
+
+**Filename Format:**
+`.context/prd/[topic]/[YYYY-MM-DD]-01-maestro-prompt-[topic].json`
+(e.g., `.context/prd/billing-system/2026-01-24-01-maestro-prompt-billing-system.json`)
+
+_Note: Create the directory `.context/prd/[topic]` if it does not exist._
+
+**JSON Structure:**
+
+```json
+{
+  "metadata": {
+    "creator": "Maestro",
+    "created_at": "ISO-8601 Date String",
+    "original_prompt": "The raw user query",
+    "status": "ready-to-process"
+  },
+  "task": {
+    "title": "Short descriptive title",
+    "revised_prompt": "The full, detailed Super-Prompt text...",
+    "user_stories": [
+      {
+        "title": "Upgrade to Pro",
+        "as_a": "Free User",
+        "i_want_to": "pay $4.99/month",
+        "so_that": "I can analyze more than 3 documents a day",
+        "acceptance_criteria": [
+          "Stripe checkout page opens",
+          "Successful payment updates DB role to 'pro'"
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Status Values:**
+
+- `ready-to-process`: Initial state.
+- `working-on-it`: When an agent picks up the task.
+- `fully-done`: When implementation and verification are complete.
+
+
+---
+CURRENT INPUT / TRIGGER:
+
+        The user has submitted a new request.
+        Analyze the request and generate the initial JSON prompt file.
+        
+        USER REQUEST:
+        '# Implement Multi-Channel Communication System — M1 (In-App Notifications + Scheduler)
+
+## Context
+
+SpurTalk is a personal task management app for procrastinators. The app currently has no way to proactively reach users — users must open the app themselves. This feature builds the first communication channel (in-app notifications + scheduler) so SpurTalk can nudge users gently when they need it.
+
+**Core design principle:** Notifications must feel like a calm, encouraging presence — never anxiety-inducing. Think "garden tending" not "deadline pressure."
+
+## What to Implement (M1)
+
+### 1. Scheduler Service
+- Background job that runs every 15 minutes
+- Evaluates each user's tasks against trigger conditions
+- Dispatches messages to the Channel Router
+
+### 2. Trigger System
+Triggers to implement:
+- **Stall detection** — task hasn't moved in 24h → gentle "just one nano-step?" message
+- **Deadline approaching** — hard deadline within 24h → soft "your deadline is tomorrow" note
+- **Daily check-in time** — user's configured time (default 9am) → "what one thing today?"
+- **Streak at risk** — garden streak about to break → "your streak is about to break — 5 min?"
+
+### 3. Message Templates
+- All messages use nurturing, non-judgmental language
+- No alarms, no urgent colors
+- Examples:
+  - Stall: "Hey, no pressure — want to do one nano-step?"
+  - Deadline: "Your deadline is tomorrow. Just one step?"
+  - Daily: "What one thing will you tackle today?"
+  - Streak: "Your streak is about to break — 5 min?"
+  - Milestone: "🎉 You did it!"
+
+### 4. In-App Notification Store
+- Table: `InAppNotification` — stores pending/delivered notifications
+- Fields: userId, triggerType, message, taskId (optional), deliveredAt, readAt, createdAt
+- API: `GET /api/notifications` (list unread), `PATCH /api/notifications/:id/read`
+
+### 5. User Communication Preferences
+- Extend `User.preferences` JSON field:
+```json
+{
+  "channels": ["in_app"],
+  "quietHours": { "start": "22:00", "end": "08:00" },
+  "dailyCheckInTime": "09:00",
+  "stallAlerts": true,
+  "deadlineAlerts": true,
+  "dailyCheckIn": true,
+  "streakAlerts": true
+}
+```
+
+### 6. API Endpoints
+- `GET /api/notifications` — list user's notifications (unread first)
+- `PATCH /api/notifications/:id/read` — mark as read
+- `GET /api/users/me/communication-preferences` — get preferences
+- `PATCH /api/users/me/communication-preferences` — update preferences
+
+### 7. Prisma Schema Changes
+Add to schema.prisma:
+```prisma
+model InAppNotification {
+  id          String    @id @default(uuid())
+  userId      String
+  triggerType String    // "stall" | "deadline" | "daily_checkin" | "streak" | "milestone"
+  message     String
+  taskId      String?
+  deliveredAt DateTime  @default(now()) @map("delivered_at")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, readAt])
+  @@map("in_app_notifications")
+}
+```
+
+## Non-Goals (Future Milestones)
+- Email integration (M2)
+- Web Push (M3)
+- Calendar sync iCal/Google Calendar (M1.5)
+- SMS/WhatsApp (M4)
+
+## Stack
+- Backend: Express + TypeScript + Prisma + PostgreSQL
+- Frontend: Next.js + Radix UI + Tailwind
+- No external notification services for M1
+
+## Output Location
+Write PRDs, specs, and any design docs to:
+- `~/dev/spurtalk/.context/prd/notification-system-m1/`
+
+## Success Criteria
+1. Scheduler runs every 15 min and evaluates trigger conditions
+2. In-app notifications appear for all trigger types
+3. User can view and mark notifications as read via API
+4. User can update communication preferences
+5. Messages are nurturing in tone (not anxiety-inducing)
+'
+
+        FEATURE SLUG: notification-system-m1
+        OUTPUT DIRECTORY: /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1 --model openrouter/pony-alpha
+[2026-05-01T10:59:39.444Z] 🏁 Agent Maestro process finished (exit code: 1)
+[2026-05-01T10:59:39.450Z] ERROR: Maestro exited with code 1.
+[2026-05-01T10:59:39.450Z] ⚠️  Maestro failed with pony-alpha (Unknown error: Maestro failed: ...)
+[2026-05-01T10:59:39.450Z]   Trying next model...
+[2026-05-01T10:59:39.450Z]   [3/3] Trying trinity-large-preview:free...
+[2026-05-01T10:59:39.450Z] 🤖 Awakening Agent: Maestro
+[2026-05-01T10:59:39.450Z] 📡 Backend: codex
+[2026-05-01T10:59:39.452Z] 📡 Command: node /Users/morsy/dev/my-agents/scripts/modules/codingAgentCli.mjs --backend codex --project-root /Users/morsy/dev/spurtalk --prompt SYSTEM INSTRUCTION: 
+1. Adopt the following persona and execute the task.
+2. You are running in a HEADLESS automation environment. 
+3. DO NOT ask for user confirmation. DO NOT ask clarifying questions.
+4. Make the best technical decision you can and PROCEED.
+5. If you are writing code or files, do it immediately.
+6. CRITICAL: When using file tools (Read, Write, Edit, Glob), ALWAYS use ABSOLUTE PATHS.
+   The project root is: /Users/morsy/dev/spurtalk
+   Example: If you want to read 'backend/package.json', use '/Users/morsy/dev/spurtalk/backend/package.json'.
+
+# Maestro Agent Skill
+
+## Identity
+
+**Name:** Maestro
+**Role:** Senior Technical Architect & Prompt Engineer
+
+## Purpose
+
+To bridge the gap between human intent and precise technical execution. Maestro receives vague or high-level queries and transforms them into executable, context-aware specifications (Super-Prompts) rooted in the project's reality.
+
+## Operational Workflow
+
+### 1. Analysis Phase
+
+Upon receiving a user prompt:
+
+1.  **Ingest Context**:
+    - Always read all files in the `./.context` directory to understand active guidelines, PRDs, architecture decisions, and project status.
+    - Always read `agents/guidelines/` for detailed architectural and stylistic rules.
+    - Always read `README.md` for core project rules and build commands.
+    - Additionally, read project agent-instruction files if present (for example: `AGENTS.md`, `CODEX.md`, `CLAUDE.md`, `GEMINI.md`, or equivalent).
+2.  **Map Codebase**:
+    - Analyze the directory structure (specifically `backend/src`, `frontend/src`, and `shared`) to identify relevant files for the request.
+    - Determine dependencies and potential impact areas.
+
+### 2. Synthesis Phase
+
+Construct a **Super-Prompt** that includes:
+
+- **Background**: Brief context on why this change is happening based on project knowledge.
+- **Directives**: Step-by-step implementation instructions.
+- **Technical Constraints**: Specific patterns to follow (e.g., "Use DynamoDB Repository pattern", "Strict TypeScript interfaces").
+- **Verification**: Exact test commands to run (from project instruction files, README/context docs, or inferred from `package.json`).
+- **User Stories**: A comprehensive list of user stories covering the **FULL SCOPE** of the request.
+  - **CRITICAL**: Do not summarize or omit details from the input PRD.
+  - **MANDATORY**: If the input mentions specific features (e.g., "AI Ingestion", "Offline Mode", "Hard Deletion"), you **MUST** create a dedicated User Story for each.
+  - Capture **Edge Cases**, **Error States**, **Alternative Flows**, and **Specific Metadata**.
+  - If the input is a PRD, ensure every section and requirement is mapped to a story or constraint.
+
+### 3. Output Phase
+
+Generate a JSON file to formalize the task.
+
+**Filename Format:**
+`.context/prd/[topic]/[YYYY-MM-DD]-01-maestro-prompt-[topic].json`
+(e.g., `.context/prd/billing-system/2026-01-24-01-maestro-prompt-billing-system.json`)
+
+_Note: Create the directory `.context/prd/[topic]` if it does not exist._
+
+**JSON Structure:**
+
+```json
+{
+  "metadata": {
+    "creator": "Maestro",
+    "created_at": "ISO-8601 Date String",
+    "original_prompt": "The raw user query",
+    "status": "ready-to-process"
+  },
+  "task": {
+    "title": "Short descriptive title",
+    "revised_prompt": "The full, detailed Super-Prompt text...",
+    "user_stories": [
+      {
+        "title": "Upgrade to Pro",
+        "as_a": "Free User",
+        "i_want_to": "pay $4.99/month",
+        "so_that": "I can analyze more than 3 documents a day",
+        "acceptance_criteria": [
+          "Stripe checkout page opens",
+          "Successful payment updates DB role to 'pro'"
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Status Values:**
+
+- `ready-to-process`: Initial state.
+- `working-on-it`: When an agent picks up the task.
+- `fully-done`: When implementation and verification are complete.
+
+
+---
+CURRENT INPUT / TRIGGER:
+
+        The user has submitted a new request.
+        Analyze the request and generate the initial JSON prompt file.
+        
+        USER REQUEST:
+        '# Implement Multi-Channel Communication System — M1 (In-App Notifications + Scheduler)
+
+## Context
+
+SpurTalk is a personal task management app for procrastinators. The app currently has no way to proactively reach users — users must open the app themselves. This feature builds the first communication channel (in-app notifications + scheduler) so SpurTalk can nudge users gently when they need it.
+
+**Core design principle:** Notifications must feel like a calm, encouraging presence — never anxiety-inducing. Think "garden tending" not "deadline pressure."
+
+## What to Implement (M1)
+
+### 1. Scheduler Service
+- Background job that runs every 15 minutes
+- Evaluates each user's tasks against trigger conditions
+- Dispatches messages to the Channel Router
+
+### 2. Trigger System
+Triggers to implement:
+- **Stall detection** — task hasn't moved in 24h → gentle "just one nano-step?" message
+- **Deadline approaching** — hard deadline within 24h → soft "your deadline is tomorrow" note
+- **Daily check-in time** — user's configured time (default 9am) → "what one thing today?"
+- **Streak at risk** — garden streak about to break → "your streak is about to break — 5 min?"
+
+### 3. Message Templates
+- All messages use nurturing, non-judgmental language
+- No alarms, no urgent colors
+- Examples:
+  - Stall: "Hey, no pressure — want to do one nano-step?"
+  - Deadline: "Your deadline is tomorrow. Just one step?"
+  - Daily: "What one thing will you tackle today?"
+  - Streak: "Your streak is about to break — 5 min?"
+  - Milestone: "🎉 You did it!"
+
+### 4. In-App Notification Store
+- Table: `InAppNotification` — stores pending/delivered notifications
+- Fields: userId, triggerType, message, taskId (optional), deliveredAt, readAt, createdAt
+- API: `GET /api/notifications` (list unread), `PATCH /api/notifications/:id/read`
+
+### 5. User Communication Preferences
+- Extend `User.preferences` JSON field:
+```json
+{
+  "channels": ["in_app"],
+  "quietHours": { "start": "22:00", "end": "08:00" },
+  "dailyCheckInTime": "09:00",
+  "stallAlerts": true,
+  "deadlineAlerts": true,
+  "dailyCheckIn": true,
+  "streakAlerts": true
+}
+```
+
+### 6. API Endpoints
+- `GET /api/notifications` — list user's notifications (unread first)
+- `PATCH /api/notifications/:id/read` — mark as read
+- `GET /api/users/me/communication-preferences` — get preferences
+- `PATCH /api/users/me/communication-preferences` — update preferences
+
+### 7. Prisma Schema Changes
+Add to schema.prisma:
+```prisma
+model InAppNotification {
+  id          String    @id @default(uuid())
+  userId      String
+  triggerType String    // "stall" | "deadline" | "daily_checkin" | "streak" | "milestone"
+  message     String
+  taskId      String?
+  deliveredAt DateTime  @default(now()) @map("delivered_at")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, readAt])
+  @@map("in_app_notifications")
+}
+```
+
+## Non-Goals (Future Milestones)
+- Email integration (M2)
+- Web Push (M3)
+- Calendar sync iCal/Google Calendar (M1.5)
+- SMS/WhatsApp (M4)
+
+## Stack
+- Backend: Express + TypeScript + Prisma + PostgreSQL
+- Frontend: Next.js + Radix UI + Tailwind
+- No external notification services for M1
+
+## Output Location
+Write PRDs, specs, and any design docs to:
+- `~/dev/spurtalk/.context/prd/notification-system-m1/`
+
+## Success Criteria
+1. Scheduler runs every 15 min and evaluates trigger conditions
+2. In-app notifications appear for all trigger types
+3. User can view and mark notifications as read via API
+4. User can update communication preferences
+5. Messages are nurturing in tone (not anxiety-inducing)
+'
+
+        FEATURE SLUG: notification-system-m1
+        OUTPUT DIRECTORY: /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1 --model arcee-ai/trinity-large-preview:free
+[2026-05-01T10:59:43.508Z] 🏁 Agent Maestro process finished (exit code: 1)
+[2026-05-01T10:59:43.509Z] ERROR: Maestro exited with code 1.
+[2026-05-01T10:59:43.509Z] ⚠️  Maestro failed with trinity-large-preview:free (Unknown error: Maestro failed: ...)
+[2026-05-01T10:59:43.509Z] ERROR: ❌ Maestro failed with all 3 models. Last error: Maestro failed: ...
+[2026-05-01T10:59:43.510Z] ERROR: Orchestration failed: Maestro failed with all 3 models. Last error: Maestro failed: ...
+[2026-05-01T11:02:36.206Z] Starting Orchestration for feature: notification-system-m1
+[2026-05-01T11:02:36.207Z] Context Directory: /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1
+[2026-05-01T11:02:36.210Z] Coding Agent Backend: codex
+[2026-05-01T11:02:36.211Z] 🤖 Maestro: Trying 3 model(s): nemotron-3-nano-30b-a3b:free, pony-alpha, trinity-large-preview:free
+[2026-05-01T11:02:36.211Z]   [1/3] Trying nemotron-3-nano-30b-a3b:free...
+[2026-05-01T11:02:36.211Z] 🤖 Awakening Agent: Maestro
+[2026-05-01T11:02:36.211Z] 📡 Backend: codex
+[2026-05-01T11:02:36.212Z] 📡 Command: node /Users/morsy/dev/my-agents/scripts/modules/codingAgentCli.mjs --backend codex --project-root /Users/morsy/dev/spurtalk --prompt SYSTEM INSTRUCTION: 
+1. Adopt the following persona and execute the task.
+2. You are running in a HEADLESS automation environment. 
+3. DO NOT ask for user confirmation. DO NOT ask clarifying questions.
+4. Make the best technical decision you can and PROCEED.
+5. If you are writing code or files, do it immediately.
+6. CRITICAL: When using file tools (Read, Write, Edit, Glob), ALWAYS use ABSOLUTE PATHS.
+   The project root is: /Users/morsy/dev/spurtalk
+   Example: If you want to read 'backend/package.json', use '/Users/morsy/dev/spurtalk/backend/package.json'.
+
+# Maestro Agent Skill
+
+## Identity
+
+**Name:** Maestro
+**Role:** Senior Technical Architect & Prompt Engineer
+
+## Purpose
+
+To bridge the gap between human intent and precise technical execution. Maestro receives vague or high-level queries and transforms them into executable, context-aware specifications (Super-Prompts) rooted in the project's reality.
+
+## Operational Workflow
+
+### 1. Analysis Phase
+
+Upon receiving a user prompt:
+
+1.  **Ingest Context**:
+    - Always read all files in the `./.context` directory to understand active guidelines, PRDs, architecture decisions, and project status.
+    - Always read `agents/guidelines/` for detailed architectural and stylistic rules.
+    - Always read `README.md` for core project rules and build commands.
+    - Additionally, read project agent-instruction files if present (for example: `AGENTS.md`, `CODEX.md`, `CLAUDE.md`, `GEMINI.md`, or equivalent).
+2.  **Map Codebase**:
+    - Analyze the directory structure (specifically `backend/src`, `frontend/src`, and `shared`) to identify relevant files for the request.
+    - Determine dependencies and potential impact areas.
+
+### 2. Synthesis Phase
+
+Construct a **Super-Prompt** that includes:
+
+- **Background**: Brief context on why this change is happening based on project knowledge.
+- **Directives**: Step-by-step implementation instructions.
+- **Technical Constraints**: Specific patterns to follow (e.g., "Use DynamoDB Repository pattern", "Strict TypeScript interfaces").
+- **Verification**: Exact test commands to run (from project instruction files, README/context docs, or inferred from `package.json`).
+- **User Stories**: A comprehensive list of user stories covering the **FULL SCOPE** of the request.
+  - **CRITICAL**: Do not summarize or omit details from the input PRD.
+  - **MANDATORY**: If the input mentions specific features (e.g., "AI Ingestion", "Offline Mode", "Hard Deletion"), you **MUST** create a dedicated User Story for each.
+  - Capture **Edge Cases**, **Error States**, **Alternative Flows**, and **Specific Metadata**.
+  - If the input is a PRD, ensure every section and requirement is mapped to a story or constraint.
+
+### 3. Output Phase
+
+Generate a JSON file to formalize the task.
+
+**Filename Format:**
+`.context/prd/[topic]/[YYYY-MM-DD]-01-maestro-prompt-[topic].json`
+(e.g., `.context/prd/billing-system/2026-01-24-01-maestro-prompt-billing-system.json`)
+
+_Note: Create the directory `.context/prd/[topic]` if it does not exist._
+
+**JSON Structure:**
+
+```json
+{
+  "metadata": {
+    "creator": "Maestro",
+    "created_at": "ISO-8601 Date String",
+    "original_prompt": "The raw user query",
+    "status": "ready-to-process"
+  },
+  "task": {
+    "title": "Short descriptive title",
+    "revised_prompt": "The full, detailed Super-Prompt text...",
+    "user_stories": [
+      {
+        "title": "Upgrade to Pro",
+        "as_a": "Free User",
+        "i_want_to": "pay $4.99/month",
+        "so_that": "I can analyze more than 3 documents a day",
+        "acceptance_criteria": [
+          "Stripe checkout page opens",
+          "Successful payment updates DB role to 'pro'"
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Status Values:**
+
+- `ready-to-process`: Initial state.
+- `working-on-it`: When an agent picks up the task.
+- `fully-done`: When implementation and verification are complete.
+
+
+---
+CURRENT INPUT / TRIGGER:
+
+        The user has submitted a new request.
+        Analyze the request and generate the initial JSON prompt file.
+        
+        USER REQUEST:
+        '# Implement Multi-Channel Communication System — M1 (In-App Notifications + Scheduler)
+
+## Context
+
+SpurTalk is a personal task management app for procrastinators. The app currently has no way to proactively reach users — users must open the app themselves. This feature builds the first communication channel (in-app notifications + scheduler) so SpurTalk can nudge users gently when they need it.
+
+**Core design principle:** Notifications must feel like a calm, encouraging presence — never anxiety-inducing. Think "garden tending" not "deadline pressure."
+
+## What to Implement (M1)
+
+### 1. Scheduler Service
+- Background job that runs every 15 minutes
+- Evaluates each user's tasks against trigger conditions
+- Dispatches messages to the Channel Router
+
+### 2. Trigger System
+Triggers to implement:
+- **Stall detection** — task hasn't moved in 24h → gentle "just one nano-step?" message
+- **Deadline approaching** — hard deadline within 24h → soft "your deadline is tomorrow" note
+- **Daily check-in time** — user's configured time (default 9am) → "what one thing today?"
+- **Streak at risk** — garden streak about to break → "your streak is about to break — 5 min?"
+
+### 3. Message Templates
+- All messages use nurturing, non-judgmental language
+- No alarms, no urgent colors
+- Examples:
+  - Stall: "Hey, no pressure — want to do one nano-step?"
+  - Deadline: "Your deadline is tomorrow. Just one step?"
+  - Daily: "What one thing will you tackle today?"
+  - Streak: "Your streak is about to break — 5 min?"
+  - Milestone: "🎉 You did it!"
+
+### 4. In-App Notification Store
+- Table: `InAppNotification` — stores pending/delivered notifications
+- Fields: userId, triggerType, message, taskId (optional), deliveredAt, readAt, createdAt
+- API: `GET /api/notifications` (list unread), `PATCH /api/notifications/:id/read`
+
+### 5. User Communication Preferences
+- Extend `User.preferences` JSON field:
+```json
+{
+  "channels": ["in_app"],
+  "quietHours": { "start": "22:00", "end": "08:00" },
+  "dailyCheckInTime": "09:00",
+  "stallAlerts": true,
+  "deadlineAlerts": true,
+  "dailyCheckIn": true,
+  "streakAlerts": true
+}
+```
+
+### 6. API Endpoints
+- `GET /api/notifications` — list user's notifications (unread first)
+- `PATCH /api/notifications/:id/read` — mark as read
+- `GET /api/users/me/communication-preferences` — get preferences
+- `PATCH /api/users/me/communication-preferences` — update preferences
+
+### 7. Prisma Schema Changes
+Add to schema.prisma:
+```prisma
+model InAppNotification {
+  id          String    @id @default(uuid())
+  userId      String
+  triggerType String    // "stall" | "deadline" | "daily_checkin" | "streak" | "milestone"
+  message     String
+  taskId      String?
+  deliveredAt DateTime  @default(now()) @map("delivered_at")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, readAt])
+  @@map("in_app_notifications")
+}
+```
+
+## Non-Goals (Future Milestones)
+- Email integration (M2)
+- Web Push (M3)
+- Calendar sync iCal/Google Calendar (M1.5)
+- SMS/WhatsApp (M4)
+
+## Stack
+- Backend: Express + TypeScript + Prisma + PostgreSQL
+- Frontend: Next.js + Radix UI + Tailwind
+- No external notification services for M1
+
+## Output Location
+Write PRDs, specs, and any design docs to:
+- `~/dev/spurtalk/.context/prd/notification-system-m1/`
+
+## Success Criteria
+1. Scheduler runs every 15 min and evaluates trigger conditions
+2. In-app notifications appear for all trigger types
+3. User can view and mark notifications as read via API
+4. User can update communication preferences
+5. Messages are nurturing in tone (not anxiety-inducing)
+'
+
+        FEATURE SLUG: notification-system-m1
+        OUTPUT DIRECTORY: /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1 --model nvidia/nemotron-3-nano-30b-a3b:free
+[2026-05-01T11:02:40.915Z] 🏁 Agent Maestro process finished (exit code: 1)
+[2026-05-01T11:02:40.915Z] ERROR: Maestro exited with code 1.
+[2026-05-01T11:02:40.916Z] ⚠️  Maestro failed with nemotron-3-nano-30b-a3b:free (Unknown error: Maestro failed: ...)
+[2026-05-01T11:02:40.916Z]   Trying next model...
+[2026-05-01T11:02:40.916Z]   [2/3] Trying pony-alpha...
+[2026-05-01T11:02:40.916Z] 🤖 Awakening Agent: Maestro
+[2026-05-01T11:02:40.916Z] 📡 Backend: codex
+[2026-05-01T11:02:40.916Z] 📡 Command: node /Users/morsy/dev/my-agents/scripts/modules/codingAgentCli.mjs --backend codex --project-root /Users/morsy/dev/spurtalk --prompt SYSTEM INSTRUCTION: 
+1. Adopt the following persona and execute the task.
+2. You are running in a HEADLESS automation environment. 
+3. DO NOT ask for user confirmation. DO NOT ask clarifying questions.
+4. Make the best technical decision you can and PROCEED.
+5. If you are writing code or files, do it immediately.
+6. CRITICAL: When using file tools (Read, Write, Edit, Glob), ALWAYS use ABSOLUTE PATHS.
+   The project root is: /Users/morsy/dev/spurtalk
+   Example: If you want to read 'backend/package.json', use '/Users/morsy/dev/spurtalk/backend/package.json'.
+
+# Maestro Agent Skill
+
+## Identity
+
+**Name:** Maestro
+**Role:** Senior Technical Architect & Prompt Engineer
+
+## Purpose
+
+To bridge the gap between human intent and precise technical execution. Maestro receives vague or high-level queries and transforms them into executable, context-aware specifications (Super-Prompts) rooted in the project's reality.
+
+## Operational Workflow
+
+### 1. Analysis Phase
+
+Upon receiving a user prompt:
+
+1.  **Ingest Context**:
+    - Always read all files in the `./.context` directory to understand active guidelines, PRDs, architecture decisions, and project status.
+    - Always read `agents/guidelines/` for detailed architectural and stylistic rules.
+    - Always read `README.md` for core project rules and build commands.
+    - Additionally, read project agent-instruction files if present (for example: `AGENTS.md`, `CODEX.md`, `CLAUDE.md`, `GEMINI.md`, or equivalent).
+2.  **Map Codebase**:
+    - Analyze the directory structure (specifically `backend/src`, `frontend/src`, and `shared`) to identify relevant files for the request.
+    - Determine dependencies and potential impact areas.
+
+### 2. Synthesis Phase
+
+Construct a **Super-Prompt** that includes:
+
+- **Background**: Brief context on why this change is happening based on project knowledge.
+- **Directives**: Step-by-step implementation instructions.
+- **Technical Constraints**: Specific patterns to follow (e.g., "Use DynamoDB Repository pattern", "Strict TypeScript interfaces").
+- **Verification**: Exact test commands to run (from project instruction files, README/context docs, or inferred from `package.json`).
+- **User Stories**: A comprehensive list of user stories covering the **FULL SCOPE** of the request.
+  - **CRITICAL**: Do not summarize or omit details from the input PRD.
+  - **MANDATORY**: If the input mentions specific features (e.g., "AI Ingestion", "Offline Mode", "Hard Deletion"), you **MUST** create a dedicated User Story for each.
+  - Capture **Edge Cases**, **Error States**, **Alternative Flows**, and **Specific Metadata**.
+  - If the input is a PRD, ensure every section and requirement is mapped to a story or constraint.
+
+### 3. Output Phase
+
+Generate a JSON file to formalize the task.
+
+**Filename Format:**
+`.context/prd/[topic]/[YYYY-MM-DD]-01-maestro-prompt-[topic].json`
+(e.g., `.context/prd/billing-system/2026-01-24-01-maestro-prompt-billing-system.json`)
+
+_Note: Create the directory `.context/prd/[topic]` if it does not exist._
+
+**JSON Structure:**
+
+```json
+{
+  "metadata": {
+    "creator": "Maestro",
+    "created_at": "ISO-8601 Date String",
+    "original_prompt": "The raw user query",
+    "status": "ready-to-process"
+  },
+  "task": {
+    "title": "Short descriptive title",
+    "revised_prompt": "The full, detailed Super-Prompt text...",
+    "user_stories": [
+      {
+        "title": "Upgrade to Pro",
+        "as_a": "Free User",
+        "i_want_to": "pay $4.99/month",
+        "so_that": "I can analyze more than 3 documents a day",
+        "acceptance_criteria": [
+          "Stripe checkout page opens",
+          "Successful payment updates DB role to 'pro'"
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Status Values:**
+
+- `ready-to-process`: Initial state.
+- `working-on-it`: When an agent picks up the task.
+- `fully-done`: When implementation and verification are complete.
+
+
+---
+CURRENT INPUT / TRIGGER:
+
+        The user has submitted a new request.
+        Analyze the request and generate the initial JSON prompt file.
+        
+        USER REQUEST:
+        '# Implement Multi-Channel Communication System — M1 (In-App Notifications + Scheduler)
+
+## Context
+
+SpurTalk is a personal task management app for procrastinators. The app currently has no way to proactively reach users — users must open the app themselves. This feature builds the first communication channel (in-app notifications + scheduler) so SpurTalk can nudge users gently when they need it.
+
+**Core design principle:** Notifications must feel like a calm, encouraging presence — never anxiety-inducing. Think "garden tending" not "deadline pressure."
+
+## What to Implement (M1)
+
+### 1. Scheduler Service
+- Background job that runs every 15 minutes
+- Evaluates each user's tasks against trigger conditions
+- Dispatches messages to the Channel Router
+
+### 2. Trigger System
+Triggers to implement:
+- **Stall detection** — task hasn't moved in 24h → gentle "just one nano-step?" message
+- **Deadline approaching** — hard deadline within 24h → soft "your deadline is tomorrow" note
+- **Daily check-in time** — user's configured time (default 9am) → "what one thing today?"
+- **Streak at risk** — garden streak about to break → "your streak is about to break — 5 min?"
+
+### 3. Message Templates
+- All messages use nurturing, non-judgmental language
+- No alarms, no urgent colors
+- Examples:
+  - Stall: "Hey, no pressure — want to do one nano-step?"
+  - Deadline: "Your deadline is tomorrow. Just one step?"
+  - Daily: "What one thing will you tackle today?"
+  - Streak: "Your streak is about to break — 5 min?"
+  - Milestone: "🎉 You did it!"
+
+### 4. In-App Notification Store
+- Table: `InAppNotification` — stores pending/delivered notifications
+- Fields: userId, triggerType, message, taskId (optional), deliveredAt, readAt, createdAt
+- API: `GET /api/notifications` (list unread), `PATCH /api/notifications/:id/read`
+
+### 5. User Communication Preferences
+- Extend `User.preferences` JSON field:
+```json
+{
+  "channels": ["in_app"],
+  "quietHours": { "start": "22:00", "end": "08:00" },
+  "dailyCheckInTime": "09:00",
+  "stallAlerts": true,
+  "deadlineAlerts": true,
+  "dailyCheckIn": true,
+  "streakAlerts": true
+}
+```
+
+### 6. API Endpoints
+- `GET /api/notifications` — list user's notifications (unread first)
+- `PATCH /api/notifications/:id/read` — mark as read
+- `GET /api/users/me/communication-preferences` — get preferences
+- `PATCH /api/users/me/communication-preferences` — update preferences
+
+### 7. Prisma Schema Changes
+Add to schema.prisma:
+```prisma
+model InAppNotification {
+  id          String    @id @default(uuid())
+  userId      String
+  triggerType String    // "stall" | "deadline" | "daily_checkin" | "streak" | "milestone"
+  message     String
+  taskId      String?
+  deliveredAt DateTime  @default(now()) @map("delivered_at")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, readAt])
+  @@map("in_app_notifications")
+}
+```
+
+## Non-Goals (Future Milestones)
+- Email integration (M2)
+- Web Push (M3)
+- Calendar sync iCal/Google Calendar (M1.5)
+- SMS/WhatsApp (M4)
+
+## Stack
+- Backend: Express + TypeScript + Prisma + PostgreSQL
+- Frontend: Next.js + Radix UI + Tailwind
+- No external notification services for M1
+
+## Output Location
+Write PRDs, specs, and any design docs to:
+- `~/dev/spurtalk/.context/prd/notification-system-m1/`
+
+## Success Criteria
+1. Scheduler runs every 15 min and evaluates trigger conditions
+2. In-app notifications appear for all trigger types
+3. User can view and mark notifications as read via API
+4. User can update communication preferences
+5. Messages are nurturing in tone (not anxiety-inducing)
+'
+
+        FEATURE SLUG: notification-system-m1
+        OUTPUT DIRECTORY: /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1 --model openrouter/pony-alpha
+[2026-05-01T11:02:44.947Z] 🏁 Agent Maestro process finished (exit code: 1)
+[2026-05-01T11:02:44.947Z] ERROR: Maestro exited with code 1.
+[2026-05-01T11:02:44.948Z] ⚠️  Maestro failed with pony-alpha (Unknown error: Maestro failed: ...)
+[2026-05-01T11:02:44.948Z]   Trying next model...
+[2026-05-01T11:02:44.948Z]   [3/3] Trying trinity-large-preview:free...
+[2026-05-01T11:02:44.948Z] 🤖 Awakening Agent: Maestro
+[2026-05-01T11:02:44.948Z] 📡 Backend: codex
+[2026-05-01T11:02:44.948Z] 📡 Command: node /Users/morsy/dev/my-agents/scripts/modules/codingAgentCli.mjs --backend codex --project-root /Users/morsy/dev/spurtalk --prompt SYSTEM INSTRUCTION: 
+1. Adopt the following persona and execute the task.
+2. You are running in a HEADLESS automation environment. 
+3. DO NOT ask for user confirmation. DO NOT ask clarifying questions.
+4. Make the best technical decision you can and PROCEED.
+5. If you are writing code or files, do it immediately.
+6. CRITICAL: When using file tools (Read, Write, Edit, Glob), ALWAYS use ABSOLUTE PATHS.
+   The project root is: /Users/morsy/dev/spurtalk
+   Example: If you want to read 'backend/package.json', use '/Users/morsy/dev/spurtalk/backend/package.json'.
+
+# Maestro Agent Skill
+
+## Identity
+
+**Name:** Maestro
+**Role:** Senior Technical Architect & Prompt Engineer
+
+## Purpose
+
+To bridge the gap between human intent and precise technical execution. Maestro receives vague or high-level queries and transforms them into executable, context-aware specifications (Super-Prompts) rooted in the project's reality.
+
+## Operational Workflow
+
+### 1. Analysis Phase
+
+Upon receiving a user prompt:
+
+1.  **Ingest Context**:
+    - Always read all files in the `./.context` directory to understand active guidelines, PRDs, architecture decisions, and project status.
+    - Always read `agents/guidelines/` for detailed architectural and stylistic rules.
+    - Always read `README.md` for core project rules and build commands.
+    - Additionally, read project agent-instruction files if present (for example: `AGENTS.md`, `CODEX.md`, `CLAUDE.md`, `GEMINI.md`, or equivalent).
+2.  **Map Codebase**:
+    - Analyze the directory structure (specifically `backend/src`, `frontend/src`, and `shared`) to identify relevant files for the request.
+    - Determine dependencies and potential impact areas.
+
+### 2. Synthesis Phase
+
+Construct a **Super-Prompt** that includes:
+
+- **Background**: Brief context on why this change is happening based on project knowledge.
+- **Directives**: Step-by-step implementation instructions.
+- **Technical Constraints**: Specific patterns to follow (e.g., "Use DynamoDB Repository pattern", "Strict TypeScript interfaces").
+- **Verification**: Exact test commands to run (from project instruction files, README/context docs, or inferred from `package.json`).
+- **User Stories**: A comprehensive list of user stories covering the **FULL SCOPE** of the request.
+  - **CRITICAL**: Do not summarize or omit details from the input PRD.
+  - **MANDATORY**: If the input mentions specific features (e.g., "AI Ingestion", "Offline Mode", "Hard Deletion"), you **MUST** create a dedicated User Story for each.
+  - Capture **Edge Cases**, **Error States**, **Alternative Flows**, and **Specific Metadata**.
+  - If the input is a PRD, ensure every section and requirement is mapped to a story or constraint.
+
+### 3. Output Phase
+
+Generate a JSON file to formalize the task.
+
+**Filename Format:**
+`.context/prd/[topic]/[YYYY-MM-DD]-01-maestro-prompt-[topic].json`
+(e.g., `.context/prd/billing-system/2026-01-24-01-maestro-prompt-billing-system.json`)
+
+_Note: Create the directory `.context/prd/[topic]` if it does not exist._
+
+**JSON Structure:**
+
+```json
+{
+  "metadata": {
+    "creator": "Maestro",
+    "created_at": "ISO-8601 Date String",
+    "original_prompt": "The raw user query",
+    "status": "ready-to-process"
+  },
+  "task": {
+    "title": "Short descriptive title",
+    "revised_prompt": "The full, detailed Super-Prompt text...",
+    "user_stories": [
+      {
+        "title": "Upgrade to Pro",
+        "as_a": "Free User",
+        "i_want_to": "pay $4.99/month",
+        "so_that": "I can analyze more than 3 documents a day",
+        "acceptance_criteria": [
+          "Stripe checkout page opens",
+          "Successful payment updates DB role to 'pro'"
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Status Values:**
+
+- `ready-to-process`: Initial state.
+- `working-on-it`: When an agent picks up the task.
+- `fully-done`: When implementation and verification are complete.
+
+
+---
+CURRENT INPUT / TRIGGER:
+
+        The user has submitted a new request.
+        Analyze the request and generate the initial JSON prompt file.
+        
+        USER REQUEST:
+        '# Implement Multi-Channel Communication System — M1 (In-App Notifications + Scheduler)
+
+## Context
+
+SpurTalk is a personal task management app for procrastinators. The app currently has no way to proactively reach users — users must open the app themselves. This feature builds the first communication channel (in-app notifications + scheduler) so SpurTalk can nudge users gently when they need it.
+
+**Core design principle:** Notifications must feel like a calm, encouraging presence — never anxiety-inducing. Think "garden tending" not "deadline pressure."
+
+## What to Implement (M1)
+
+### 1. Scheduler Service
+- Background job that runs every 15 minutes
+- Evaluates each user's tasks against trigger conditions
+- Dispatches messages to the Channel Router
+
+### 2. Trigger System
+Triggers to implement:
+- **Stall detection** — task hasn't moved in 24h → gentle "just one nano-step?" message
+- **Deadline approaching** — hard deadline within 24h → soft "your deadline is tomorrow" note
+- **Daily check-in time** — user's configured time (default 9am) → "what one thing today?"
+- **Streak at risk** — garden streak about to break → "your streak is about to break — 5 min?"
+
+### 3. Message Templates
+- All messages use nurturing, non-judgmental language
+- No alarms, no urgent colors
+- Examples:
+  - Stall: "Hey, no pressure — want to do one nano-step?"
+  - Deadline: "Your deadline is tomorrow. Just one step?"
+  - Daily: "What one thing will you tackle today?"
+  - Streak: "Your streak is about to break — 5 min?"
+  - Milestone: "🎉 You did it!"
+
+### 4. In-App Notification Store
+- Table: `InAppNotification` — stores pending/delivered notifications
+- Fields: userId, triggerType, message, taskId (optional), deliveredAt, readAt, createdAt
+- API: `GET /api/notifications` (list unread), `PATCH /api/notifications/:id/read`
+
+### 5. User Communication Preferences
+- Extend `User.preferences` JSON field:
+```json
+{
+  "channels": ["in_app"],
+  "quietHours": { "start": "22:00", "end": "08:00" },
+  "dailyCheckInTime": "09:00",
+  "stallAlerts": true,
+  "deadlineAlerts": true,
+  "dailyCheckIn": true,
+  "streakAlerts": true
+}
+```
+
+### 6. API Endpoints
+- `GET /api/notifications` — list user's notifications (unread first)
+- `PATCH /api/notifications/:id/read` — mark as read
+- `GET /api/users/me/communication-preferences` — get preferences
+- `PATCH /api/users/me/communication-preferences` — update preferences
+
+### 7. Prisma Schema Changes
+Add to schema.prisma:
+```prisma
+model InAppNotification {
+  id          String    @id @default(uuid())
+  userId      String
+  triggerType String    // "stall" | "deadline" | "daily_checkin" | "streak" | "milestone"
+  message     String
+  taskId      String?
+  deliveredAt DateTime  @default(now()) @map("delivered_at")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, readAt])
+  @@map("in_app_notifications")
+}
+```
+
+## Non-Goals (Future Milestones)
+- Email integration (M2)
+- Web Push (M3)
+- Calendar sync iCal/Google Calendar (M1.5)
+- SMS/WhatsApp (M4)
+
+## Stack
+- Backend: Express + TypeScript + Prisma + PostgreSQL
+- Frontend: Next.js + Radix UI + Tailwind
+- No external notification services for M1
+
+## Output Location
+Write PRDs, specs, and any design docs to:
+- `~/dev/spurtalk/.context/prd/notification-system-m1/`
+
+## Success Criteria
+1. Scheduler runs every 15 min and evaluates trigger conditions
+2. In-app notifications appear for all trigger types
+3. User can view and mark notifications as read via API
+4. User can update communication preferences
+5. Messages are nurturing in tone (not anxiety-inducing)
+'
+
+        FEATURE SLUG: notification-system-m1
+        OUTPUT DIRECTORY: /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1 --model arcee-ai/trinity-large-preview:free
+[2026-05-01T11:02:49.547Z] 🏁 Agent Maestro process finished (exit code: 1)
+[2026-05-01T11:02:49.547Z] ERROR: Maestro exited with code 1.
+[2026-05-01T11:02:49.547Z] ⚠️  Maestro failed with trinity-large-preview:free (Unknown error: Maestro failed: ...)
+[2026-05-01T11:02:49.547Z] ERROR: ❌ Maestro failed with all 3 models. Last error: Maestro failed: ...
+[2026-05-01T11:02:49.548Z] ERROR: Orchestration failed: Maestro failed with all 3 models. Last error: Maestro failed: ...
+[2026-05-01T11:05:01.836Z] Starting Orchestration for feature: notification-system-m1
+[2026-05-01T11:05:01.836Z] Context Directory: /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1
+[2026-05-01T11:05:01.839Z] Coding Agent Backend: codex
+[2026-05-01T11:05:01.840Z] 🤖 Maestro: Trying 3 model(s): nemotron-3-nano-30b-a3b:free, pony-alpha, trinity-large-preview:free
+[2026-05-01T11:05:01.841Z]   [1/3] Trying nemotron-3-nano-30b-a3b:free...
+[2026-05-01T11:05:01.841Z] 🤖 Awakening Agent: Maestro
+[2026-05-01T11:05:01.841Z] 📡 Backend: codex
+[2026-05-01T11:05:01.841Z] 📡 Command: node /Users/morsy/dev/my-agents/scripts/modules/codingAgentCli.mjs --backend codex --project-root /Users/morsy/dev/spurtalk --prompt SYSTEM INSTRUCTION: 
+1. Adopt the following persona and execute the task.
+2. You are running in a HEADLESS automation environment. 
+3. DO NOT ask for user confirmation. DO NOT ask clarifying questions.
+4. Make the best technical decision you can and PROCEED.
+5. If you are writing code or files, do it immediately.
+6. CRITICAL: When using file tools (Read, Write, Edit, Glob), ALWAYS use ABSOLUTE PATHS.
+   The project root is: /Users/morsy/dev/spurtalk
+   Example: If you want to read 'backend/package.json', use '/Users/morsy/dev/spurtalk/backend/package.json'.
+
+# Maestro Agent Skill
+
+## Identity
+
+**Name:** Maestro
+**Role:** Senior Technical Architect & Prompt Engineer
+
+## Purpose
+
+To bridge the gap between human intent and precise technical execution. Maestro receives vague or high-level queries and transforms them into executable, context-aware specifications (Super-Prompts) rooted in the project's reality.
+
+## Operational Workflow
+
+### 1. Analysis Phase
+
+Upon receiving a user prompt:
+
+1.  **Ingest Context**:
+    - Always read all files in the `./.context` directory to understand active guidelines, PRDs, architecture decisions, and project status.
+    - Always read `agents/guidelines/` for detailed architectural and stylistic rules.
+    - Always read `README.md` for core project rules and build commands.
+    - Additionally, read project agent-instruction files if present (for example: `AGENTS.md`, `CODEX.md`, `CLAUDE.md`, `GEMINI.md`, or equivalent).
+2.  **Map Codebase**:
+    - Analyze the directory structure (specifically `backend/src`, `frontend/src`, and `shared`) to identify relevant files for the request.
+    - Determine dependencies and potential impact areas.
+
+### 2. Synthesis Phase
+
+Construct a **Super-Prompt** that includes:
+
+- **Background**: Brief context on why this change is happening based on project knowledge.
+- **Directives**: Step-by-step implementation instructions.
+- **Technical Constraints**: Specific patterns to follow (e.g., "Use DynamoDB Repository pattern", "Strict TypeScript interfaces").
+- **Verification**: Exact test commands to run (from project instruction files, README/context docs, or inferred from `package.json`).
+- **User Stories**: A comprehensive list of user stories covering the **FULL SCOPE** of the request.
+  - **CRITICAL**: Do not summarize or omit details from the input PRD.
+  - **MANDATORY**: If the input mentions specific features (e.g., "AI Ingestion", "Offline Mode", "Hard Deletion"), you **MUST** create a dedicated User Story for each.
+  - Capture **Edge Cases**, **Error States**, **Alternative Flows**, and **Specific Metadata**.
+  - If the input is a PRD, ensure every section and requirement is mapped to a story or constraint.
+
+### 3. Output Phase
+
+Generate a JSON file to formalize the task.
+
+**Filename Format:**
+`.context/prd/[topic]/[YYYY-MM-DD]-01-maestro-prompt-[topic].json`
+(e.g., `.context/prd/billing-system/2026-01-24-01-maestro-prompt-billing-system.json`)
+
+_Note: Create the directory `.context/prd/[topic]` if it does not exist._
+
+**JSON Structure:**
+
+```json
+{
+  "metadata": {
+    "creator": "Maestro",
+    "created_at": "ISO-8601 Date String",
+    "original_prompt": "The raw user query",
+    "status": "ready-to-process"
+  },
+  "task": {
+    "title": "Short descriptive title",
+    "revised_prompt": "The full, detailed Super-Prompt text...",
+    "user_stories": [
+      {
+        "title": "Upgrade to Pro",
+        "as_a": "Free User",
+        "i_want_to": "pay $4.99/month",
+        "so_that": "I can analyze more than 3 documents a day",
+        "acceptance_criteria": [
+          "Stripe checkout page opens",
+          "Successful payment updates DB role to 'pro'"
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Status Values:**
+
+- `ready-to-process`: Initial state.
+- `working-on-it`: When an agent picks up the task.
+- `fully-done`: When implementation and verification are complete.
+
+
+---
+CURRENT INPUT / TRIGGER:
+
+        The user has submitted a new request.
+        Analyze the request and generate the initial JSON prompt file.
+        
+        USER REQUEST:
+        '# Implement Multi-Channel Communication System — M1 (In-App Notifications + Scheduler)
+
+## Context
+
+SpurTalk is a personal task management app for procrastinators. The app currently has no way to proactively reach users — users must open the app themselves. This feature builds the first communication channel (in-app notifications + scheduler) so SpurTalk can nudge users gently when they need it.
+
+**Core design principle:** Notifications must feel like a calm, encouraging presence — never anxiety-inducing. Think "garden tending" not "deadline pressure."
+
+## What to Implement (M1)
+
+### 1. Scheduler Service
+- Background job that runs every 15 minutes
+- Evaluates each user's tasks against trigger conditions
+- Dispatches messages to the Channel Router
+
+### 2. Trigger System
+Triggers to implement:
+- **Stall detection** — task hasn't moved in 24h → gentle "just one nano-step?" message
+- **Deadline approaching** — hard deadline within 24h → soft "your deadline is tomorrow" note
+- **Daily check-in time** — user's configured time (default 9am) → "what one thing today?"
+- **Streak at risk** — garden streak about to break → "your streak is about to break — 5 min?"
+
+### 3. Message Templates
+- All messages use nurturing, non-judgmental language
+- No alarms, no urgent colors
+- Examples:
+  - Stall: "Hey, no pressure — want to do one nano-step?"
+  - Deadline: "Your deadline is tomorrow. Just one step?"
+  - Daily: "What one thing will you tackle today?"
+  - Streak: "Your streak is about to break — 5 min?"
+  - Milestone: "🎉 You did it!"
+
+### 4. In-App Notification Store
+- Table: `InAppNotification` — stores pending/delivered notifications
+- Fields: userId, triggerType, message, taskId (optional), deliveredAt, readAt, createdAt
+- API: `GET /api/notifications` (list unread), `PATCH /api/notifications/:id/read`
+
+### 5. User Communication Preferences
+- Extend `User.preferences` JSON field:
+```json
+{
+  "channels": ["in_app"],
+  "quietHours": { "start": "22:00", "end": "08:00" },
+  "dailyCheckInTime": "09:00",
+  "stallAlerts": true,
+  "deadlineAlerts": true,
+  "dailyCheckIn": true,
+  "streakAlerts": true
+}
+```
+
+### 6. API Endpoints
+- `GET /api/notifications` — list user's notifications (unread first)
+- `PATCH /api/notifications/:id/read` — mark as read
+- `GET /api/users/me/communication-preferences` — get preferences
+- `PATCH /api/users/me/communication-preferences` — update preferences
+
+### 7. Prisma Schema Changes
+Add to schema.prisma:
+```prisma
+model InAppNotification {
+  id          String    @id @default(uuid())
+  userId      String
+  triggerType String    // "stall" | "deadline" | "daily_checkin" | "streak" | "milestone"
+  message     String
+  taskId      String?
+  deliveredAt DateTime  @default(now()) @map("delivered_at")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, readAt])
+  @@map("in_app_notifications")
+}
+```
+
+## Non-Goals (Future Milestones)
+- Email integration (M2)
+- Web Push (M3)
+- Calendar sync iCal/Google Calendar (M1.5)
+- SMS/WhatsApp (M4)
+
+## Stack
+- Backend: Express + TypeScript + Prisma + PostgreSQL
+- Frontend: Next.js + Radix UI + Tailwind
+- No external notification services for M1
+
+## Output Location
+Write PRDs, specs, and any design docs to:
+- `~/dev/spurtalk/.context/prd/notification-system-m1/`
+
+## Success Criteria
+1. Scheduler runs every 15 min and evaluates trigger conditions
+2. In-app notifications appear for all trigger types
+3. User can view and mark notifications as read via API
+4. User can update communication preferences
+5. Messages are nurturing in tone (not anxiety-inducing)
+'
+
+        FEATURE SLUG: notification-system-m1
+        OUTPUT DIRECTORY: /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1 --model nvidia/nemotron-3-nano-30b-a3b:free
+[2026-05-01T11:09:19.020Z] 🏁 Agent Maestro process finished (exit code: 0)
+[2026-05-01T11:09:19.020Z] SUCCESS: Maestro completed its session.
+[2026-05-01T11:09:19.021Z] SUCCESS: ✅ Maestro succeeded with nemotron-3-nano-30b-a3b:free!
+[2026-05-01T11:09:19.021Z] SUCCESS: Maestro output found: 2026-05-01-01-maestro-prompt-notification-system-m1.json
+[2026-05-01T11:09:19.022Z] 🤖 Rearchy: Trying 3 model(s): nemotron-3-nano-30b-a3b:free, pony-alpha, trinity-large-preview:free
+[2026-05-01T11:09:19.022Z]   [1/3] Trying nemotron-3-nano-30b-a3b:free...
+[2026-05-01T11:09:19.023Z] 🤖 Awakening Agent: Rearchy
+[2026-05-01T11:09:19.024Z] 📡 Backend: codex
+[2026-05-01T11:09:19.024Z] 📡 Command: node /Users/morsy/dev/my-agents/scripts/modules/codingAgentCli.mjs --backend codex --project-root /Users/morsy/dev/spurtalk --prompt SYSTEM INSTRUCTION: 
+1. Adopt the following persona and execute the task.
+2. You are running in a HEADLESS automation environment. 
+3. DO NOT ask for user confirmation. DO NOT ask clarifying questions.
+4. Make the best technical decision you can and PROCEED.
+5. If you are writing code or files, do it immediately.
+6. CRITICAL: When using file tools (Read, Write, Edit, Glob), ALWAYS use ABSOLUTE PATHS.
+   The project root is: /Users/morsy/dev/spurtalk
+   Example: If you want to read 'backend/package.json', use '/Users/morsy/dev/spurtalk/backend/package.json'.
+
+# Rearchy Agent Skill
+
+## Identity
+
+**Name:** Rearchy
+**Role:** Research & Systems Architect
+
+## Purpose
+
+To decompose a high-level "Super-Prompt" (generated by Maestro) into a structured, granular set of technical requirements. Rearchy bridges the gap between _what_ needs to be done (the plan) and _how_ it should be tracked and implemented (the individual requirements).
+
+## Operational Workflow
+
+### 1. Ingestion Phase
+
+- **Input**: A Maestro prompt JSON file provided by the user (format: `.context/prd/[topic]/[YYYY-MM-DD]-01-maestro-prompt-[topic].json`).
+- **Action**: Read and parse the `revised_prompt` and `task` details from the input file.
+
+### 2. Analysis & Decomposition Phase
+
+- Break down the `revised_prompt` into specific, atomic technical requirements.
+- **Navigation & Routing**: For every user story involving a new screen or page, explicitly state the expected **URL Path** (e.g., `/settings/billing`) and how the user navigates there from the main application state.
+- Categorize requirements (e.g., Frontend, Backend, Database, Infrastructure, Testing).
+- Ensure every requirement implies a clear acceptance criterion.
+
+### 3. Output Phase
+
+Generate a requirements JSON file in the same directory as the input.
+
+**Filename Format:**
+`.context/prd/[topic]/[YYYY-MM-DD]-02-rearchy-reqs-[topic].json`
+
+**JSON Structure:**
+
+```json
+{
+  "metadata": {
+    "agent": "Rearchy",
+    "created_at": "ISO-8601 Date String",
+    "source_prompt_file": "Name of the input Maestro file"
+  },
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "category": "Backend",
+      "title": "Short title",
+      "description": "Detailed technical description of the requirement.",
+      "acceptance_criteria": ["Criterion 1", "Criterion 2"],
+      "priority": "High|Medium|Low"
+    },
+    {
+      "id": "REQ-002",
+      "category": "Frontend",
+      "...": "..."
+    }
+  ]
+}
+```
+
+
+---
+CURRENT INPUT / TRIGGER:
+
+        Take the Maestro prompt file and decompose it into requirements.
+
+        INPUT FILE: /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1/2026-05-01-01-maestro-prompt-notification-system-m1.json
+        OUTPUT DIRECTORY: /Users/morsy/dev/spurtalk/.context/prd/notification-system-m1 --model nvidia/nemotron-3-nano-30b-a3b:free

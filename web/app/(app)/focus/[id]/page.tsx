@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { getRandomCelebration } from "@/lib/design-tokens";
 import { api } from "@/lib/api";
 import { Task, NanoStep } from "@spurtalk/shared";
+import { MomentumTimer } from "@/components/deck/MomentumTimer";
 
 export default function FocusModePage() {
   const router = useRouter();
@@ -38,6 +39,7 @@ export default function FocusModePage() {
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebration, setCelebration] = useState("");
+  const [showMomentumMode, setShowMomentumMode] = useState(false);
 
   // Fetch task data
   useEffect(() => {
@@ -113,6 +115,21 @@ export default function FocusModePage() {
     }, 2000);
   };
 
+  const handleMomentumComplete = (result: any) => {
+    if (result.earnedFlower) {
+      setShowCelebration(true);
+      setCelebration("Momentum built! 🌸");
+    }
+    setTimeout(() => {
+      setShowMomentumMode(false);
+      router.push("/deck");
+    }, 2500);
+  };
+
+  const handleMomentumAbandon = (seconds: number) => {
+    setShowMomentumMode(false);
+  };
+
   const progress =
     task && task.nanoSteps && task.nanoSteps.length > 0
       ? (completedSteps.length / task.nanoSteps.length) * 100
@@ -167,6 +184,7 @@ export default function FocusModePage() {
           </Button>
 
           {/* Timer */}
+)
           <div className="flex items-center gap-3">
             <Badge
               variant={isTimerActive ? "default" : "secondary"}
@@ -193,146 +211,171 @@ export default function FocusModePage() {
         </div>
       </header>
 
+      {/* Momentum Mode Toggle Button */}
+      {!showMomentumMode && !loading && !error && task && (
+        <div className="container mx-auto max-w-2xl px-4 py-2">
+          <Button
+            variant="outline"
+            className="w-full gap-2 border-primary/30 text-primary hover:bg-primary/10"
+            onClick={() => setShowMomentumMode(true)}
+          >
+            <Sparkles className="h-4 w-4" />
+            Just 5 Minutes — Start Momentum Mode
+          </Button>
+        </div>
+      )}
+
       {/* Content */}
       <main className="container mx-auto max-w-2xl px-4 py-8">
-        {/* Loading State */}
-        {loading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-16"
-          >
-            <Flower className="h-8 w-8 text-success animate-bloom mb-4" />
-            <p className="text-body text-muted-foreground">
-              Loading your task...
-            </p>
-          </motion.div>
-        )}
-
-        {/* Error State */}
-        {!loading && error && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-16 text-center"
-          >
-            <p className="text-h3 text-foreground mb-2">
-              This task couldn&apos;t be found
-            </p>
-            <p className="text-body text-muted-foreground mb-6">
-              It may have been moved or deleted.
-            </p>
-            <Button onClick={() => router.push("/deck")}>Back to Deck</Button>
-          </motion.div>
-        )}
-
-        {/* Task Info */}
-        {!loading && !error && task && (
+        {/* Show Momentum Timer instead of task when in momentum mode */}
+        {showMomentumMode && task ? (
+          <MomentumTimer
+            taskId={task.id}
+            onComplete={handleMomentumComplete}
+            onAbandon={handleMomentumAbandon}
+          />
+        ) : (
           <>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-8"
-            >
-              <Badge variant="outline" className="mb-3">
-                {task.effortLevel}
-              </Badge>
-              <h1 className="text-h2 text-foreground mb-2">{task.title}</h1>
-              {task.description && (
-                <p className="text-body text-muted-foreground">
-                  {task.description}
-                </p>
-              )}
-            </motion.div>
-
-            {/* Progress */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="mb-8"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-body-small text-muted-foreground">
-                  Progress
-                </span>
-                <span className="text-body-small font-medium text-foreground">
-                  {completedSteps.length} / {task.nanoSteps.length}
-                </span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </motion.div>
-
-            {/* Nano Steps */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="space-y-3 mb-8"
-            >
-              <h3 className="text-subheader text-foreground flex items-center gap-2">
-                <ChevronDown className="h-5 w-5" />
-                Tiny Steps
-              </h3>
-
-              {task.nanoSteps.map((step: NanoStep, index: number) => {
-                const isCompleted = completedSteps.includes(step.id);
-                return (
-                  <motion.div
-                    key={step.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 + index * 0.1 }}
-                  >
-                    <Card
-                      className={cn(
-                        "cursor-pointer transition-all hover:border-primary/30",
-                        isCompleted && "bg-success/10 border-success/30"
-                      )}
-                      onClick={() => toggleStep(step.id)}
-                    >
-                      <CardContent className="flex items-center gap-3 py-3 px-4">
-                        <div
-                          className={cn(
-                            "flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors",
-                            isCompleted
-                              ? "bg-success border-success text-success-foreground"
-                              : "border-muted-foreground/30"
-                          )}
-                        >
-                          {isCompleted && <CheckCircle2 className="h-4 w-4" />}
-                        </div>
-                        <span
-                          className={cn(
-                            "text-body transition-colors",
-                            isCompleted && "text-muted-foreground line-through"
-                          )}
-                        >
-                          {step.text}
-                        </span>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-
-            {/* Complete Button */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <Button
-                size="lg"
-                className="w-full h-12 text-base font-medium gap-2"
-                onClick={handleComplete}
-                disabled={completedSteps.length === 0}
+            {/* Loading State */}
+            {loading && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex flex-col items-center justify-center py-16"
               >
-                <CheckCircle2 className="h-5 w-5" />
-                Mark Complete
-              </Button>
-            </motion.div>
+                <Flower className="h-8 w-8 text-success animate-bloom mb-4" />
+                <p className="text-body text-muted-foreground">
+                  Loading your task...
+                </p>
+              </motion.div>
+            )}
+
+            {/* Error State */}
+            {!loading && error && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center justify-center py-16 text-center"
+              >
+                <p className="text-h3 text-foreground mb-2">
+                  This task couldn&apos;t be found
+                </p>
+                <p className="text-body text-muted-foreground mb-6">
+                  It may have been moved or deleted.
+                </p>
+                <Button onClick={() => router.push("/deck")}>Back to Deck</Button>
+              </motion.div>
+            )}
+
+            {/* Task Info */}
+            {!loading && !error && task && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-8"
+                >
+                  <Badge variant="outline" className="mb-3">
+                    {task.effortLevel}
+                  </Badge>
+                  <h1 className="text-h2 text-foreground mb-2">{task.title}</h1>
+                  {task.description && (
+                    <p className="text-body text-muted-foreground">
+                      {task.description}
+                    </p>
+                  )}
+                </motion.div>
+
+                {/* Progress */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="mb-8"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-body-small text-muted-foreground">
+                      Progress
+                    </span>
+                    <span className="text-body-small font-medium text-foreground">
+                      {completedSteps.length} / {task.nanoSteps.length}
+                    </span>
+                  </div>
+                  <Progress value={progress} className="h-2" />
+                </motion.div>
+
+                {/* Nano Steps */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="space-y-3 mb-8"
+                >
+                  <h3 className="text-subheader text-foreground flex items-center gap-2">
+                    <ChevronDown className="h-5 w-5" />
+                    Tiny Steps
+                  </h3>
+
+                  {task.nanoSteps.map((step: NanoStep, index: number) => {
+                    const isCompleted = completedSteps.includes(step.id);
+                    return (
+                      <motion.div
+                        key={step.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 + index * 0.1 }}
+                      >
+                        <Card
+                          className={cn(
+                            "cursor-pointer transition-all hover:border-primary/30",
+                            isCompleted && "bg-success/10 border-success/30"
+                          )}
+                          onClick={() => toggleStep(step.id)}
+                        >
+                          <CardContent className="flex items-center gap-3 py-3 px-4">
+                            <div
+                              className={cn(
+                                "flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors",
+                                isCompleted
+                                  ? "bg-success border-success text-success-foreground"
+                                  : "border-muted-foreground/30"
+                              )}
+                            >
+                              {isCompleted && <CheckCircle2 className="h-4 w-4" />}
+                            </div>
+                            <span
+                              className={cn(
+                                "text-body transition-colors",
+                                isCompleted && "text-muted-foreground line-through"
+                              )}
+                            >
+                              {step.text}
+                            </span>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+
+                {/* Complete Button */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <Button
+                    size="lg"
+                    className="w-full h-12 text-base font-medium gap-2"
+                    onClick={handleComplete}
+                    disabled={completedSteps.length === 0}
+                  >
+                    <CheckCircle2 className="h-5 w-5" />
+                    Mark Complete
+                  </Button>
+                </motion.div>
+              </>
+            )}
           </>
         )}
       </main>

@@ -8,17 +8,18 @@ datasource db {
 }
 
 model User {
-  id           String     @id @default(uuid())
-  email        String     @unique
-  passwordHash String     @map("password_hash")
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
-  preferences  Json       @default("{}")
-  subscription Json       @default("{}")
-  gardenState  Json       @default("{}") @map("garden_state")
-  documents    Document[]
-  tasks        Task[]
-  timelines    Timeline[]
+  id               String             @id @default(uuid())
+  email            String             @unique
+  passwordHash     String             @map("password_hash")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+  preferences     Json             @default("{}")
+  subscription   Json             @default("{}")
+  gardenState    Json             @default("{}") @map("garden_state")
+  documents       Document[]
+  tasks           Task[]
+  timelines      Timeline[]
+  momentumSessions MomentumSession[]
 
   @@map("users")
 }
@@ -44,9 +45,10 @@ model Task {
   dependencies       Json      @default("[]") @map("dependencies")
   tags               Json      @default("[]") @map("tags")
   deckOrder          Int?      @default(0) @map("deck_order")
-  parentTask         Task?     @relation("TaskHierarchy", fields: [parentTaskId], references: [id])
-  subtasks           Task[]    @relation("TaskHierarchy")
-  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentTask         Task?            @relation("TaskHierarchy", fields: [parentTaskId], references: [id])
+  subtasks        Task[]           @relation("TaskHierarchy")
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  momentumSessions MomentumSession[]
 
   @@index([userId])
   @@index([state])
@@ -92,4 +94,21 @@ model WaitlistEntry {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("waitlist_entries")
+}
+
+model MomentumSession {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  taskId          String   @map("task_id")
+  startedAt       DateTime @default(now()) @map("started_at")
+  durationSeconds Int      @default(300) @map("duration_seconds")
+  completedAt     DateTime? @map("completed_at")
+  earnedFlower    Boolean  @default(false) @map("earned_flower")
+
+  user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task  Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([taskId])
+  @@map("momentum_sessions")
 }
