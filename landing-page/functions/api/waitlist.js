@@ -68,7 +68,7 @@ async function handlePost(request, env, corsHeaders) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'SpurTalk Waitlist <noreply@spurtalk.com>',
+          from: 'SpurTalk Waitlist <spurtalk+noreply@specialized.live>',
           to: ['spurtalk@specialized.live'],
           subject: 'New SpurTalk waitlist signup',
           text: `Email: ${email}\nTime: ${timestamp}`,
