@@ -63,7 +63,7 @@ services:
     environment:
       NODE_ENV: production
       HOSTNAME: "0.0.0.0"
-      NEXT_PUBLIC_API_URL: http://178.105.101.144:7101
+      NEXT_PUBLIC_API_URL: http://178.105.101.144
       BACKEND_URL: http://backend:7101
       PORT: 7100
     ports:
