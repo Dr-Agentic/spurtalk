@@ -1,6 +1,18 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resendClient: Resend | null = null;
+
+function getResendClient(): Resend {
+  if (!resendClient) {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      throw new Error("RESEND_API_KEY is not configured. Password reset emails cannot be sent.");
+    }
+    resendClient = new Resend(apiKey);
+  }
+  return resendClient;
+}
+
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "SpurTalk <spurtalk+noreply@specialized.live>";
 const APP_URL = process.env.APP_URL || "http://localhost:7100";
 
@@ -10,6 +22,7 @@ export interface PasswordResetEmail {
 }
 
 export async function sendPasswordResetEmail({ to, resetToken }: PasswordResetEmail): Promise<void> {
+  const resend = getResendClient();
   const resetLink = `${APP_URL}/reset-password?token=${resetToken}`;
 
   await resend.emails.send({
