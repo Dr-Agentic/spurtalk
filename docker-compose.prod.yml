@@ -40,9 +40,13 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/spurtalk
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me-in-production-refresh}
       NODE_ENV: production
       PORT: 7101
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-dummy-key-for-build}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-SpurTalk <spurtalk+noreply@specialized.live>}
+      APP_URL: ${APP_URL:-http://178.105.101.144:7100}
     ports:
       - "7101:7101"
     depends_on:
