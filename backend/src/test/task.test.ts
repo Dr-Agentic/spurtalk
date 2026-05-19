@@ -102,6 +102,39 @@ describe("TaskService", () => {
       expect(task.hardDeadline).toBeNull();
     });
 
+    it("should create a task with ONLY hardDeadline (no fuzzyDeadline)", async () => {
+      const taskData: CreateTask = {
+        title: "Hard Deadline Only Task",
+        effortLevel: "Medium",
+        hardDeadline: new Date(Date.now() + 86400000), // tomorrow
+        tags: [],
+      };
+
+      const task = await taskService.createTask(testUserId, taskData);
+      createdTaskIds.push(task.id);
+
+      expect(task).toBeDefined();
+      expect(task.hardDeadline).toBeDefined();
+      expect(task.fuzzyDeadline).toBeNull();
+    });
+
+    it("should create a task with NO deadline at all", async () => {
+      const taskData: CreateTask = {
+        title: "No Deadline Task",
+        effortLevel: "Tiny",
+        tags: [],
+      };
+
+      const task = await taskService.createTask(testUserId, taskData);
+      createdTaskIds.push(task.id);
+
+      expect(task).toBeDefined();
+      expect(task.title).toBe("No Deadline Task");
+      expect(task.fuzzyDeadline).toBeNull();
+      expect(task.hardDeadline).toBeNull();
+      expect(task.state).toBe("Deck");
+    });
+
     it("should fail with invalid dependencies", async () => {
       const taskData: CreateTask = {
         title: "Task with invalid deps",
